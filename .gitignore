@@ -1,2 +1,33 @@
 # Superpowers planning artifacts (specs, plans) stay local
 docs/superpowers/
+
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+.age.key.txt
+.age.key.txt.secours
+ansible/config/.vault_file
+ansible/config/known_hosts
+
+# Local environments and tool caches
+.venv/
+.ruff_cache/
+.ansible/
+.task/
+**/__pycache__/
+*.retry
+*.log
+
+# Generated Ansible runtime files
+ansible/config/tmp/*
+!ansible/config/tmp/.gitkeep
+
+# Downloaded vendor content; keep the empty path visible
+ansible/roles/vendors/*
+!ansible/roles/vendors/.gitkeep
+ansible/collections/vendors/*
+!ansible/collections/vendors/.gitkeep
+
+# Local agent tooling lockfile — not repo content
+skills-lock.json
