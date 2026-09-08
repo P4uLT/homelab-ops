@@ -1,5 +1,5 @@
 # terraform/
 
-Infrastructure as code for Proxmox VE (bpg provider), one root per server.
-Creates LXC from Packer images and generates the `iac.tf.yml` inventory.
-Populated in a later phase.
+Infrastructure as code for Proxmox VE (bpg provider), with one root per
+server. Generated inventory support is planned for a later phase, alongside
+LXC creation from Packer images.

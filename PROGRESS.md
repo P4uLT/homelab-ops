@@ -1,8 +1,7 @@
 # Progress
 
-Phase tracking for the homelab-ops monorepo. The plan of record is the
-internal architecture study plus the phase design specs kept as local
-planning documents.
+Phase tracking for the homelab-ops monorepo. Detailed design documents
+remain local until the corresponding work is ready.
 
 | Phase | Scope | Status |
 | ----- | ----- | ------ |

@@ -8,7 +8,7 @@ Kubernetes lab.
 
 | Path | Purpose |
 | ---- | ------- |
-| `packer/` | Golden LXC images, pinned by digest |
+| `packer/` | Golden LXC images (digest locking planned) |
 | `terraform/` | Proxmox infrastructure, one root per server |
 | `ansible/` | Runtime configuration (hub-and-spoke playbooks) |
 | `kubernetes/` | Talos + Flux bare-metal lab |
