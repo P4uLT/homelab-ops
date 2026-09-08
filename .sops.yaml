@@ -1,0 +1,9 @@
+# SOPS creation rules — stub.
+#
+# The SOPS bootstrap phase generates the age key pair (docs/sops.md).
+# Until then no rule is active: uncomment and set the recipient to the
+# generated public key when it exists. No key material ever lives here.
+
+# creation_rules:
+#   - path_regex: \.sops\.ya?ml$
+#     age: age1REPLACE_WITH_GENERATED_PUBLIC_KEY

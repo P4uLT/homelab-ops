@@ -1,0 +1,9 @@
+# Toolchain for homelab-ops — extended phase by phase.
+# Roadmap for later phases (uncomment as each lands):
+#   packer, tofu (OpenTofu), kubectl, talosctl, topf, flux, sops, age, yq, just
+# topf's mise availability is unverified (architecture study). Check it before adding.
+
+[tools]
+task = "latest"
+python = "3.13.2"
+uv = "latest"
