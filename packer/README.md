@@ -1,5 +1,6 @@
 # packer/
 
-Golden LXC images for Proxmox VE, built with Packer. Image digests and
-locking will be added in a later phase. Cattle containers come from these
-images and are never patched in place. Populated in a later phase.
+This directory will contain golden LXC images for Proxmox VE. Packer builds
+the images, and a later phase adds digest locking. Cattle containers come
+from these images. Never patch a cattle container in place. The directory
+stays a placeholder until that phase.

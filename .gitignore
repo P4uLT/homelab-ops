@@ -23,7 +23,7 @@ ansible/config/known_hosts
 ansible/config/tmp/*
 !ansible/config/tmp/.gitkeep
 
-# Downloaded vendor content; keep the empty path visible
+# Downloaded vendor content. Keep the empty paths visible.
 ansible/roles/vendors/*
 !ansible/roles/vendors/.gitkeep
 ansible/collections/vendors/*

@@ -1,7 +1,7 @@
 # Progress
 
-Phase tracking for the homelab-ops monorepo. Detailed design documents
-remain local until the corresponding work is ready.
+This file tracks the phases of the homelab-ops monorepo. Detailed design
+documents remain local until the corresponding work is ready.
 
 | Phase | Scope | Status |
 | ----- | ----- | ------ |

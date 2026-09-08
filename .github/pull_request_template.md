@@ -4,12 +4,13 @@
 
 ## Validation
 
-- [ ] Tests or validation commands are listed below.
-- [ ] No credentials, private keys, inventories, hostnames, or rendered secrets are included.
-- [ ] Documentation and `.gitignore` are updated when needed.
+- [ ] List the tests or validation commands in the section below.
+- [ ] Do not include credentials, private keys, inventories, hostnames, or
+      rendered secrets in this pull request.
+- [ ] Update documentation and `.gitignore` when needed.
 
 ## Validation commands
 
 ```text
-# Add the commands run, or explain why validation is not applicable.
+# Add the commands that you ran, or explain why you ran none.
 ```
