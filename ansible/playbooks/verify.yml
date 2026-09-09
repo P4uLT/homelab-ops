@@ -1,0 +1,27 @@
+---
+# Verification playbook — the executable proof of the phase 0b shell.
+# Runs on the controller over a local connection: no managed host, no SSH,
+# no become, no credentials. Entry point: task -d ansible verify.
+- name: Verify the Ansible shell is alive on the controller
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Check the shell directories resolve
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../{{ item }}"
+      loop:
+        - roles
+        - collections/local
+        - collections/vendors
+        - plugins/modules
+        - config/tmp
+      register: shell_dirs
+
+    - name: Assert every shell directory exists
+      ansible.builtin.assert:
+        that:
+          - shell_dirs.results | map(attribute='stat.exists') | select('equalto', false) | list | length == 0
+        success_msg: "Ansible shell verified — {{ inventory_hostname }} is alive."
+        quiet: true

@@ -2,7 +2,22 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-# Delegator namespace for the Ansible shell (lands in phase 0b). Phase 0b
-# appends the real delegator tasks (verify, lint, run) here. Until then the
-# namespace stays empty so `task --list` works from the repo root.
-tasks: {}
+# Delegator namespace for the Ansible shell. Each task runs the real
+# recipe inside ansible/ (see ansible/Taskfile.yml), so the phase 0b
+# verification entry point also works from the repo root as
+# `task ansible:verify`.
+tasks:
+  verify:
+    desc: Verify the Ansible shell — deps, syntax, lint, local run
+    dir: ansible
+    cmd: task verify
+
+  lint:
+    desc: Lint the Ansible verification playbook
+    dir: ansible
+    cmd: task lint
+
+  run:
+    desc: Run the Ansible verification playbook against localhost
+    dir: ansible
+    cmd: task run

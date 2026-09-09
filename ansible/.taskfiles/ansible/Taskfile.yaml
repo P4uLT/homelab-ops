@@ -1,0 +1,34 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Recipes for the Ansible shell. Everything runs through the project-local
+# uv environment — no global Ansible install, no source-repository venv.
+tasks:
+  deps:
+    desc: Sync the project environment (uv)
+    cmds:
+      - uv sync
+
+  syntax:
+    desc: Syntax-check the verification playbook
+    cmds:
+      - uv run ansible-playbook --syntax-check -i inventory/local.yml playbooks/verify.yml
+
+  lint:
+    desc: Lint the verification playbook with ansible-lint
+    cmds:
+      - uv run ansible-lint playbooks/verify.yml
+
+  run:
+    desc: Run the verification playbook against localhost
+    cmds:
+      - uv run ansible-playbook -i inventory/local.yml playbooks/verify.yml
+
+  verify:
+    desc: Verify the shell — deps, syntax, lint, local run
+    cmds:
+      - task: deps
+      - task: syntax
+      - task: lint
+      - task: run
