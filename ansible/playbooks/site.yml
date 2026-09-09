@@ -1,0 +1,4 @@
+---
+# Hub playbook — the single entry point of the tree. It imports the
+# orchestrators under main/ in their fixed order. Populated during the
+# content-import phase; the shell ships no real plays yet.

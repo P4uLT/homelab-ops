@@ -1,0 +1,6 @@
+---
+# ansible-lint configuration. Phase 0b lints the verification playbook;
+# scope widens with each content-import phase.
+exclude_paths:
+  - .venv
+  - config/tmp

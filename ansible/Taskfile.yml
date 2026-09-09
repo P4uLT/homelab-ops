@@ -1,0 +1,11 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Entry point for the Ansible shell. The real recipes live in the included
+# taskfile, flattened into this namespace so `task -d ansible verify` works
+# as the single verification entry point from inside ansible/.
+includes:
+  shell:
+    taskfile: .taskfiles/ansible/Taskfile.yaml
+    flatten: true
