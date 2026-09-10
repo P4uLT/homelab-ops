@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository.
 
 Public infrastructure-as-code monorepo for a homelab: Packer golden images,
 Terraform on Proxmox VE, Ansible runtime configuration, and a Talos/Flux lab.
-The repo grows in phases. See `PROGRESS.md` for the current phase.
+[mise](https://mise.jdx.dev) manages tools. [Task](https://taskfile.dev) runs tasks.
 [mise](https://mise.jdx.dev) manages tools. [Task](https://taskfile.dev) runs tasks.
 
 ## Commands
@@ -14,12 +14,13 @@ The repo grows in phases. See `PROGRESS.md` for the current phase.
 ```sh
 task verify                                   # full local proof. No host contact.
 task ansible:inventory -- --host jarvis       # resolved vars, decrypted in memory
+task ansible:site                            # applies server config, may contact hosts
 task sops:encrypt -- <path>                   # also: decrypt, edit, encrypt-all, check-all
 task ansible:galaxy                           # vendor install if missing
 task ansible:galaxy-reinstall                 # purge and reinstall. Needs network.
 ```
 
-`task verify` is the single gate for every change. Run it before you claim success.
+`task verify` is the required local check. Run it before you claim success.
 Tools come from mise. In a shell without the mise hook, prefix with `mise exec --`.
 
 ## Layout (ansible shell)
@@ -52,9 +53,24 @@ ansible/
 - Never enable `display_args_to_stdout` or `[diff] always`: task arguments
   and diffs can leak secret values into logs.
 - Do not run `-vv` or `--diff` on secret-bearing plays.
-- Check mode can change the node. Owner approval gates every host contact.
+- Check mode can change the node. Get owner approval before any host contact.
 - A non-root node stores its `ansible_become_password` in the node group
   secrets file. Never a prompt setting in the config.
+
+## Host terminology
+
+Use the specific system name when you know it:
+
+- Proxmox hypervisor: PVE host that runs VMs and LXC containers.
+- NAS: storage host.
+- Raspberry Pi: ARM host.
+- Terraform-created LXC container: LXC workload created by Terraform.
+- Terraform-created VM: VM workload created by Terraform.
+- Talos node: Kubernetes host.
+- Packer-built image: image source, not a host.
+
+Use the provisioning source when it matters: Terraform, Packer, manual, or
+bare metal. Use `host` only when the system type is unknown.
 
 ## Gotchas
 
@@ -72,11 +88,11 @@ ansible/
 
 - Docs: short sentences. Active voice. Plain words.
 - Commits: `type(scope): summary`. Imperative. 72 characters max.
-- PRs follow `.github/pull_request_template.md`. Update `CHANGELOG.md` and
-  `PROGRESS.md` when phase state moves.
+- PRs follow `.github/pull_request_template.md`. Update `CHANGELOG.md` when
+  user-visible behavior changes.
 
 ## Pointers
 
 - `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
-- `PROGRESS.md` — phase index. `CHANGELOG.md` — notable changes.
+- `CHANGELOG.md` — notable changes.

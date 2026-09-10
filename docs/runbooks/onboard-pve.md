@@ -13,7 +13,7 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 6. Preview the changes: `task ansible:converge-check`.
 7. Create users, groups, roles, and ACLs: `task ansible:converge -- -e "pve_storages=[]"`.
 8. Test the new credentials:
-   `task ansible:playbook -- playbooks/oper/proxmox_credential_check.yml`.
+   `task ansible:playbook -- playbooks/servers/stacks/proxmox/credential_check.yml`.
 
 9. Apply the storage configuration: `task ansible:converge`.
 10. Review and delete `ansible/config/tmp/ansible.log`.

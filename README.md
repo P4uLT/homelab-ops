@@ -17,9 +17,7 @@ Kubernetes lab.
 
 ## Phases
 
-[PROGRESS.md](PROGRESS.md) tracks the phases. The repo grows in phases:
-root skeleton → Ansible shell → content import → Packer / Terraform →
-Kubernetes.
+The repository grows through small, reviewable changes. See `CHANGELOG.md` for history.
 
 ## Usage
 

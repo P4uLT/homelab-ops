@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import stack playbooks
+  ansible.builtin.import_playbook: stacks/all.yml

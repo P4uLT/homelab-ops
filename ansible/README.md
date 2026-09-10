@@ -36,7 +36,7 @@ Talos nodes are out of scope for Ansible: no SSH, no playbooks, ever.
 The shell proves itself without any managed host:
 
 ```console
-task -d ansible verify
+task verify
 ```
 
 That runs `uv sync`, the playbook syntax passes, `ansible-lint`, and the

@@ -1,3 +1,4 @@
+# code: language=ansible
 ---
 # Check SOPS decryption and inventory variables. This playbook does not
 # change a managed host or print variable values.

@@ -13,7 +13,7 @@ when the first release is cut.
 - Ansible shell: complete directory topology (inventory, playbooks,
   roles, collections, plugins), `ansible.cfg`, Python toolchain lock
   (`pyproject.toml` + `uv.lock`), lint configs, and a local verification
-  contract (`task -d ansible verify`) that needs no managed host.
+  contract (`task verify`) that needs no managed host.
 - PVE onboarding pattern and `converge` playbook for Proxmox pets
   (first node: jarvis).
 

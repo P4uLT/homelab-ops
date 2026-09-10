@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import common playbooks
+  ansible.builtin.import_playbook: common/all.yml

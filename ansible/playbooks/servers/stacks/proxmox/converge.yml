@@ -1,7 +1,8 @@
+# code: language=ansible
 ---
-# Converge Proxmox VE pets — wraps lae.proxmox (git-tag pinned, galaxy-installed).
+# Converge Proxmox VE nodes — wraps lae.proxmox (git-tag pinned, galaxy-installed).
 # Connection vars and PVE credentials: SOPS-encrypted group_vars only.
-# Entry: task -d ansible converge | converge-check. Never run with -vv/--diff.
+# Entry: task ansible:converge or ansible:converge-check. Never run with -vv/--diff.
 - name: Converge Proxmox VE nodes
   hosts: grp_servers_proxmox
   become: true

@@ -31,6 +31,7 @@ tasks:
   syntax:
     desc: Syntax-check all playbooks
     cmds:
+      - uv run ansible-playbook --syntax-check playbooks/site.yml
       - uv run ansible-playbook --syntax-check playbooks/verify.yml
       - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
       - uv run ansible-playbook --syntax-check playbooks/servers/stacks/proxmox/converge.yml
@@ -44,6 +45,16 @@ tasks:
     desc: Run the verification playbook against localhost
     cmds:
       - uv run ansible-playbook playbooks/verify.yml
+
+  site:
+    desc: Apply the server configuration. May contact managed hosts.
+    cmd: uv run ansible-playbook playbooks/site.yml {{.CLI_ARGS}}
+
+  site-check:
+    desc: Preview the server configuration. Check mode can change hosts.
+    cmds:
+      - task: site
+        vars: { CLI_ARGS: --check }
 
   playbook:
     desc: Run any playbook against the servers inventory. Pass the path and args after --.
