@@ -9,3 +9,5 @@ includes:
   ansible:
     taskfile: ansible/Taskfile.yml
     dir: ansible
+  sops:
+    taskfile: .taskfiles/sops.yml

@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# SOPS helpers. The path goes after --, for example:
+#   task sops:encrypt -- ansible/inventory/servers/group_vars/all/secrets.sops.yaml
+# See docs/sops.md for the full procedures.
+tasks:
+  encrypt:
+    desc: Encrypt a file in place. Pass the path after --.
+    cmd: mise exec -- sops --encrypt --in-place {{.CLI_ARGS}}
+
+  decrypt:
+    desc: Print a decrypted file. Pass the path after --.
+    cmd: mise exec -- sops --decrypt {{.CLI_ARGS}}
+
+  edit:
+    desc: Edit a SOPS file. Pass the path after --.
+    cmd: mise exec -- sops edit {{.CLI_ARGS}}
+
+  encrypt-all:
+    desc: Encrypt every plain SOPS file in the repository.
+    vars:
+      PLAIN_SOPS_FILES:
+        sh: git ls-files --cached --others --exclude-standard -- '*.sops.yaml' ':(exclude).sops.yaml' ':(exclude)**/.sops.yaml' | sort -u | xargs -r grep -L '^sops:' || true
+    cmds:
+      - for: { var: PLAIN_SOPS_FILES, as: FILE }
+        cmd: task sops:encrypt -- "{{.FILE}}"
+
+  check-all:
+    desc: Check every encrypted SOPS file without printing its values.
+    vars:
+      ENCRYPTED_SOPS_FILES:
+        sh: git ls-files --cached --others --exclude-standard -- '*.sops.yaml' ':(exclude).sops.yaml' ':(exclude)**/.sops.yaml' | sort -u | xargs -r grep -l '^sops:' || true
+    cmds:
+      - for: { var: ENCRYPTED_SOPS_FILES, as: FILE }
+        cmd: task sops:decrypt -- "{{.FILE}}" > /dev/null
