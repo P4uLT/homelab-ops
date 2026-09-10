@@ -1,0 +1,4 @@
+---
+# Header text for template-managed files. Set as a variable: the
+# ansible_managed config option is deprecated and removed in 2.23.
+ansible_managed: "This file is managed by homelab-ops (Ansible). Manual edits will be overwritten."

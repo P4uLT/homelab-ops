@@ -4,3 +4,6 @@
 collections:
   - name: community.sops
     version: 2.4.0
+  # Only for the ansible.posix.profile_tasks timing callback.
+  - name: ansible.posix
+    version: 2.2.2
