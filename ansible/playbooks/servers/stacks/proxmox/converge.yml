@@ -11,6 +11,7 @@
     - name: Read the PVE version
       ansible.builtin.command: pveversion
       changed_when: false
+      check_mode: false  # read-only: run even in check mode
       register: pve_version_raw
 
     - name: Assert pve-manager 9.x
