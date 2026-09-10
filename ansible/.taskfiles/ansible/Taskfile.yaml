@@ -10,15 +10,22 @@ tasks:
     cmds:
       - uv sync
 
+  galaxy:
+    desc: Install pinned vendor roles and collections
+    cmds:
+      - uv run ansible-galaxy role install -r playbooks/main/role_requirements.yml -p roles/vendors --force
+      - uv run ansible-galaxy collection install -r collections/requirements.yml -p collections/vendors --force
+
   syntax:
-    desc: Syntax-check the verification playbook
+    desc: Syntax-check all playbooks
     cmds:
       - uv run ansible-playbook --syntax-check -i inventory/local.yml playbooks/verify.yml
+      - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/oper/sops_canary_check.yml playbooks/servers/stacks/proxmox/converge.yml
 
   lint:
-    desc: Lint the verification playbook with ansible-lint
+    desc: Lint all playbooks with ansible-lint
     cmds:
-      - uv run ansible-lint playbooks/verify.yml
+      - uv run ansible-lint playbooks/
 
   run:
     desc: Run the verification playbook against localhost
@@ -26,9 +33,20 @@ tasks:
       - uv run ansible-playbook -i inventory/local.yml playbooks/verify.yml
 
   verify:
-    desc: Verify the shell — deps, syntax, lint, local run
+    desc: Verify the shell — deps, galaxy, syntax, lint, local run
     cmds:
       - task: deps
+      - task: galaxy
       - task: syntax
       - task: lint
       - task: run
+
+  converge-check:
+    desc: Best-effort check-mode preview on jarvis (Gate 2) — NOT guaranteed read-only
+    cmds:
+      - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
+
+  converge:
+    desc: Converge jarvis (Gates 3a/3b) — pass extra vars after --
+    cmds:
+      - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}

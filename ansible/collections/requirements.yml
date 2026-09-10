@@ -1,0 +1,6 @@
+---
+# Vendor collections — exact pins only, installed to collections/vendors/ (gitignored).
+# Entry: task -d ansible galaxy
+collections:
+  - name: community.sops
+    version: 2.4.0

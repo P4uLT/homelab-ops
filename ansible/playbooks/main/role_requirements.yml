@@ -1,3 +1,7 @@
 ---
-# Vendor role requirements for ansible-galaxy. Populated during the
-# content-import phase; the shell ships no vendor roles yet.
+# Vendor roles — exact pins only, installed to roles/vendors/ (gitignored).
+# Entry: task -d ansible galaxy
+roles:
+  - name: lae.proxmox
+    src: git+https://github.com/lae/ansible-role-proxmox.git
+    version: v1.10.1
