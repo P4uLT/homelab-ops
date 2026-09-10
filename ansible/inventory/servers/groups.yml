@@ -1,0 +1,10 @@
+---
+# Group tree — topology only, no hosts here. Hosts live in hosts.yml
+# and group variables in the adjacent group_vars/ directory.
+all:
+  children:
+    grp_servers:
+      children:
+        grp_servers_proxmox:
+          children:
+            grp_servers_proxmox_jarvis:

@@ -31,9 +31,9 @@ tasks:
   syntax:
     desc: Syntax-check all playbooks
     cmds:
-      - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/verify.yml
-      - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/oper/sops_canary_check.yml
-      - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml
+      - uv run ansible-playbook --syntax-check playbooks/verify.yml
+      - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
+      - uv run ansible-playbook --syntax-check playbooks/servers/stacks/proxmox/converge.yml
 
   lint:
     desc: Lint all playbooks with ansible-lint
@@ -43,11 +43,11 @@ tasks:
   run:
     desc: Run the verification playbook against localhost
     cmds:
-      - uv run ansible-playbook -i inventory/servers/static.yml playbooks/verify.yml
+      - uv run ansible-playbook playbooks/verify.yml
 
   playbook:
     desc: Run any playbook against the servers inventory. Pass the path and args after --.
-    cmd: uv run ansible-playbook -i inventory/servers/static.yml {{.CLI_ARGS}}
+    cmd: uv run ansible-playbook {{.CLI_ARGS}}
 
   verify:
     desc: Verify the shell — deps, galaxy, syntax, lint, local run
@@ -61,13 +61,13 @@ tasks:
   converge-check:
     desc: Preview jarvis changes in check mode. Check mode can change the node.
     cmds:
-      - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
 
   converge:
     desc: Converge jarvis. Pass extra variables after --.
     cmds:
-      - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
 
   inventory:
     desc: Show resolved inventory and host variables. Pass options after --.
-    cmd: uv run ansible-inventory -i inventory/servers/static.yml {{.CLI_ARGS}}
+    cmd: uv run ansible-inventory {{.CLI_ARGS}}
