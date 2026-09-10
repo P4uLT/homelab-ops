@@ -45,6 +45,10 @@ tasks:
     cmds:
       - uv run ansible-playbook -i inventory/servers/static.yml playbooks/verify.yml
 
+  playbook:
+    desc: Run any playbook against the servers inventory. Pass the path and args after --.
+    cmd: uv run ansible-playbook -i inventory/servers/static.yml {{.CLI_ARGS}}
+
   verify:
     desc: Verify the shell — deps, galaxy, syntax, lint, local run
     cmds:
