@@ -65,8 +65,8 @@ ansible/
   pseudo-terminal: `script -qec '<command>' /dev/null`.
 - `task verify` works offline after the first `galaxy` install.
   `galaxy-reinstall` needs network and wipes manual changes in `vendors/`.
-- The legacy sibling repository that fed the migration is read-only.
-  Never change it.
+- The legacy sibling repository that fed the migration keeps a read-only
+  status. Never change it.
 
 ## Style
 
