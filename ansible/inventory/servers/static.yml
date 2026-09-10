@@ -1,5 +1,12 @@
 ---
-# Static inventory — reserved for the pets by nature (pve-one, TrueNAS,
-# OMV), the manual LXC group (grp_lxc_manual), and the opt-in groups
-# (grp_monitoring, service and stack groups). Populated during the
-# content-import phase; the shell ships no hosts yet.
+# Static inventory — pets by nature. Structure and hostnames only:
+# network locators and credentials live in SOPS-encrypted group_vars.
+all:
+  children:
+    grp_servers:
+      children:
+        grp_servers_proxmox:
+          children:
+            grp_servers_proxmox_jarvis:
+              hosts:
+                jarvis:

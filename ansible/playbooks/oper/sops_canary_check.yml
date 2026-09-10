@@ -14,3 +14,14 @@
           - sops_canary is defined
           - sops_canary | length > 0
         quiet: true
+
+- name: Inventory vars resolve for jarvis
+  hosts: jarvis
+  gather_facts: false
+  tasks:
+    - name: Assert connection variables exist
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined and ansible_host | length > 0
+          - ansible_user is defined and ansible_user | length > 0
+        quiet: true
