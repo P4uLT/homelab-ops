@@ -31,3 +31,6 @@ ansible/collections/vendors/*
 
 # Local agent tooling lockfile — not repo content
 skills-lock.json
+
+# Local task-runner output
+.pi/
