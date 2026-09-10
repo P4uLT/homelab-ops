@@ -1,0 +1,15 @@
+---
+# All vendor requirements — roles and collections, exact pins only.
+# Installed to roles/vendors/ and collections/vendors/ (both git-ignored).
+# Entry: task ansible:galaxy
+roles:
+  - name: lae.proxmox
+    src: git+https://github.com/lae/ansible-role-proxmox.git
+    version: v1.10.1
+
+collections:
+  - name: community.sops
+    version: 2.4.0
+  # Only for the ansible.posix.profile_tasks timing callback.
+  - name: ansible.posix
+    version: 2.2.2

@@ -8,6 +8,7 @@ one inventory, three host populations with separate authorities.
 | Path | Purpose |
 | ---- | ------- |
 | `config/` | `ansible.cfg` (symlinked at `ansible/` for auto-discovery), logs, retry files, project `known_hosts` |
+| `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
 | `inventory/` | `servers/` (static pets, `iac.tf.yml` placeholder) with adjacent `group_vars/` |
 | `inventory/servers/group_vars/` | Variables per inventory group (cleartext vars + `*.sops.yaml` secrets) |
 | `playbooks/` | Hub (`site.yml`), orchestrators (`main/`), spokes, `verify.yml` |

@@ -16,10 +16,17 @@ tasks:
       - uv sync
 
   galaxy:
-    desc: Install pinned vendor roles and collections
+    desc: Install pinned vendor roles and collections if missing.
+    # Never edit roles/vendors content. Patch = fork pin or roles/local copy.
     cmds:
-      - uv run ansible-galaxy role install -r playbooks/main/role_requirements.yml -p roles/vendors --force
-      - uv run ansible-galaxy collection install -r collections/requirements.yml -p collections/vendors --force
+      - uv run ansible-galaxy role install -r requirements.yml -p roles/vendors {{.CLI_ARGS}}
+      - uv run ansible-galaxy collection install -r requirements.yml -p collections/vendors {{.CLI_ARGS}}
+
+  galaxy-reinstall:
+    desc: Reinstall all vendors from scratch. Wipes manual edits in vendors/.
+    cmds:
+      - task: galaxy
+        vars: { CLI_ARGS: --force }
 
   syntax:
     desc: Syntax-check all playbooks
