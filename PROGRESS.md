@@ -3,8 +3,9 @@
 This file tracks the phases of the homelab-ops monorepo. Detailed design
 documents remain local until the corresponding work is ready.
 
-| Phase | Scope | Status |
-| ----- | ----- | ------ |
-| 0a | Root skeleton | done |
-| 0b | Ansible shell — empty but verifiable | done |
-| next | Content import from the legacy Ansible repository (copy-only), then Packer / Terraform / Kubernetes | pending |
+| Phase | Scope | Branch | Status |
+| ----- | ----- | ------ | ------ |
+| 0a | Root skeleton | — | done |
+| 0b | Ansible shell — empty but verifiable | — | done |
+| 1a | jarvis onboarding + SOPS/age baseline | `feat/phase-1a-jarvis-sops` | done 2026-09-09 |
+| next | kheb-gen8/NAS onboarding reusing the phase 1a PVE pattern | — | pending |
