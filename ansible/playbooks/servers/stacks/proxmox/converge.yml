@@ -1,0 +1,22 @@
+---
+# Converge Proxmox VE pets — wraps lae.proxmox (git-tag pinned, galaxy-installed).
+# Connection vars and PVE credentials: SOPS-encrypted group_vars only.
+# Entry: task -d ansible converge | converge-check. Never run with -vv/--diff.
+- name: Converge Proxmox VE nodes
+  hosts: grp_servers_proxmox
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Read the PVE version
+      ansible.builtin.command: pveversion
+      changed_when: false
+      register: pve_version_raw
+
+    - name: Assert pve-manager 9.x
+      ansible.builtin.assert:
+        that: pve_version_raw.stdout is match('pve-manager/9\\.')
+        quiet: true
+
+    - name: Include lae.proxmox
+      ansible.builtin.include_role:
+        name: lae.proxmox

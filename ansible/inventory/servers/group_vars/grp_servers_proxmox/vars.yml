@@ -1,0 +1,34 @@
+---
+# Proxmox VE convergence — declarative identity plane. No secrets here:
+# credentials and storage endpoints live in secrets.sops.yaml (this group).
+pve_groups:
+  - name: Terraform_Provisioning
+    comment: Terraform Terraform_Provisioning
+
+pve_roles:
+  - name: Terraform_Provisioning
+    privileges:
+      - "Datastore.AllocateSpace"
+      - "Datastore.Audit"
+      - "Pool.Allocate"
+      - "Sys.Audit"
+      - "Sys.Console"
+      - "Sys.Modify"
+      - "VM.Allocate"
+      - "VM.Audit"
+      - "VM.Clone"
+      - "VM.Config.CDROM"
+      - "VM.Config.Cloudinit"
+      - "VM.Config.CPU"
+      - "VM.Config.Disk"
+      - "VM.Config.HWType"
+      - "VM.Config.Memory"
+      - "VM.Config.Network"
+      - "VM.Config.Options"
+      - "VM.Migrate"
+      - "VM.PowerMgmt"
+
+pve_acls:
+  - path: /
+    roles: ["Terraform_Provisioning"]
+    groups: ["Terraform_Provisioning"]

@@ -21,9 +21,7 @@ tasks:
     cmds:
       - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/verify.yml
       - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/oper/sops_canary_check.yml
-      # TEMPORARY (Task 3 fix 1): converge.yml does not exist until Task 6.
-      # Task 6 MUST restore this exact syntax line (uncomment it):
-      # - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml
+      - uv run ansible-playbook --syntax-check -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml
 
   lint:
     desc: Lint all playbooks with ansible-lint

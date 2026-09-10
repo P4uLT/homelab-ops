@@ -24,4 +24,6 @@
         that:
           - ansible_host is defined and ansible_host | length > 0
           - ansible_user is defined and ansible_user | length > 0
+          - pve_users is defined and pve_users | length > 0
+          - pve_storages is defined and pve_storages | length > 0
         quiet: true
