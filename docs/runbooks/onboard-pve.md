@@ -27,6 +27,10 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 9. Test the new credentials:
    `task ansible:playbook -- playbooks/oper/credential_check.yml`.
 10. Apply the storage configuration: `task ansible:converge`.
+    Before running it: create the NFS export `/export/Proxmox` on the NAS
+    and allow the node IP. Check the `pve_storages` values in the shared
+    group secrets (`task sops:decrypt -- ...`). After the run, check
+    Datacenter → Storage in the PVE UI.
 11. Review and delete `ansible/config/tmp/ansible.log`.
 
 Steps 7 through 10 contact the node. Get owner approval before steps 7, 8, and 10. Check mode can change the node.
