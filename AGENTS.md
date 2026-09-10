@@ -65,7 +65,8 @@ ansible/
   pseudo-terminal: `script -qec '<command>' /dev/null`.
 - `task verify` works offline after the first `galaxy` install.
   `galaxy-reinstall` needs network and wipes manual changes in `vendors/`.
-- `../ansible-home-automation` is a read-only source. Never change it.
+- The legacy sibling repository that fed the migration is read-only.
+  Never change it.
 
 ## Style
 
