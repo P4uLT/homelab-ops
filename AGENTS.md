@@ -7,7 +7,6 @@ Guidance for AI coding agents working in this repository.
 Public infrastructure-as-code monorepo for a homelab: Packer golden images,
 Terraform on Proxmox VE, Ansible runtime configuration, and a Talos/Flux lab.
 [mise](https://mise.jdx.dev) manages tools. [Task](https://taskfile.dev) runs tasks.
-[mise](https://mise.jdx.dev) manages tools. [Task](https://taskfile.dev) runs tasks.
 
 ## Commands
 
@@ -21,7 +20,7 @@ task ansible:galaxy-reinstall                 # purge and reinstall. Needs netwo
 ```
 
 `task verify` is the required local check. Run it before you claim success.
-Tools come from mise. In a shell without the mise hook, prefix with `mise exec --`.
+In a shell without the mise hook, prefix commands with `mise exec --`.
 
 ## Layout (ansible shell)
 
