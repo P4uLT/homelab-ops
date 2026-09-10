@@ -56,3 +56,7 @@ tasks:
     desc: Converge jarvis. Pass extra variables after --.
     cmds:
       - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+
+  inventory:
+    desc: Show resolved inventory and host variables. Pass options after --.
+    cmd: uv run ansible-inventory -i inventory/servers/static.yml {{.CLI_ARGS}}
