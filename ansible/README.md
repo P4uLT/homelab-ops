@@ -7,14 +7,13 @@ one inventory, three host populations with separate authorities.
 
 | Path | Purpose |
 | ---- | ------- |
-| `ansible.cfg` | Points to the local roles, collections, plugins, retry, and log paths |
+| `config/` | `ansible.cfg` (symlinked at `ansible/` for auto-discovery), logs, retry files, project `known_hosts` |
 | `inventory/` | `servers/` (static pets, `iac.tf.yml` placeholder) with adjacent `group_vars/` |
 | `inventory/servers/group_vars/` | Variables per inventory group (cleartext vars + `*.sops.yaml` secrets) |
 | `playbooks/` | Hub (`site.yml`), orchestrators (`main/`), spokes, `verify.yml` |
 | `roles/` | `local/` (ours), `profiles/` (composable baselines), `vendors/` (downloaded, ignored) |
 | `collections/` | `local/` (ours), `vendors/` (downloaded, ignored except the marker) |
 | `plugins/` | Local filter, lookup, callback, and module code |
-| `config/tmp/` | Retry files and logs (git-ignored) |
 | `vars/` | Variable files loaded explicitly by name |
 
 ## Populations
