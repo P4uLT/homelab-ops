@@ -38,7 +38,7 @@ A clone without the age key fails on every Ansible run. The failure occurs at va
 2. Run `mise install`.
 3. Put your age key file at the repository root as `.age.key.txt`. Use the main key or the backup key.
 4. Run `git status --ignored`. Confirm that git ignores `.age.key.txt`.
-5. Run `task -d ansible verify`. A green run confirms the recovery. No `.env` file is needed. The committed `mise.toml` sets the key path.
+5. Run `task -d ansible verify`. A green run confirms the recovery. You do not need an `.env` file. The committed `mise.toml` sets the key path.
 
 ## Lost main key
 

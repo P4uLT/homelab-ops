@@ -48,11 +48,11 @@ tasks:
       - task: run
 
   converge-check:
-    desc: Best-effort check-mode preview on jarvis (Gate 2) — NOT guaranteed read-only
+    desc: Preview jarvis changes in check mode. Check mode can change the node.
     cmds:
       - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
 
   converge:
-    desc: Converge jarvis (Gates 3a/3b) — pass extra vars after --
+    desc: Converge jarvis. Pass extra variables after --.
     cmds:
       - uv run ansible-playbook -i inventory/servers/static.yml playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}

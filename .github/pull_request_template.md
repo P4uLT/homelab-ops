@@ -1,6 +1,6 @@
 ## What and why
 
-<!-- One short paragraph: what this change does and why it is needed. -->
+<!-- One short paragraph: what this change does and why it matters. -->
 <!-- Link the phase (PROGRESS.md) or the issue (#N). -->
 
 ## Changes

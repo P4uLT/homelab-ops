@@ -1,8 +1,6 @@
 ---
-# Gate-1 proofs, controller side. No managed-host contact:
-# play 1 asserts the SOPS canary; play 2 (added later, with the jarvis
-# inventory and group vars in place) asserts variable resolution without
-# printing values.
+# Check SOPS decryption and inventory variables. This playbook does not
+# change a managed host or print variable values.
 - name: SOPS canary proof
   hosts: localhost
   connection: local
