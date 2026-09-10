@@ -1,0 +1,16 @@
+---
+# Gate-1 proofs, controller side. No managed-host contact:
+# play 1 asserts the SOPS canary; play 2 (added later, with the jarvis
+# inventory and group vars in place) asserts variable resolution without
+# printing values.
+- name: SOPS canary proof
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Assert the canary variable decrypted
+      ansible.builtin.assert:
+        that:
+          - sops_canary is defined
+          - sops_canary | length > 0
+        quiet: true
