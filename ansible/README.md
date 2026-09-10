@@ -9,7 +9,7 @@ one inventory, three host populations with separate authorities.
 | ---- | ------- |
 | `config/` | `ansible.cfg` (symlinked at `ansible/` for auto-discovery), logs, retry files, project `known_hosts` |
 | `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
-| `inventory/` | `servers/` (static pets, `iac.tf.yml` placeholder) with adjacent `group_vars/` |
+| `inventory/` | `servers/` — `groups.yml` (tree), `hosts.yml` (membership), `iac.tf.yml` (TF placeholder) — with adjacent `group_vars/` |
 | `inventory/servers/group_vars/` | Variables per inventory group (cleartext vars + `*.sops.yaml` secrets) |
 | `playbooks/` | Hub (`site.yml`), orchestrators (`main/`), spokes, `verify.yml` |
 | `roles/` | `local/` (ours), `profiles/` (composable baselines), `vendors/` (downloaded, ignored) |
@@ -40,5 +40,5 @@ task -d ansible verify
 ```
 
 That runs `uv sync`, the playbook syntax passes, `ansible-lint`, and the
-verification playbook against `inventory/servers/static.yml` (localhost,
+verification playbook against the `inventory/servers` inventory (localhost,
 local connection, no managed-host contact, no credentials).

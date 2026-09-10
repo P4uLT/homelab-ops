@@ -4,7 +4,7 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 
 ## Steps
 
-1. Add the node group and hostname to `ansible/inventory/servers/static.yml`.
+1. Add the node leaf group to `ansible/inventory/servers/groups.yml`, then the hostname to `hosts.yml`.
 2. Store `ansible_host` and `ansible_user` in the node group's `secrets.sops.yaml` file. A non-root
    node also stores its `ansible_become_password` there.
 3. Store shared PVE variables under `ansible/inventory/servers/group_vars/grp_servers_proxmox/`.
