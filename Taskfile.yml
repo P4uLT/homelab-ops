@@ -3,5 +3,9 @@
 version: "3"
 
 includes:
+  project:
+    taskfile: .taskfiles/project.yml
+    flatten: true
   ansible:
-    taskfile: .taskfiles/ansible.yml
+    taskfile: ansible/Taskfile.yml
+    dir: ansible

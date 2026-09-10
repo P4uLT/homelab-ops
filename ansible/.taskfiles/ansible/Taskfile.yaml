@@ -5,6 +5,11 @@ version: "3"
 # Recipes for the Ansible shell. Everything runs through the project-local
 # uv environment — no global Ansible install, no source-repository venv.
 tasks:
+  default:
+    desc: List Ansible tasks
+    silent: true
+    cmd: task --list
+
   deps:
     desc: Sync the project environment (uv)
     cmds:

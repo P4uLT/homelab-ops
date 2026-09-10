@@ -1,0 +1,26 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Project-level task aliases. Component-specific tasks stay in their
+# component namespace, for example ansible:verify.
+tasks:
+  default:
+    desc: List project tasks
+    silent: true
+    cmd: task --list
+
+  verify:
+    desc: Verify the project through the Ansible shell
+    cmds:
+      - task: ansible:verify
+
+  lint:
+    desc: Lint the Ansible playbooks
+    cmds:
+      - task: ansible:lint
+
+  run:
+    desc: Run the local Ansible verification playbook
+    cmds:
+      - task: ansible:run
