@@ -94,5 +94,6 @@ bare metal. Use `host` only when the system type is unknown.
 ## Pointers
 
 - `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
+- `docs/ssh.md` — keys, host-key pinning, access inventory.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
 - `CHANGELOG.md` — notable changes.

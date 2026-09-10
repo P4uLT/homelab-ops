@@ -60,6 +60,15 @@ tasks:
     desc: Run any playbook against the servers inventory. Pass the path and args after --.
     cmd: uv run ansible-playbook {{.CLI_ARGS}}
 
+  hostkey:
+    desc: Show a host key fingerprint. Pass the IP after --. Compare it on the node.
+    # ssh-keyscan ignores ~/.ssh/config: pass the IP, not the alias.
+    cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} | ssh-keygen -lf -
+
+  hostkey-pin:
+    desc: Pin a host key after checking the fingerprint on the node.
+    cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} >> config/known_hosts
+
   verify:
     desc: Verify the shell — deps, galaxy, syntax, lint, local run
     cmds:
