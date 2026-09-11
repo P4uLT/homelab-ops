@@ -141,5 +141,5 @@ mise exec -- ovhcloud cloud storage object bucket object copy \
   --target-bucket <bucket-name> --target-key <key>
 ```
 
-Then run a plan from any root to confirm the state reads back. Do not
+Then run a plan from any root to check that the state reads back. Do not
 repoint a backend at the replica. See `terraform/BACKEND.md`.
