@@ -63,7 +63,7 @@ tasks:
     requires:
       vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu apply
+      - mise exec -- env {{.TF_ENV}} tofu apply {{.CLI_ARGS}}
 
   bootstrap-output:
     desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
