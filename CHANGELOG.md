@@ -21,6 +21,12 @@ when the first release is cut.
   `DeleteBucket` or `DeleteObjectVersion`), `terraform/BACKEND.md` design
   record, onboarding runbook, and `task tf:*` recipes including offline
   schema validation.
+- Packer golden images: versioned Debian 13 LXC artifacts built from the
+  node's official container template (SSH-driven `pct`, vzdump archive in
+  the template cache, images chained one on another with a pinned parent
+  and a name carrying the lineage, per-node local connection file, journald
+  container logs), `task packer:*` recipes, and the build runbook. The
+  build contacts the node and needs owner approval.
 
 ### Security
 

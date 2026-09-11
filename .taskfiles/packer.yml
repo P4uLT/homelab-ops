@@ -1,0 +1,61 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Golden LXC images. fmt, fmt-check, and validate stay offline. build
+# contacts the PVE node over SSH and needs owner approval.
+#
+# PKR_IMAGES is ordered: it is the chain, each image building on the
+# artifact of the one before it.
+
+vars:
+  # PVE nodes holding the artifacts.
+  PKR_HOSTS: [jarvis]
+  # One name per file under packer/images/.
+  PKR_IMAGES: [base, docker]
+
+tasks:
+  fmt:
+    desc: Format every Packer file in the repository.
+    cmd: mise exec -- packer fmt -recursive packer/
+
+  fmt-check:
+    desc: Check Packer formatting without writing.
+    cmd: mise exec -- packer fmt -check -recursive packer/
+
+  init:
+    desc: Install the Packer plugins declared in packer/images. Network on the first run only.
+    dir: packer
+    cmd: mise exec -- packer init images
+
+  validate:
+    desc: Validate every image offline. Runs init first.
+    dir: packer
+    cmds:
+      - task: init
+      # Validation never connects. The plugin refuses an unset address and an
+      # unset credential, so it passes the reserved .invalid address and a
+      # dummy password, and needs no node local file: a fresh clone still
+      # validates.
+      - for: { var: PKR_HOSTS, as: HOST }
+        cmd: mise exec -- packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
+
+  build:
+    desc: Build every golden image on its PVE nodes. Owner approval required. Extra args go to packer build after --.
+    dir: packer
+    cmds:
+      - task: init
+      # The manifest post-processor writes its file but never creates the
+      # directory, and the directory is git-ignored, so it is missing on a
+      # fresh clone.
+      - cmd: mkdir -p manifests
+      # Each node brings its own git-ignored local var file for the address and
+      # the login, so a missing one stops the build instead of aiming at
+      # another node. The matrix walks the images in order, base before
+      # docker, then the nodes, and one failure stops the chain. Packer names a
+      # build `<builder>.<source>`, so the selector is the image name once.
+      - for:
+          matrix:
+            IMAGE: { ref: .PKR_IMAGES }
+            HOST: { ref: .PKR_HOSTS }
+        cmd: mise exec -- packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/

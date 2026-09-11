@@ -44,3 +44,9 @@ skills-lock.json
 
 # Local task-runner output
 .pi/
+
+# Local node connection facts: address, login, key
+packer/hosts/*.local.pkrvars.hcl
+
+# Packer build records
+packer/manifests/

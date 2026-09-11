@@ -1,0 +1,116 @@
+# Build the golden images
+
+A golden image is a Packer build on a PVE node: a container template,
+provisioned by scripts, then packed with vzdump as a versioned archive.
+Terraform instantiates those archives. Never patch a clone in place.
+
+The images form a chain: the base builds on the official Debian template,
+the Docker image on the base.
+
+The plugin connects to the node over plain SSH and runs `pct`. It does not
+use the PVE API.
+
+## Node files
+
+Two files per node, both under `packer/hosts/`:
+
+- `<node>.pkrvars.hcl`, committed. The non-secret facts: `parent_template`
+  (the official template volid, `<storage>:vztmpl/<file>`),
+  `artifact_storage` and `artifact_dir` (where our artifacts are written
+  and addressed from), `ct_storage`, `ct_bridge`.
+- `<node>.local.pkrvars.hcl`, git-ignored. The connection:
+  `pve_ssh_host`, `pve_ssh_user`, and either `pve_ssh_key_path` (absolute,
+  passphrase-less) or `pve_ssh_password`. Prefer the key: the plugin
+  connects without checking the host key, see `docs/ssh.md`.
+
+The build passes both, so a missing local file stops the build instead of
+aiming at another node.
+
+## Before the first build
+
+1. Put the Debian 13 template on the storage the node reads, then read back
+   its exact file name:
+
+   ```sh
+   pveam update
+   pveam download <storage> <template from pveam available>
+   pveam list <storage> | grep debian-13
+   ```
+
+   Copy it into `parent_template` as a full volid. Proxmox ships several
+   builds of the same release (`13.6-1`, `13.6-2`) and a build stops on a
+   name the node does not have.
+
+2. Read the storage and bridge names off the node:
+
+   ```sh
+   pvesm status
+   ip -br link show type bridge
+   ```
+
+   They go into that same committed file. PVE mounts an NFS storage under
+   `/mnt/pve/<id>`, with its templates in `template/cache`.
+
+3. Create `<node>.local.pkrvars.hcl`, mode 600, with the connection.
+
+4. Run `task packer:init` once. Later runs stay offline.
+
+## Build
+
+`task packer:build` contacts the node. Get owner approval first. It builds
+every image of `PKR_IMAGES`, in order, on every node of `PKR_HOSTS`. For
+each one: a container from the parent template, the image scripts, a
+vzdump archive in the template storage, then the container is destroyed.
+
+The archive is named after the chain that produced it, plus where it stands
+in that chain:
+
+```text
+NAS:vztmpl/debian-13-standard-base_13.6-1_amd64.tar.zst
+```
+
+Bump `base_build` or `docker_build` in `packer/images/<name>.pkr.hcl` to
+build a new one. Packer overwrites a file of the same name, so a rebuild
+without a bump replaces the archive already in the storage.
+
+An image pins its parent by file name, `<name>_parent`, and the storage
+comes from the node's `artifact_storage`. To rebuild one image alone, run
+its command from the task with `-only`:
+
+```sh
+cd packer
+mise exec -- packer build -only=proxmox-lxc.docker \
+  -var-file=hosts/jarvis.pkrvars.hcl \
+  -var-file=hosts/jarvis.local.pkrvars.hcl images/
+```
+
+Each build writes `packer/manifests/<image>.json` (git-ignored): the
+artifact, its version, and its parent.
+
+## When a build stops at `pct create`
+
+The plugin captures that command's error output and never prints it, so
+Packer only reports `command exited with status 255`. Check the three
+preconditions it relies on, then run the command by hand for the real
+error:
+
+```sh
+pvesm status
+pveam list <storage>
+ip -br link show <bridge>
+```
+
+The plugin destroys its container on any failure; only a killed Packer
+process leaves one behind, so `pct list` then `pct destroy <ctid>`.
+
+## Adding an image
+
+Four touch points:
+
+1. a numbered script in `_common/`; `90-finalize.sh` always runs last;
+2. `packer/images/<name>.pkr.hcl`, with its own `<name>_build` and
+   `<name>_parent` variables: Packer variable and local names are global to
+   the directory, so they carry the image name;
+3. a source and a build block named `<name>`, so `-only=proxmox-lxc.<name>`
+   matches;
+4. `<name>` in `PKR_IMAGES` in `.taskfiles/packer.yml`.

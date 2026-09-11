@@ -10,12 +10,14 @@ tasks:
     cmd: task --list
 
   verify:
-    desc: Verify the project locally (Ansible shell, Terraform format, lint, and validate)
+    desc: Verify the project locally (Ansible shell, Terraform and Packer checks)
     cmds:
       - task: ansible:verify
       - task: tf:fmt-check
       - task: tf:lint
       - task: tf:validate
+      - task: packer:fmt-check
+      - task: packer:validate
 
   lint:
     desc: Lint the Ansible playbooks

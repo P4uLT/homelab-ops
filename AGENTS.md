@@ -96,9 +96,13 @@ bare metal. Use `host` only when the system type is unknown.
 - Extra-vars with JSON die in `task ansible:converge --`: the quotes are
   stripped across the two shell layers and the value degrades to a string.
   Use the file form instead: `-e @/tmp/vars.yml`.
-- `task verify` works offline after the first `galaxy` install and the
-  first OpenTofu provider download (`task tf:init`). `galaxy-reinstall`
-  needs network and wipes manual changes in `vendors/`.
+- `task verify` works offline after the first `galaxy` install, the
+  first OpenTofu provider download (`task tf:init`), and the first Packer
+  plugin download (`task packer:init`). `galaxy-reinstall` needs network
+  and wipes manual changes in `vendors/`.
+- The golden LXC images ship without apt package lists. An apt task on a
+  clone needs `update_cache: true` or `cache_valid_time`, or it fails with
+  `Unable to locate package`.
 - The OVH project API takes the region in UPPERCASE (`EU-WEST-PAR`). The S3
   endpoint takes it lowercase. Lowercase in the API returns
   `Invalid region parameter`.
@@ -118,6 +122,8 @@ bare metal. Use `host` only when the system type is unknown.
 - Docs: short sentences. Active voice. Plain words.
 - Comments: short. State the why, not the what. Delete a comment that
   restates the line under it.
+- Prefer the documented standard over a local trick. When a choice is not
+  standard, record the reason next to it.
 - Commits: `type(scope): summary`. Imperative. 72 characters max.
 - PRs follow `.github/pull_request_template.md`. Update `CHANGELOG.md` when
   user-visible behavior changes.
@@ -127,6 +133,7 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
 - `docs/ssh.md` — keys, host-key pinning, access inventory.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
+- `docs/runbooks/build-base-image.md` — build the golden LXC images.
 - `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
 - `terraform/BACKEND.md` — Terraform state design and recovery.
 - `CHANGELOG.md` — notable changes.

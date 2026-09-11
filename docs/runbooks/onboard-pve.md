@@ -31,6 +31,11 @@ Keep addresses and credentials in SOPS-encrypted group variables.
     and allow the node IP. Check the `pve_storages` values in the shared
     group secrets (`task sops:decrypt -- ...`). After the run, check
     Datacenter → Storage in the PVE UI.
-11. Review and delete `ansible/config/tmp/ansible.log`.
+11. Build the golden images on the node: add the node to `PKR_HOSTS` in
+    `.taskfiles/packer.yml`, create `packer/hosts/<node>.pkrvars.hcl` (node
+    facts) and `packer/hosts/<node>.local.pkrvars.hcl` (connection,
+    git-ignored), then run `task packer:build`. See
+    `docs/runbooks/build-base-image.md`.
+12. Review and delete `ansible/config/tmp/ansible.log`.
 
-Steps 7 through 10 contact the node. Get owner approval before steps 7, 8, and 10. Check mode can change the node.
+Steps 7 through 11 contact the node. Get owner approval before steps 7, 8, 10, and 11. Check mode can change the node.

@@ -13,3 +13,5 @@ includes:
     taskfile: .taskfiles/sops.yml
   tf:
     taskfile: .taskfiles/tf.yml
+  packer:
+    taskfile: .taskfiles/packer.yml

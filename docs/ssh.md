@@ -14,6 +14,11 @@ Before the first managed contact, pin the host key:
 The pinned keys live in `ansible/config/known_hosts` (git-ignored).
 Ansible verifies against this file on every run.
 
+One path does not verify the host key: the Packer image build. The
+Proxmox LXC plugin connects with host-key verification disabled. Treat
+that link as a trusted network; the pinning above covers Ansible and
+manual logins only.
+
 ## Keys
 
 - One automation key per person or tool. Ansible uses a dedicated key.
