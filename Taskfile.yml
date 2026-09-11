@@ -11,3 +11,5 @@ includes:
     dir: ansible
   sops:
     taskfile: .taskfiles/sops.yml
+  tf:
+    taskfile: .taskfiles/terraform.yml

@@ -16,6 +16,10 @@ when the first release is cut.
   contract (`task verify`) that needs no managed host.
 - PVE onboarding pattern and `converge` playbook for Proxmox pets
   (first node: jarvis).
+- TF-0 state backend scaffold: frozen OpenTofu bootstrap root for the
+  OVH S3 state bucket (versioning, SSE, 90-day lifecycle, allowlist
+  policy without `DeleteBucket`), `terraform/BACKEND.md` design record,
+  onboarding runbook, and `task tf:*` recipes.
 
 ### Security
 

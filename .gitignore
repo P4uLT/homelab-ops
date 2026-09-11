@@ -23,6 +23,11 @@ ansible/config/known_hosts
 ansible/config/tmp/*
 !ansible/config/tmp/.gitkeep
 
+# OpenTofu local state and provider caches. The lock file stays tracked.
+*.tfstate
+*.tfstate.*
+.terraform/
+
 # Downloaded vendor content. Keep the empty paths visible.
 ansible/roles/vendors/*
 !ansible/roles/vendors/.gitkeep

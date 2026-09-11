@@ -98,4 +98,6 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
 - `docs/ssh.md` — keys, host-key pinning, access inventory.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
+- `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
+- `terraform/BACKEND.md` — Terraform state design and recovery.
 - `CHANGELOG.md` — notable changes.

@@ -11,9 +11,10 @@ tasks:
     cmd: task --list
 
   verify:
-    desc: Verify the project through the Ansible shell
+    desc: Verify the project locally (Ansible shell and Terraform format)
     cmds:
       - task: ansible:verify
+      - task: tf:fmt-check
 
   lint:
     desc: Lint the Ansible playbooks
