@@ -18,6 +18,9 @@ before the first stateful run.
 
 These files are OpenTofu. The HashiCorp Terraform language server
 rejects valid OpenTofu blocks such as `encryption` with
-"Blocks of type ... are not expected here". Use the OpenTofu language
-server (`tofu-ls`, or the OpenTofu extension in your editor) instead.
-Linting runs through `task tf:lint` with the repository `.tflint.hcl`.
+"Blocks of type ... are not expected here". Use the OpenTofu extension
+([vscode-opentofu](https://marketplace.visualstudio.com/items?itemName=OpenTofu.vscode-opentofu))
+version 0.6.3 or newer: older versions bundle a language server whose
+schema does not know the `encryption` block and raises the same false
+error. Linting runs through `task tf:lint` with the repository
+`terraform/.tflint.hcl`.
