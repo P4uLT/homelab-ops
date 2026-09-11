@@ -12,4 +12,4 @@ includes:
   sops:
     taskfile: .taskfiles/sops.yml
   tf:
-    taskfile: .taskfiles/terraform.yml
+    taskfile: .taskfiles/tf.yml
