@@ -44,21 +44,29 @@ copy under `~/.config/ovhcloud/`, outside the repository.
    `homelab-ops-terraform`.
 3. Pick the expiration. `Unlimited` fits infrastructure credentials
    that must not break mid-flight. Rotate them deliberately instead.
-4. Add the scope rules. Four rules on the catch-all path, one per
-   method:
+4. Add the scope rules. Four rules, all on `/cloud/project/*`:
 
    | Method | Path |
    |---|---|
-   | GET | `*` |
-   | POST | `*` |
-   | PUT | `*` |
-   | DELETE | `*` |
+   | GET | `/cloud/project/*` |
+   | POST | `/cloud/project/*` |
+   | PUT | `/cloud/project/*` |
+   | DELETE | `/cloud/project/*` |
 
-   This is a full-access credential. A narrower split per path looks
-   appealing, but the exact-path rule (`GET /cloud/project`) did not
-   grant through this form in testing, and the star form
-   (`/cloud/project/*`) does not match the exact path. Start with the
-   four rules above. Tighten later if the account needs it.
+   These cover every call the OVH provider makes for the bootstrap
+   root. The provider endpoints, verified in the provider source, all
+   sit under `/cloud/project/...`: user, s3Credentials, policy,
+   storage, lifecycle, and replication jobs. Two caveats:
+
+   - The star does not match the exact path `/cloud/project`. The
+     `cloud project list` command needs one extra rule, GET on
+     `/cloud/project`. Without it, read the project ID from the
+     console, or use `cloud project get <id>`.
+   - Test with a fresh shell. A stale exported `OVH_*` value makes a
+     good rule look broken. See the warning below.
+
+   Rules on the catch-all path `*` also work. They are broader than
+   this root needs.
 
 5. Submit. The page shows all three keys once. Copy them into `.env`
    right away: `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET`,
