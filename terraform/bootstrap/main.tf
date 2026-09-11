@@ -32,6 +32,9 @@ resource "ovh_cloud_project_user_s3_credential" "state" {
 # DeleteObjectVersion is absent too: the S3 backend never needs it, and
 # it would let the state writer purge the versions that BACKEND.md
 # relies on for recovery. DeleteObject stays for `use_lockfile` cleanup.
+# OVH has no GetObjectVersion or DeleteObjectVersion action: versioned
+# reads and deletes ride on GetObject and DeleteObject, and
+# ListBucketVersions covers the listing.
 #
 # Scope is the primary bucket only. The replica stays out of reach: a
 # writer that can reach both can diverge them. Restore uses the OVH API
@@ -53,7 +56,7 @@ resource "ovh_cloud_project_user_s3_policy" "state" {
       {
         Sid    = "StateObjectReadWrite"
         Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:GetObjectVersion", "s3:AbortMultipartUpload"]
+        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"]
         Resource = [
           "arn:aws:s3:::${var.bucket_name}/*"
         ]
