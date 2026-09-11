@@ -9,16 +9,18 @@ version: "3"
 # OpenTofu runs.
 
 vars:
-  # One .env -> TF_VAR_ mapping for every bootstrap task. The shell
-  # expands the dollar references at run time; Task only substitutes
-  # the string.
+  # One .env -> TF_VAR_ mapping for every task. The shell expands the
+  # dollar references at run time; Task only substitutes the string.
   TF_ENV: >-
     TF_VAR_state_passphrase="$TF_STATE_PASSPHRASE"
     TF_VAR_project_id="$OVH_CLOUD_PROJECT_SERVICE"
     TF_VAR_bucket_name="$OVH_BUCKET"
     TF_VAR_region="$OVH_REGION"
-    TF_VAR_replica_bucket_name="$OVH_REPLICA_BUCKET"
-    TF_VAR_replica_region="$OVH_REPLICA_REGION"
+
+  # Every OpenTofu root, by directory name under terraform/. Keep the
+  # list explicit. That keeps a future modules/ directory out of the
+  # loop. See BACKEND.md.
+  TF_ROOTS: [bootstrap]
 
 tasks:
   fmt:
@@ -34,64 +36,43 @@ tasks:
     dir: terraform
     cmd: mise exec -- tflint --recursive
 
-  validate:
-    desc: Initialize without a backend and validate every OpenTofu root.
-    dir: terraform
+  init:
+    desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
     cmds:
-      - |
-        for root in $(find . -name '*.tf' -not -path '*/.terraform/*' -exec dirname {} \; | sort -u); do
-          echo "== validate $root =="
-          mise exec -- tofu -chdir="$root" init -backend=false -input=false > /dev/null || exit 1
-          mise exec -- tofu -chdir="$root" validate -no-color || exit 1
-        done
+      - for: { var: TF_ROOTS, as: ROOT }
+        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false
 
-  bootstrap-init:
-    desc: Initialize the bootstrap root (downloads the OVH provider).
-    dir: terraform/bootstrap
-    preconditions:
-      - sh: mise exec -- sh -c 'test ${#TF_STATE_PASSPHRASE} -ge 16'
-        msg: "TF_STATE_PASSPHRASE is missing or too short. Fill it in .env (16 characters minimum)."
+  validate:
+    desc: Validate every OpenTofu root. Runs init first.
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu init
+      - task: init
+      - for: { var: TF_ROOTS, as: ROOT }
+        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
 
   bootstrap-plan:
     desc: Plan the state backend. Needs the OVH_* values in .env.
     dir: terraform/bootstrap
-    preconditions:
-      - sh: mise exec -- sh -c 'test ${#TF_STATE_PASSPHRASE} -ge 16'
-        msg: "TF_STATE_PASSPHRASE is missing or too short. Fill it in .env (16 characters minimum)."
-      - sh: mise exec -- sh -c 'test -n "$OVH_CLOUD_PROJECT_SERVICE" && test -n "$OVH_BUCKET" && test -n "$OVH_REGION" && test -n "$OVH_REPLICA_BUCKET" && test -n "$OVH_REPLICA_REGION"'
-        msg: "Set OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_REPLICA_BUCKET, and OVH_REPLICA_REGION in .env."
-      - sh: mise exec -- sh -c 'test -n "$OVH_APPLICATION_KEY" && test -n "$OVH_APPLICATION_SECRET" && test -n "$OVH_CONSUMER_KEY"'
-        msg: "OVH API credentials are incomplete. See docs/runbooks/bootstrap-tf-backend.md."
+    requires:
+      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
     cmds:
       - mise exec -- env {{.TF_ENV}} tofu plan
 
   bootstrap-apply:
-    desc: Create the state buckets and the access chain. Idempotent.
+    desc: Create the state bucket and the access chain. Idempotent.
     dir: terraform/bootstrap
-    preconditions:
-      - sh: mise exec -- sh -c 'test ${#TF_STATE_PASSPHRASE} -ge 16'
-        msg: "TF_STATE_PASSPHRASE is missing or too short. Fill it in .env (16 characters minimum)."
-      - sh: mise exec -- sh -c 'test -n "$OVH_CLOUD_PROJECT_SERVICE" && test -n "$OVH_BUCKET" && test -n "$OVH_REGION" && test -n "$OVH_REPLICA_BUCKET" && test -n "$OVH_REPLICA_REGION"'
-        msg: "Set OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_REPLICA_BUCKET, and OVH_REPLICA_REGION in .env."
-      - sh: mise exec -- sh -c 'test -n "$OVH_APPLICATION_KEY" && test -n "$OVH_APPLICATION_SECRET" && test -n "$OVH_CONSUMER_KEY"'
-        msg: "OVH API credentials are incomplete. See docs/runbooks/bootstrap-tf-backend.md."
+    requires:
+      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
     cmds:
       - mise exec -- env {{.TF_ENV}} tofu apply
 
   bootstrap-output:
     desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
     dir: terraform/bootstrap
-    preconditions:
-      - sh: mise exec -- sh -c 'test ${#TF_STATE_PASSPHRASE} -ge 16'
-        msg: "TF_STATE_PASSPHRASE is missing or too short. Fill it in .env (16 characters minimum)."
-    cmd: mise exec -- env {{.TF_ENV}} tofu output {{.CLI_ARGS}}
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu output {{.CLI_ARGS}}
 
   bootstrap-state-list:
     desc: List resources tracked in the bootstrap state.
     dir: terraform/bootstrap
-    preconditions:
-      - sh: mise exec -- sh -c 'test ${#TF_STATE_PASSPHRASE} -ge 16'
-        msg: "TF_STATE_PASSPHRASE is missing or too short. Fill it in .env (16 characters minimum)."
-    cmd: mise exec -- env {{.TF_ENV}} tofu state list
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu state list
