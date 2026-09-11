@@ -17,12 +17,7 @@ output "s3_secret_key" {
   sensitive   = true
 }
 
-output "primary_bucket_name" {
-  description = "Primary state bucket name. Check with `ovhcloud cloud storage object bucket get`."
+output "bucket_name" {
+  description = "State bucket name. Check with `ovhcloud cloud storage object bucket get`."
   value       = ovh_cloud_project_storage.state.name
-}
-
-output "replica_bucket_name" {
-  description = "Replica bucket name in the second region. The restore source. See BACKEND.md."
-  value       = ovh_cloud_project_storage.replica.name
 }
