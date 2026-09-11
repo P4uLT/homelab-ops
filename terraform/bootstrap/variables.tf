@@ -10,11 +10,26 @@ variable "project_id" {
 }
 
 variable "bucket_name" {
-  description = "State bucket name. Source: OVH_BUCKET in .env."
+  description = "Primary state bucket name. Source: OVH_BUCKET in .env."
   type        = string
 }
 
 variable "region" {
-  description = "OVH region of the state bucket. Source: OVH_REGION in .env."
+  description = "OVH region of the primary state bucket. Source: OVH_REGION in .env. Prefer a 3-AZ region."
   type        = string
+}
+
+variable "replica_bucket_name" {
+  description = "Replica bucket name for the cross-region copy. Source: OVH_REPLICA_BUCKET in .env."
+  type        = string
+}
+
+variable "replica_region" {
+  description = "OVH region of the replica bucket. Source: OVH_REPLICA_REGION in .env. Must differ from region."
+  type        = string
+
+  validation {
+    condition     = var.replica_region != var.region
+    error_message = "replica_region must differ from region. A copy in the same region shares the failure domain."
+  }
 }
