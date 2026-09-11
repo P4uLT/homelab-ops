@@ -1,8 +1,4 @@
-# Read after the apply, not from the apply transcript: the two keys are
-# sensitive and print masked. Use the recipe, then copy the values into
-# .env and into the off-site recovery kit.
-#
-#   task tf:bootstrap-output -- -raw s3_access_key
+# Read these through the recipe. The apply masks them:
 #   task tf:bootstrap-output -- -raw s3_secret_key
 
 output "s3_access_key" {
@@ -21,3 +17,4 @@ output "bucket_name" {
   description = "State bucket name. Check with `ovhcloud cloud storage object bucket get`."
   value       = ovh_cloud_project_storage.state.name
 }
+

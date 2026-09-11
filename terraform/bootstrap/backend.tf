@@ -1,13 +1,11 @@
 terraform {
-  # Deliberately local. This root has no remote backend: it creates the
-  # bucket that every other root uses as their backend. The state file
-  # lands as terraform.tfstate next to these files.
+  # Local on purpose: this root creates the bucket that every other root
+  # uses as its backend. State lands in terraform.tfstate beside these
+  # files. See BACKEND.md.
   backend "local" {}
 
-  # OpenTofu native state encryption. The passphrase arrives through
-  # TF_VAR_state_passphrase, mapped from .env by the tf tasks (16
-  # characters minimum). The S3 credentials land in this state, so
-  # encryption is mandatory, not optional.
+  # The S3 keys land in this state, so encryption is mandatory.
+  # TF_VAR_state_passphrase reaches this from .env through the tf tasks.
   encryption {
     key_provider "pbkdf2" "state" {
       passphrase = var.state_passphrase

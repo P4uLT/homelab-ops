@@ -1,9 +1,7 @@
-# State backend bootstrap. This root runs once, then stays frozen.
-# See BACKEND.md for the design and the recovery path.
+# Bootstrap root. Runs once, then stays frozen. See BACKEND.md.
 
 terraform {
-  # Exact pin, like every other dependency. Keep in step with the
-  # opentofu entry in mise.toml.
+  # Exact pin, in step with the opentofu entry in mise.toml.
   required_version = "1.12.6"
 
   required_providers {
@@ -15,7 +13,5 @@ terraform {
 }
 
 provider "ovh" {
-  # The API credentials come from the environment: OVH_ENDPOINT,
-  # OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY.
-  # They live in the git-ignored .env file that mise loads.
+  # Credentials come from the environment, through the git-ignored .env.
 }

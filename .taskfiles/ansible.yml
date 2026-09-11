@@ -4,8 +4,7 @@ version: "3"
 
 # Recipes for the Ansible shell. The root include sets dir: ansible, so
 # the short relative paths stay valid. Everything runs through the
-# project-local uv environment: no global Ansible install, no
-# source-repository venv.
+# project-local uv environment.
 tasks:
   default:
     desc: List Ansible tasks

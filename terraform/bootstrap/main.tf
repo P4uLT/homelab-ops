@@ -1,13 +1,8 @@
-# The state bucket and its access chain. Every resource here is
-# idempotent: a second apply converges to the same state.
-#
-# The root is frozen, so every resource carries prevent_destroy. A
-# destroy must be a deliberate code change. See BACKEND.md.
+# The state bucket and its access chain. The root is frozen: every
+# resource carries prevent_destroy. See BACKEND.md.
 
-# Dedicated API user for the state bucket. The main OVH account keeps
-# full control; this user never gets the DeleteBucket permission.
-# objectstore_operator is required before an S3 policy can attach
-# (OVHcloud Object Storage IAM guide).
+# Dedicated API user. objectstore_operator is required before an S3
+# policy can attach (OVHcloud Object Storage IAM guide).
 resource "ovh_cloud_project_user" "state" {
   service_name = var.project_id
   description  = "terraform state backend"
@@ -27,15 +22,13 @@ resource "ovh_cloud_project_user_s3_credential" "state" {
   }
 }
 
-# Allowlist for the S3 backend. Two statements, one per resource type.
-# DeleteBucket is absent on purpose: the user cannot remove the bucket.
-# DeleteObjectVersion is absent too: the S3 backend never needs it, and
-# it would let the state writer purge the versions that BACKEND.md
-# relies on for recovery. DeleteObject stays for `use_lockfile` cleanup.
+# Allowlist for the S3 backend. No DeleteBucket: the user cannot remove
+# the bucket. No DeleteObjectVersion: the backend never needs it, and it
+# would let the writer purge the versions recovery depends on.
+# DeleteObject stays for use_lockfile cleanup.
 #
-# Keep this list to the actions the OVH API stores back verbatim. It
-# drops s3:GetObjectVersion, which would show a diff on every plan.
-# The backend reads the current version only.
+# Keep only actions the OVH API stores back. It drops
+# s3:GetObjectVersion, which would diff on every plan.
 resource "ovh_cloud_project_user_s3_policy" "state" {
   service_name = var.project_id
   user_id      = ovh_cloud_project_user.state.id
@@ -66,11 +59,8 @@ resource "ovh_cloud_project_user_s3_policy" "state" {
   }
 }
 
-# The bucket itself. SSE protects objects at rest; OpenTofu state adds
-# its own client-side encryption on top (see backend.tf).
-#
-# The bucket lives in a 3-AZ region. See BACKEND.md for the region
-# choice and the failure domains it does and does not cover.
+# The bucket. SSE protects objects at rest; OpenTofu state encryption
+# adds a second layer (see backend.tf). Region: see BACKEND.md.
 resource "ovh_cloud_project_storage" "state" {
   service_name = var.project_id
   name         = var.bucket_name
@@ -89,8 +79,7 @@ resource "ovh_cloud_project_storage" "state" {
   }
 }
 
-# Keep 90 days of noncurrent object versions. Versioning plus this rule
-# is the state recovery path. See BACKEND.md.
+# 90 days of noncurrent versions: the state recovery path. See BACKEND.md.
 resource "ovh_cloud_project_storage_object_bucket_lifecycle_configuration" "state" {
   service_name   = var.project_id
   container_name = ovh_cloud_project_storage.state.name
