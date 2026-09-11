@@ -66,6 +66,11 @@ tool of your choice instead.
 
 ### Check the credentials
 
+Reload your shell first (`exec zsh`, or open a new terminal). Your
+shell keeps previously exported `OVH_*` values and passes them to the
+CLI ahead of `.env`. A fresh `mise exec --` call re-reads `.env`, so it
+always sees the current values.
+
 Run `mise exec -- ovhcloud cloud project list`. It lists your Public
 Cloud projects. The command proves the three keys work. Note the
 `project_id` of your project. It is the value for
