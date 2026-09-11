@@ -9,6 +9,10 @@ Terraform-managed by the roots that use it. A separate, frozen bootstrap
 root creates it once. This avoids the circular case where the backend
 bucket stores the state of the root that creates it.
 
+A second bucket in another region holds an asynchronous copy. The
+backend never reads it. It exists to survive a region loss. See
+Cross-region replica below.
+
 ## Design
 
 | Item | Decision |
@@ -20,6 +24,7 @@ bucket stores the state of the root that creates it.
 | Encryption at rest (OVH) | SSE with AES256 |
 | Encryption of the state payload | OpenTofu native encryption (AES-GCM, passphrase in `.env`) |
 | Access | One dedicated project user with the `objectstore_operator` role, an allowlist policy, and no `DeleteBucket` or `DeleteObjectVersion` |
+| Replication | Asynchronous copy to a bucket in a second region. Delete markers are not replicated |
 
 The two encryption layers are deliberate. SSE protects objects in the
 bucket. OpenTofu native encryption protects the state payload itself, so
@@ -34,11 +39,15 @@ without exposing secrets.
    The role is required before an S3 policy can attach.
 2. An S3 credential pair for that user.
 3. An allowlist policy. It grants list, read, write, and version
-   actions on the bucket. `DeleteBucket` is absent on purpose, and so is
-   `DeleteObjectVersion`: the state writer must not be able to purge the
-   versions that the recovery path relies on.
-4. The bucket with versioning and SSE enabled.
-5. The 90-day lifecycle rule for noncurrent versions.
+   actions on the primary bucket. `DeleteBucket` is absent on purpose,
+   and so is `DeleteObjectVersion`: the state writer must not be able to
+   purge the versions that the recovery path relies on. The policy
+   covers the primary only. See Cross-region replica below.
+4. The primary bucket with versioning and SSE enabled.
+5. The replica bucket in a second region, with versioning and SSE
+   enabled.
+6. The replication rule from the primary to the replica.
+7. The 90-day lifecycle rule for noncurrent versions, on both buckets.
 
 The root uses a **local** backend. Its state is small and encrypted with
 OpenTofu native encryption. This local state is acceptable because of
@@ -87,6 +96,58 @@ move with `git mv`, and its state stays in place. When a shared
 discovery an explicit list, so `tf:validate` never treats a module as
 a root.
 
+## Cross-region replica
+
+| Item | Decision |
+|---|---|
+| Topology | One primary bucket and one replica bucket, in two regions |
+| Direction | Asynchronous, primary to replica, one way |
+| Delete markers | Not replicated. A primary deletion does not reach the replica |
+| On primary deletion | The replica stays |
+| Lifecycle | The same 90-day noncurrent rule on both buckets |
+| Writer access | Primary only. The replica stays out of reach |
+| Role | Restore source, not a live failover target |
+
+### What it protects
+
+The 90-day version history lives inside the primary bucket. A region
+loss or a bucket-level deletion removes the state and its history
+together. The replica puts the copy in a different failure domain.
+
+The replica covers a region or datacenter loss inside OVHcloud. It does
+not cover the loss of the OVHcloud account. The rclone mirror to RustFS
+and the off-site copy cover that case. Keep both.
+
+Choose a 3-AZ region for the primary. A 3-AZ region already survives the
+loss of one availability zone.
+
+### What it is not
+
+The replica is not a second backend. The S3 backend talks to the primary
+bucket only. There is no automatic failover, and none is wanted:
+
+- replication is one way. Writes to the replica never return to the
+  primary.
+- two writers on two buckets produce two divergent states, with no
+  automatic reconciliation. That is a state split-brain.
+- a switch back would need a manual reversal.
+
+Restore from the replica instead. The backend configuration never
+changes.
+
+### Recovery point
+
+Replication is asynchronous. The replica can lag behind the primary by a
+short interval, so expect to lose the last writes. This is acceptable
+for a state file, because the roots are declarative and a lost apply can
+run again.
+
+### Cost
+
+The replica uses the storage class of the source object by default. Set
+`storage_class = "STANDARD_IA"` on the rule destination for a cheaper
+standby copy. State stays small, so the difference is minor.
+
 ## Credential flow
 
 | Credential | Source | Home |
@@ -116,6 +177,23 @@ task tf:validate           # schema check without a backend
 The full procedure lives in `docs/runbooks/bootstrap-tf-backend.md`.
 
 ## Recovery
+
+**State object loss, or a region loss.** Read the object from the
+replica and copy it back into the primary bucket. The OVH API does the
+copy, so the restricted state-writer keys are not needed:
+
+```sh
+mise exec -- ovhcloud cloud storage object bucket object version list \
+  <replica-bucket> <key> --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
+
+mise exec -- ovhcloud cloud storage object bucket object copy \
+  <replica-bucket> <key> \
+  --cloud-project "$OVH_CLOUD_PROJECT_SERVICE" \
+  --target-bucket <primary-bucket> --target-key <key>
+```
+
+Then run `task tf:bootstrap-plan` and a plan from any root to confirm
+the state reads back.
 
 **State file recovery.** Pick the previous object version in the bucket
 (or from the off-site copy) and restore it. Versioning keeps 90 days of

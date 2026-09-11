@@ -17,8 +17,9 @@ when the first release is cut.
 - PVE onboarding pattern and `converge` playbook for Proxmox pets
   (first node: jarvis).
 - TF-0 state backend scaffold: frozen OpenTofu bootstrap root for the
-  OVH S3 state bucket (versioning, SSE, 90-day lifecycle, allowlist
-  policy without `DeleteBucket` or `DeleteObjectVersion`),
+  OVH S3 state bucket and a cross-region replica (versioning, SSE,
+  90-day lifecycle on both, allowlist policy without `DeleteBucket` or
+  `DeleteObjectVersion`, replication with delete markers disabled),
   `terraform/BACKEND.md` design record, onboarding runbook, and
   `task tf:*` recipes including offline schema validation.
 

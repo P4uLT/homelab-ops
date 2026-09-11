@@ -10,6 +10,8 @@ converges.
 - The `OVH_*` and `TF_STATE_PASSPHRASE` values from `.env.example`,
   filled into your local `.env` file.
 - Owner approval, because this creates billable resources.
+- The design in `terraform/BACKEND.md`, including the cross-region
+  replica section.
 
 ## Mint the OVH API credentials
 
@@ -68,10 +70,12 @@ Cloud projects. The command proves the three keys work. Note the
 
 1. Fill the credential values from the section above into `.env`.
    Restrict the file to your user: `chmod 600 .env`.
-2. Choose the bucket name and region. Fill `OVH_BUCKET` and
-   `OVH_REGION` in `.env`. Keep the name out of any tracked file.
+2. Choose the two bucket names and the two regions. Fill `OVH_BUCKET`,
+   `OVH_REGION`, `OVH_REPLICA_BUCKET`, and `OVH_REPLICA_REGION` in
+   `.env`. Keep the names out of any tracked file. Use a 3-AZ region for
+   the primary and a different region for the replica.
 3. Download the provider: `task tf:bootstrap-init`.
-4. Preview: `task tf:bootstrap-plan`. Expect five resources to add.
+4. Preview: `task tf:bootstrap-plan`. Expect seven resources to add.
 5. Create: `task tf:bootstrap-apply`.
 6. Read the credentials. The apply masks both values, so read them
    explicitly:
@@ -83,12 +87,54 @@ Cloud projects. The command proves the three keys work. Note the
 
    Copy them into `.env` (`OVH_S3_ACCESS_KEY`, `OVH_S3_SECRET_KEY`) and
    into the off-site recovery kit.
-7. Check the bucket: `mise exec -- ovhcloud cloud storage object bucket
-   get <bucket-name> --cloud-project <project-id>`. Versioning shows
-   `enabled`.
+7. Check both buckets. Versioning shows `enabled` on each:
+
+   ```sh
+   mise exec -- ovhcloud cloud storage object bucket get <bucket-name> \
+     --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
+   mise exec -- ovhcloud cloud storage object bucket get <replica-bucket> \
+     --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
+   ```
+
+   Check the replication rule in the OVHcloud Control Panel: Object
+   Storage, the primary bucket, Replication. The rule status shows
+   `enabled`, and delete markers are not replicated.
 8. Store a copy of the encrypted `terraform/bootstrap/terraform.tfstate`
    file in the recovery kit, next to the passphrase.
 9. Run the local checks: `task verify`.
 
 The bootstrap root is now frozen. Use `task tf:bootstrap-plan` to check
 for drift. Do not add resources to this root.
+
+## Later operations
+
+### Backfill the replica
+
+A replication rule applies to objects created after it. Writes that
+predate the rule need a replication job:
+
+```sh
+mise exec -- ovhcloud cloud storage object bucket replication-job create \
+  <bucket-name> --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
+```
+
+Run it when you add replication to an existing bucket, or when you
+suspect the replica is behind.
+
+### Restore from the replica
+
+The replica is a restore source, not a failover backend. Copy the object
+back into the primary bucket:
+
+```sh
+mise exec -- ovhcloud cloud storage object bucket object version list \
+  <replica-bucket> <key> --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
+
+mise exec -- ovhcloud cloud storage object bucket object copy \
+  <replica-bucket> <key> \
+  --cloud-project "$OVH_CLOUD_PROJECT_SERVICE" \
+  --target-bucket <bucket-name> --target-key <key>
+```
+
+Then run a plan from any root to confirm the state reads back. Do not
+repoint a backend at the replica. See `terraform/BACKEND.md`.
