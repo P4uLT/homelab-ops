@@ -40,7 +40,7 @@ copy under `~/.config/ovhcloud/`, outside the repository.
 
 1. Open `https://www.ovh.com/auth/api/createToken`.
 2. Fill the application name and description. Example name:
-   `homelab-ops-terraform`.
+   `homelab-ops-tofu`.
 3. Pick the expiration. `Unlimited` fits infrastructure credentials
    that must not break mid-flight. Rotate them deliberately instead.
 4. Add the rules. The provider checks the credential at start-up

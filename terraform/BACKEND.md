@@ -1,7 +1,9 @@
 # Terraform state backend
 
 This document records how the repository stores Terraform state. Read it
-before the first `terraform init` against the state bucket.
+before the first `tofu init` against the state bucket. The tool is
+OpenTofu (`tofu`); "Terraform" here names the IaC layer and its
+conventions.
 
 The backend is an OVHcloud S3 bucket. One state file lives in one bucket
 prefix per Terraform root (`key = <root-name>`). The bucket is not
