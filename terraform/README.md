@@ -13,3 +13,11 @@ Infrastructure as code for Proxmox VE and TrueNAS, on OpenTofu.
 
 State lives in the OVH S3 backend, never in git. Read `BACKEND.md`
 before the first stateful run.
+
+## Editor setup
+
+These files are OpenTofu. The HashiCorp Terraform language server
+rejects valid OpenTofu blocks such as `encryption` with
+"Blocks of type ... are not expected here". Use the OpenTofu language
+server (`tofu-ls`, or the OpenTofu extension in your editor) instead.
+Linting runs through `task tf:lint` with the repository `.tflint.hcl`.

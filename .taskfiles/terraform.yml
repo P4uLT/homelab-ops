@@ -16,6 +16,11 @@ tasks:
     desc: Check Terraform formatting without writing.
     cmd: mise exec -- tofu fmt -check -recursive terraform/
 
+  lint:
+    desc: Lint every OpenTofu root with tflint.
+    dir: terraform
+    cmd: mise exec -- tflint --recursive
+
   bootstrap-init:
     desc: Initialize the bootstrap root (downloads the OVH provider).
     dir: terraform/bootstrap
