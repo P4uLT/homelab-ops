@@ -22,9 +22,16 @@ converges.
 3. Download the provider: `task tf:bootstrap-init`.
 4. Preview: `task tf:bootstrap-plan`. Expect five resources to add.
 5. Create: `task tf:bootstrap-apply`.
-6. The apply prints the S3 access key and secret key once. Copy them
-   into `.env` (`OVH_S3_ACCESS_KEY`, `OVH_S3_SECRET_KEY`) and into the
-   off-site recovery kit.
+6. Read the credentials. The apply masks both values, so read them
+   explicitly:
+
+   ```sh
+   task tf:bootstrap-output -- -raw s3_access_key
+   task tf:bootstrap-output -- -raw s3_secret_key
+   ```
+
+   Copy them into `.env` (`OVH_S3_ACCESS_KEY`, `OVH_S3_SECRET_KEY`) and
+   into the off-site recovery kit.
 7. Check the bucket: `mise exec -- ovhcloud cloud storage object bucket
    get <bucket-name> --cloud-project <project-id>`. Versioning shows
    `enabled`.

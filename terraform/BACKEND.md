@@ -19,7 +19,7 @@ bucket stores the state of the root that creates it.
 | Lifecycle | Noncurrent versions expire after 90 days |
 | Encryption at rest (OVH) | SSE with AES256 |
 | Encryption of the state payload | OpenTofu native encryption (AES-GCM, passphrase in `.env`) |
-| Access | One dedicated project user, allowlist policy, no `DeleteBucket` |
+| Access | One dedicated project user with the `objectstore_operator` role, an allowlist policy, and no `DeleteBucket` or `DeleteObjectVersion` |
 
 The two encryption layers are deliberate. SSE protects objects in the
 bucket. OpenTofu native encryption protects the state payload itself, so
@@ -30,10 +30,13 @@ without exposing secrets.
 
 `terraform/bootstrap/` creates the whole access chain:
 
-1. A dedicated project user for the state bucket.
+1. A dedicated project user with the `objectstore_operator` role.
+   The role is required before an S3 policy can attach.
 2. An S3 credential pair for that user.
 3. An allowlist policy. It grants list, read, write, and version
-   actions on the bucket. `DeleteBucket` is absent on purpose.
+   actions on the bucket. `DeleteBucket` is absent on purpose, and so is
+   `DeleteObjectVersion`: the state writer must not be able to purge the
+   versions that the recovery path relies on.
 4. The bucket with versioning and SSE enabled.
 5. The 90-day lifecycle rule for noncurrent versions.
 
@@ -42,6 +45,9 @@ OpenTofu native encryption. This local state is acceptable because of
 four guards:
 
 - The root is frozen. It runs once and only again for drift checks.
+  Every resource carries `prevent_destroy`, so a destroy must be a
+  deliberate code change. This also applies to the S3 credential:
+  rotation means lifting that guard in a reviewed commit.
 - The bucket resource carries `prevent_destroy = true`.
 - The encrypted state file is part of the off-site recovery kit.
 - Worst case, the bucket is imported into a fresh bootstrap root. The
@@ -70,8 +76,10 @@ credential is ever written to a tracked file.
 task tf:bootstrap-init     # once, downloads the OVH provider
 task tf:bootstrap-plan     # preview; safe to repeat
 task tf:bootstrap-apply    # create; idempotent
+task tf:bootstrap-output   # read the S3 keys after the apply
 task tf:bootstrap-state-list
 task tf:fmt-check          # offline format check, part of task verify
+task tf:validate           # schema check without a backend
 ```
 
 The full procedure lives in `docs/runbooks/bootstrap-tf-backend.md`.

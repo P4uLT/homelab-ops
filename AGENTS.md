@@ -81,8 +81,10 @@ bare metal. Use `host` only when the system type is unknown.
 - Extra-vars with JSON die in `task ansible:converge --`: the quotes are
   stripped across the two shell layers and the value degrades to a string.
   Use the file form instead: `-e @/tmp/vars.yml`.
-- `task verify` works offline after the first `galaxy` install.
-  `galaxy-reinstall` needs network and wipes manual changes in `vendors/`.
+- `task verify` works offline after the first `galaxy` install and the
+  first Terraform provider download (`task tf:bootstrap-init`).
+  `galaxy-reinstall` needs network and wipes manual changes in
+  `vendors/`.
 - The legacy sibling repository that fed the migration keeps a read-only
   status. Never change it.
 
