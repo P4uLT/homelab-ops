@@ -22,8 +22,8 @@ They can touch your whole account, so treat them like the age key.
 They stay in the git-ignored `.env` and in the recovery kit. Never in
 a tracked file, shell history, or ticket.
 
-Pick one of the two paths below. Path A is faster. Path B gives you a
-scoped credential.
+Pick one of the two paths below. Path A is faster. Path B creates the
+keys by hand, so you control the exact rules.
 
 ### Path A. Log in with the CLI (recommended)
 
@@ -44,29 +44,46 @@ copy under `~/.config/ovhcloud/`, outside the repository.
    `homelab-ops-terraform`.
 3. Pick the expiration. `Unlimited` fits infrastructure credentials
    that must not break mid-flight. Rotate them deliberately instead.
-4. Add the scope rules. Four rules, all on `/cloud/project/*`:
+4. Add the rules. The provider checks the credential at start-up
+   with `GET /auth/details`, an account-level call outside
+   `/cloud/project`. A token scoped only to `/cloud/project/*` fails
+   there. The message reads `OVH client seems to be misconfigured`
+   followed by `403 This call has not been granted`.
+
+   **Recommended rules.** Four rules, all on `/*`:
 
    | Method | Path |
    |---|---|
-   | GET | `/cloud/project/*` |
-   | POST | `/cloud/project/*` |
-   | PUT | `/cloud/project/*` |
-   | DELETE | `/cloud/project/*` |
+   | GET | `/*` |
+   | POST | `/*` |
+   | PUT | `/*` |
+   | DELETE | `/*` |
 
-   These cover every call the OVH provider makes for the bootstrap
-   root. The provider endpoints, verified in the provider source, all
-   sit under `/cloud/project/...`: user, s3Credentials, policy,
-   storage, lifecycle, and replication jobs. Two caveats:
+   This is the configuration the provider expects, and the one other
+   users report as working. It is also a broad credential that can act
+   on the whole account. Treat it like the age key.
 
-   - The star does not match the exact path `/cloud/project`. The
-     `cloud project list` command needs one extra rule, GET on
-     `/cloud/project`. Without it, read the project ID from the
-     console, or use `cloud project get <id>`.
-   - Test with a fresh shell. A stale exported `OVH_*` value makes a
-     good rule look broken. See the warning below.
+   Do not add `PATCH`. The OVH form returns an internal server error.
 
-   Rules on the catch-all path `*` also work. They are broader than
-   this root needs.
+   **Scoped rules, if you accept the upkeep.** The known minimum for
+   the bootstrap root is:
+
+   | Method | Path |
+   |---|---|
+   | GET | `/auth/details` |
+   | GET, POST, PUT, DELETE | `/cloud/project/*` |
+
+   Two caveats:
+
+   - The star does not match the bare path `/cloud/project`. The
+     `cloud project list` command needs `GET /cloud/project` as well.
+     Without it, read the project ID from the console.
+   - Narrow paths produced further `403` errors for other users.
+     The message names the method and the path. Add a rule for that
+     pair, or move to the recommended rules above.
+
+   For a durable scoped setup, use an OAuth2 service account with an
+   IAM policy. See Least privilege below.
 
 5. Submit. The page shows all three keys once. Copy them into `.env`
    right away: `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET`,
@@ -87,6 +104,49 @@ Run `mise exec -- ovhcloud cloud project list`. It lists your Public
 Cloud projects. The command proves the three keys work. Note the
 `project_id` of your project. It is the value for
 `OVH_CLOUD_PROJECT_SERVICE` in `.env`.
+
+### Least privilege (later)
+
+A consumer key scopes by HTTP method and path. That model is fragile
+here, because the provider also calls account-level endpoints.
+
+The durable option is an OAuth2 service account plus an IAM policy:
+
+1. `ovh_me_api_oauth2_client` with `flow = "CLIENT_CREDENTIALS"`. It
+   outputs `client_id`, `client_secret`, and an identity URN.
+2. `ovh_iam_policy` on that identity:
+
+   ```hcl
+   resources = ["urn:v1:eu:resource:publicCloudProject:<project_id>"]
+   allow     = ["publicCloudProject:apiovh:*"]
+   ```
+
+3. The provider then authenticates with `OVH_CLIENT_ID` and
+   `OVH_CLIENT_SECRET`.
+
+Three constraints:
+
+- Creating the service account needs an already privileged credential.
+  The broad key stays, but it runs once instead of on every apply.
+- OVH returns the `client_secret` only at creation. A loss means a new
+  client.
+- The scope above may not cover the start-up call. Add the
+  `account:apiovh:*` action when the first plan asks for it.
+
+Do this after the bootstrap root is stable. It changes a credential,
+not the Terraform code.
+
+### `403 This call has not been granted`
+
+The token lacks a method and path pair for the call it made.
+
+1. Read the method and the path from the message.
+2. Add a rule for that pair, or replace the rules with the recommended
+   ones above.
+3. Reload the shell and retry. A stale exported `OVH_*` value makes a
+   good rule look broken.
+
+A start-up failure that names no resource comes from `/auth/details`.
 
 ## Steps
 
