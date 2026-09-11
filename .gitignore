@@ -7,6 +7,7 @@ docs/superpowers/
 !.env.example
 .age.key.txt
 .age.key.txt.secours
+ovh.conf
 ansible/config/.vault_file
 ansible/config/known_hosts
 
