@@ -44,17 +44,21 @@ copy under `~/.config/ovhcloud/`, outside the repository.
    `homelab-ops-terraform`.
 3. Pick the expiration. `Unlimited` fits infrastructure credentials
    that must not break mid-flight. Rotate them deliberately instead.
-4. Add the scope rules. The bootstrap root needs:
+4. Add the scope rules. Four rules on the catch-all path, one per
+   method:
 
    | Method | Path |
    |---|---|
-   | GET | `/cloud/project` |
-   | GET, POST, PUT, DELETE | `/cloud/project/*` |
-   | GET | `/service/*` |
+   | GET | `*` |
+   | POST | `*` |
+   | PUT | `*` |
+   | DELETE | `*` |
 
-   The star in `/cloud/project/*` matches the paths under it, not the
-   exact path `/cloud/project`. The first rule exists for the project
-   list call.
+   This is a full-access credential. A narrower split per path looks
+   appealing, but the exact-path rule (`GET /cloud/project`) did not
+   grant through this form in testing, and the star form
+   (`/cloud/project/*`) does not match the exact path. Start with the
+   four rules above. Tighten later if the account needs it.
 
 5. Submit. The page shows all three keys once. Copy them into `.env`
    right away: `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET`,
