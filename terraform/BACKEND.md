@@ -56,6 +56,37 @@ four guards:
 Runs are idempotent. A second `apply` converges to the same result and
 changes nothing. `plan` doubles as a drift check.
 
+## Root layout rules
+
+One root covers one triplet: provider, blast radius, and apply cadence.
+Do not split roots by resource type. Two resources with different
+cadences never share a state. A plan must not touch unrelated resources
+through the graph.
+
+| Root | Covers | Cadence |
+|---|---|---|
+| `bootstrap/` | the state bucket, its user, and its policy | once |
+| `pve-one/`, `pve-two/` | one PVE server each | often |
+| `truenas/` | NAS import | sometimes |
+| `dns/` (planned) | public DNS zone | sometimes |
+| `ovh-project/` (planned) | account-level users | rare |
+
+`bootstrap/` stays frozen and narrow. Its guards (`prevent_destroy`, the
+local backend, the run-once contract) hold only while its scope is the
+state backend. A mutable resource conflicts with `prevent_destroy`: it
+needs regular change, but the root forbids destruction. DNS zones,
+account-level users, and application buckets get sibling roots. Never
+add them here. The bootstrap policy limits its user to the state
+bucket. A user for another purpose belongs to another root.
+
+Every root declares its backend key in its own `backend.tf`
+(`key = "<name>"`). The key is a chosen name, not a value derived from
+the directory path. The path carries no technical meaning. A root can
+move with `git mv`, and its state stays in place. When a shared
+`modules/` tree appears, move the roots under `roots/`. Then make root
+discovery an explicit list, so `tf:validate` never treats a module as
+a root.
+
 ## Credential flow
 
 | Credential | Source | Home |

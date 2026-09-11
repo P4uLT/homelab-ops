@@ -4,10 +4,10 @@ Infrastructure as code for Proxmox VE and TrueNAS, on OpenTofu.
 
 - One Terraform root per PVE server: its own code, state, and token.
   The PVE resources use the [bpg provider](https://github.com/bpg/terraform-provider-proxmox).
-  Planned; no PVE root exists yet.
+  Planned. No PVE root exists yet.
 - `truenas/` imports datasets, NFS shares, and snapshots. Everything that
   democratic-csi creates stays out of Terraform management.
-  Planned; the directory does not exist yet.
+  Planned. The directory does not exist yet.
 - `talos-lab/` holds discovery VMs only. Production Talos nodes are
   bare metal and stay outside Terraform. Planned.
 - `bootstrap/` is the frozen root that owns the state backend. It is the
@@ -15,6 +15,14 @@ Infrastructure as code for Proxmox VE and TrueNAS, on OpenTofu.
 
 State lives in the OVH S3 backend, never in git. Read `BACKEND.md`
 before the first stateful run.
+
+## Root rules
+
+One root covers one provider, one blast radius, and one apply cadence.
+Do not split roots by resource type. `bootstrap/` stays frozen and owns
+only the state backend. Every root declares its own state key in its
+`backend.tf`. Never derive the key from the directory path. See
+`BACKEND.md` for the full rules.
 
 ## Editor setup
 
