@@ -1,0 +1,74 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# OpenTofu helpers. The bootstrap root owns the state backend; see
+# terraform/BACKEND.md.
+
+vars:
+  # .env to TF_VAR_ mapping, in one place. The shell expands the
+  # references at run time; Task only substitutes the string.
+  TF_ENV: >-
+    TF_VAR_state_passphrase="$TF_STATE_PASSPHRASE"
+    TF_VAR_project_id="$OVH_CLOUD_PROJECT_SERVICE"
+    TF_VAR_bucket_name="$OVH_BUCKET"
+    TF_VAR_region="$OVH_REGION"
+
+  # OpenTofu roots, by directory name under terraform/. Keep the list
+  # explicit so a future modules/ directory stays out of the loop.
+  TF_ROOTS: [bootstrap]
+
+tasks:
+  fmt:
+    desc: Format every Terraform file in the repository.
+    cmd: mise exec -- tofu fmt -recursive terraform/
+
+  fmt-check:
+    desc: Check Terraform formatting without writing.
+    cmd: mise exec -- tofu fmt -check -recursive terraform/
+
+  lint:
+    desc: Lint every OpenTofu root with tflint.
+    dir: terraform
+    cmd: mise exec -- tflint --recursive
+
+  init:
+    desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
+    cmds:
+      - for: { var: TF_ROOTS, as: ROOT }
+        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false
+
+  validate:
+    desc: Validate every OpenTofu root. Runs init first.
+    cmds:
+      - task: init
+      - for: { var: TF_ROOTS, as: ROOT }
+        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
+
+  bootstrap-plan:
+    desc: Plan the state backend. Needs the OVH_* values in .env.
+    dir: terraform/bootstrap
+    requires:
+      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu plan
+
+  bootstrap-apply:
+    desc: Create the state bucket and the access chain. Idempotent.
+    dir: terraform/bootstrap
+    requires:
+      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu apply {{.CLI_ARGS}}
+
+  bootstrap-output:
+    desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
+    dir: terraform/bootstrap
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu output {{.CLI_ARGS}}
+
+  bootstrap-state-list:
+    desc: List resources tracked in the bootstrap state.
+    dir: terraform/bootstrap
+    cmds:
+      - mise exec -- env {{.TF_ENV}} tofu state list

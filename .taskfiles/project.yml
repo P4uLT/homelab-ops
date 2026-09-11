@@ -2,8 +2,7 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-# Project-level task aliases. Component-specific tasks stay in their
-# component namespace, for example ansible:verify.
+# Project-level task aliases. Component tasks keep their own namespace.
 tasks:
   default:
     desc: List project tasks
@@ -11,9 +10,12 @@ tasks:
     cmd: task --list
 
   verify:
-    desc: Verify the project through the Ansible shell
+    desc: Verify the project locally (Ansible shell, Terraform format, lint, and validate)
     cmds:
       - task: ansible:verify
+      - task: tf:fmt-check
+      - task: tf:lint
+      - task: tf:validate
 
   lint:
     desc: Lint the Ansible playbooks

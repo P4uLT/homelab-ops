@@ -7,6 +7,7 @@ docs/superpowers/
 !.env.example
 .age.key.txt
 .age.key.txt.secours
+ovh.conf
 ansible/config/.vault_file
 ansible/config/known_hosts
 
@@ -22,6 +23,15 @@ ansible/config/known_hosts
 # Generated Ansible runtime files
 ansible/config/tmp/*
 !ansible/config/tmp/.gitkeep
+
+# OpenTofu local state and provider caches. The lock file stays tracked.
+*.tfstate
+*.tfstate.*
+.terraform/
+# Plans and variable files can carry secrets.
+*.tfplan
+*.tfvars
+!*.tfvars.example
 
 # Downloaded vendor content. Keep the empty paths visible.
 ansible/roles/vendors/*

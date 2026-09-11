@@ -1,0 +1,11 @@
+{
+    // The repository is OpenTofu, not HashiCorp Terraform. The
+    // HashiCorp extension flags valid OpenTofu blocks (encryption)
+    // as errors.
+    "recommendations": [
+        "OpenTofu.vscode-opentofu"
+    ],
+    "unwantedRecommendations": [
+        "hashicorp.terraform"
+    ]
+}

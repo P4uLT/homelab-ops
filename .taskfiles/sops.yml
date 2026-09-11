@@ -2,9 +2,7 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-# SOPS helpers. The path goes after --, for example:
-#   task sops:encrypt -- ansible/inventory/servers/group_vars/all/secrets.sops.yaml
-# See docs/sops.md for the full procedures.
+# SOPS helpers. Pass the path after --. See docs/sops.md.
 tasks:
   encrypt:
     desc: Encrypt a file in place. Pass the path after --.

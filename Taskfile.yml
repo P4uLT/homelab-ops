@@ -7,7 +7,9 @@ includes:
     taskfile: .taskfiles/project.yml
     flatten: true
   ansible:
-    taskfile: ansible/Taskfile.yml
+    taskfile: .taskfiles/ansible.yml
     dir: ansible
   sops:
     taskfile: .taskfiles/sops.yml
+  tf:
+    taskfile: .taskfiles/tf.yml
