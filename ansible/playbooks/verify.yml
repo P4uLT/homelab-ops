@@ -1,7 +1,8 @@
+# code: language=ansible
 ---
-# Verification playbook — the executable proof of the phase 0b shell.
+# Verification playbook — the executable proof of the shell.
 # Runs on the controller over a local connection: no managed host, no SSH,
-# no become, no credentials. Entry point: task -d ansible verify.
+# no become, no credentials. Entry point: task ansible:verify.
 - name: Verify the Ansible shell is alive on the controller
   hosts: localhost
   connection: local

@@ -1,6 +1,6 @@
 # Toolchain for homelab-ops — extended phase by phase.
 # Roadmap for later phases (uncomment as each lands):
-#   packer, tofu (OpenTofu), kubectl, talosctl, topf, flux, sops, age, yq, just
+#   packer, tofu (OpenTofu), kubectl, talosctl, topf, flux, yq, just
 # topf's mise availability is unverified (architecture study). Check it before adding.
 # Versions are pinned to real releases and bumped deliberately, never "latest".
 
@@ -8,3 +8,12 @@
 task = "3.53.1"
 python = "3.14.7"
 uv = "0.12.12"
+sops = "3.13.3"
+age = "1.3.2"
+
+[env]
+# Local secrets injection (gitignored .env). See docs/sops.md.
+_.file = ".env"
+# Absolute, cwd-proof age-key path: [env] entries support {{ config_root }}
+# templating and take precedence over _.file dotenv values.
+SOPS_AGE_KEY_FILE = "{{ config_root }}/.age.key.txt"

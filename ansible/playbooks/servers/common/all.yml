@@ -1,0 +1,5 @@
+# code: language=ansible
+---
+- name: Import common playbooks
+  hosts: all,!all
+  gather_facts: false

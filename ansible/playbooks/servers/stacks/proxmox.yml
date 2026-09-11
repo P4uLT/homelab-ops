@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import the Proxmox convergence
+  ansible.builtin.import_playbook: proxmox/converge.yml

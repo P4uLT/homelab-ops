@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import monitoring playbooks
+  ansible.builtin.import_playbook: monitoring/all.yml

@@ -1,4 +1,6 @@
+# code: language=ansible
 ---
-# Hub playbook — the single entry point of the tree. It imports the
-# orchestrators under main/ in their fixed order. Populated during the
-# content-import phase; the shell ships no real plays yet.
+# Hub playbook — apply the server configuration from the inventory.
+# This playbook can contact managed hosts.
+- name: Import the servers orchestrator
+  ansible.builtin.import_playbook: main/servers.yml

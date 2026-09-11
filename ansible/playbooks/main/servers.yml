@@ -1,5 +1,12 @@
+# code: language=ansible
 ---
-# Orchestrator for the server audience — fixes the spoke order (common,
-# then monitoring, services, stacks, bootstrap). Empty groups mean skipped
-# plays, so one order fits every host. Populated during the content-import
-# phase.
+# Orchestrator for the server audience. The order is common, monitoring,
+# services, then stacks.
+- name: Import common configuration
+  ansible.builtin.import_playbook: ../servers/common.yml
+- name: Import monitoring configuration
+  ansible.builtin.import_playbook: ../servers/monitoring.yml
+- name: Import services configuration
+  ansible.builtin.import_playbook: ../servers/services.yml
+- name: Import stacks configuration
+  ansible.builtin.import_playbook: ../servers/stacks.yml

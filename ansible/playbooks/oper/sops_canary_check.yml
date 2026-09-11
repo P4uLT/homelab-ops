@@ -1,0 +1,28 @@
+# code: language=ansible
+---
+# Check SOPS decryption and inventory variables. This playbook does not
+# change a managed host or print variable values.
+- name: SOPS canary proof
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Assert the canary variable decrypted
+      ansible.builtin.assert:
+        that:
+          - sops_canary is defined
+          - sops_canary | length > 0
+        quiet: true
+
+- name: Inventory vars resolve for jarvis
+  hosts: jarvis
+  gather_facts: false
+  tasks:
+    - name: Assert connection variables exist
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined and ansible_host | length > 0
+          - ansible_user is defined and ansible_user | length > 0
+          - pve_users is defined and pve_users | length > 0
+          - pve_storages is defined and pve_storages | length > 0
+        quiet: true

@@ -1,6 +1,9 @@
 ---
 # ansible-lint configuration. Phase 0b lints the verification playbook;
-# scope widens with each content-import phase.
+# scope widens with each content-import phase. Vendored roles are pinned
+# upstream code, not ours to lint — and are force-reinstalled by the
+# galaxy task, so in-place silencing there would not survive.
 exclude_paths:
   - .venv
   - config/tmp
+  - roles/vendors

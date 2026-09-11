@@ -5,30 +5,89 @@ version: "3"
 # Recipes for the Ansible shell. Everything runs through the project-local
 # uv environment — no global Ansible install, no source-repository venv.
 tasks:
+  default:
+    desc: List Ansible tasks
+    silent: true
+    cmd: task --list
+
   deps:
     desc: Sync the project environment (uv)
     cmds:
       - uv sync
 
-  syntax:
-    desc: Syntax-check the verification playbook
+  galaxy:
+    desc: Install pinned vendor roles and collections if missing.
+    # Never edit roles/vendors content. Patch = fork pin or roles/local copy.
     cmds:
-      - uv run ansible-playbook --syntax-check -i inventory/local.yml playbooks/verify.yml
+      - uv run ansible-galaxy role install -r requirements.yml -p roles/vendors {{.CLI_ARGS}}
+      - uv run ansible-galaxy collection install -r requirements.yml -p collections/vendors {{.CLI_ARGS}}
+
+  galaxy-reinstall:
+    desc: Reinstall all vendors from scratch. Wipes manual edits in vendors/.
+    cmds:
+      - task: galaxy
+        vars: { CLI_ARGS: --force }
+
+  syntax:
+    desc: Syntax-check all playbooks
+    cmds:
+      - uv run ansible-playbook --syntax-check playbooks/site.yml
+      - uv run ansible-playbook --syntax-check playbooks/verify.yml
+      - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
+      - uv run ansible-playbook --syntax-check playbooks/servers/stacks/proxmox/converge.yml
 
   lint:
-    desc: Lint the verification playbook with ansible-lint
+    desc: Lint all playbooks with ansible-lint
     cmds:
-      - uv run ansible-lint playbooks/verify.yml
+      - uv run ansible-lint playbooks/
 
   run:
     desc: Run the verification playbook against localhost
     cmds:
-      - uv run ansible-playbook -i inventory/local.yml playbooks/verify.yml
+      - uv run ansible-playbook playbooks/verify.yml
+
+  site:
+    desc: Apply the server configuration. May contact managed hosts.
+    cmd: uv run ansible-playbook playbooks/site.yml {{.CLI_ARGS}}
+
+  site-check:
+    desc: Preview the server configuration. Check mode can change hosts.
+    cmds:
+      - task: site
+        vars: { CLI_ARGS: --check }
+
+  playbook:
+    desc: Run any playbook against the servers inventory. Pass the path and args after --.
+    cmd: uv run ansible-playbook {{.CLI_ARGS}}
+
+  hostkey:
+    desc: Show a host key fingerprint. Pass the IP after --. Compare it on the node.
+    # ssh-keyscan ignores ~/.ssh/config: pass the IP, not the alias.
+    cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} | ssh-keygen -lf -
+
+  hostkey-pin:
+    desc: Pin a host key after checking the fingerprint on the node.
+    cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} >> config/known_hosts
 
   verify:
-    desc: Verify the shell — deps, syntax, lint, local run
+    desc: Verify the shell — deps, galaxy, syntax, lint, local run
     cmds:
       - task: deps
+      - task: galaxy
       - task: syntax
       - task: lint
       - task: run
+
+  converge-check:
+    desc: Preview jarvis changes in check mode. Check mode can change the node.
+    cmds:
+      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
+
+  converge:
+    desc: Converge jarvis. Pass extra variables after --.
+    cmds:
+      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+
+  inventory:
+    desc: Show resolved inventory and host variables. Pass options after --.
+    cmd: uv run ansible-inventory {{.CLI_ARGS}}

@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import service playbooks
+  ansible.builtin.import_playbook: services/all.yml

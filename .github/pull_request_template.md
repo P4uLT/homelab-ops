@@ -1,7 +1,7 @@
 ## What and why
 
-<!-- One short paragraph: what this change does and why it is needed. -->
-<!-- Link the phase (PROGRESS.md) or the issue (#N). -->
+<!-- One short paragraph: what this change does and why it matters. -->
+<!-- Link the relevant issue (#N) or design document. -->
 
 ## Changes
 
@@ -14,7 +14,7 @@
 <!-- Commands you ran and what they showed. Ran none? Say why. -->
 
 ```text
-task -d <namespace> verify
+task verify
 ```
 
 ## Checklist
@@ -24,5 +24,5 @@ task -d <namespace> verify
 - [ ] Encrypted files stay encrypted (`.sops.yaml` rules untouched)
 - [ ] Lint passes for the touched tooling (ansible-lint, yamllint,
       tflint, checkov, ...)
-- [ ] `CHANGELOG.md` and `PROGRESS.md` updated when phase state moves
+- [ ] `CHANGELOG.md` updated when user-visible behavior changes
 - [ ] Docs and comments stay in plain language

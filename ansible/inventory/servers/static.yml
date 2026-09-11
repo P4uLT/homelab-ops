@@ -1,5 +1,0 @@
----
-# Static inventory — reserved for the pets by nature (pve-one, TrueNAS,
-# OMV), the manual LXC group (grp_lxc_manual), and the opt-in groups
-# (grp_monitoring, service and stack groups). Populated during the
-# content-import phase; the shell ships no hosts yet.

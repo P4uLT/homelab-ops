@@ -1,9 +1,9 @@
-# SOPS creation rules — stub.
-#
-# The SOPS bootstrap phase generates the age key pair (docs/sops.md).
-# Until then no rule is active: uncomment and set the recipient to the
-# generated public key when it exists. No key material ever lives here.
-
-# creation_rules:
-#   - path_regex: \.sops\.ya?ml$
-#     age: age1REPLACE_WITH_GENERATED_PUBLIC_KEY
+---
+# SOPS creation rules. Two age keypairs may decrypt: main (repo-local,
+# gitignored) and backup (stored outside the repository). Key material
+# never lives in this file or repository. See docs/sops.md.
+creation_rules:
+  - path_regex: \.sops\.ya?ml$
+    age:
+      - age1t9ywveleuhdmarr5tua75gryzmpts244s39q7urh5qkmda3h4c0qa7nz72
+      - age1eg5jzz6fhl64vprwp8rlwn0hmgllqcnjafav2myrpr3unqq4zarsyn78ks

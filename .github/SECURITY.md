@@ -19,4 +19,4 @@ the first message.
   secrets.
 - Use SOPS with age keys for secrets that the repository stores. The SOPS
   workflow is not implemented yet.
-- Immediately revoke and rotate any credential that may have been exposed.
+- If someone may have exposed a credential, revoke and rotate it immediately.

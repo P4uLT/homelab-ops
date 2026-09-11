@@ -1,0 +1,4 @@
+# code: language=ansible
+---
+- name: Import the Proxmox stack
+  ansible.builtin.import_playbook: proxmox.yml
