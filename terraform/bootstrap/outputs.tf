@@ -1,9 +1,14 @@
-# Printed once at apply time. Copy both values to .env right after the
-# apply, then keep copies in the off-site recovery kit.
+# Read after the apply, not from the apply transcript: both values are
+# sensitive and print masked. Use the recipe, then copy the values into
+# .env and into the off-site recovery kit.
+#
+#   task tf:bootstrap-output -- -raw s3_access_key
+#   task tf:bootstrap-output -- -raw s3_secret_key
 
 output "s3_access_key" {
   description = "S3 access key for the state bucket. Copy to OVH_S3_ACCESS_KEY."
   value       = ovh_cloud_project_user_s3_credential.state.access_key_id
+  sensitive   = true
 }
 
 output "s3_secret_key" {

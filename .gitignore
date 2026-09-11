@@ -27,6 +27,10 @@ ansible/config/tmp/*
 *.tfstate
 *.tfstate.*
 .terraform/
+# Plans and variable files can carry secrets.
+*.tfplan
+*.tfvars
+!*.tfvars.example
 
 # Downloaded vendor content. Keep the empty paths visible.
 ansible/roles/vendors/*

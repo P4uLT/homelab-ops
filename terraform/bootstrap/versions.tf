@@ -2,7 +2,9 @@
 # See BACKEND.md for the design and the recovery path.
 
 terraform {
-  required_version = "~> 1.12"
+  # Exact pin, like every other dependency. Keep in step with the
+  # opentofu entry in mise.toml.
+  required_version = "1.12.6"
 
   required_providers {
     ovh = {
