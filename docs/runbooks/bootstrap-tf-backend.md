@@ -48,8 +48,13 @@ copy under `~/.config/ovhcloud/`, outside the repository.
 
    | Method | Path |
    |---|---|
+   | GET | `/cloud/project` |
    | GET, POST, PUT, DELETE | `/cloud/project/*` |
    | GET | `/service/*` |
+
+   The star in `/cloud/project/*` matches the paths under it, not the
+   exact path `/cloud/project`. The first rule exists for the project
+   list call.
 
 5. Submit. The page shows all three keys once. Copy them into `.env`
    right away: `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET`,
