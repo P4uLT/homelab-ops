@@ -1,0 +1,16 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# OVHcloud CLI helpers. Ops only: mint a key once, debug the state bucket.
+# The pipeline runs on OpenTofu, not on this CLI. See terraform/BACKEND.md.
+
+tasks:
+  cli:
+    desc: Run the OVHcloud CLI with the account credential. Pass its arguments after --.
+    dotenv: [".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
+    cmds:
+      - mise exec -- ovhcloud {{.CLI_ARGS}}

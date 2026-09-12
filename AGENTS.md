@@ -60,21 +60,20 @@ ansible/
   key, every run fails loudly. That is by design, not a bug.
 - The age key file is local (`.age.key.txt`, git-ignored). The committed
   `mise.toml` sets `SOPS_AGE_KEY_FILE`.
-- `.env` is git-ignored. It holds what every task may see, and nothing
-  else.
 - Secrets are declared per task: a task that needs one loads it with
   `dotenv`. Never put a secret in the environment every task inherits.
-- Secret files live at the repository root, so one `.gitignore` family
-  covers them all. A task that loads one must not set `dir`: Task resolves
-  the dotenv path against the task's directory, and a missing dotenv file
-  is skipped without a word.
-- A secret file belongs to a credential domain, never to a root or a
-  directory.
-- Two secret files, both git-ignored and mode 600. `.env` is loaded by
-  mise for every task. `.env.tf` holds what every OpenTofu root needs.
-  A file per credential domain carries the rest: `.env.bootstrap.tf`
-  holds the OVH account credential, which can act on the whole account,
-  read only by the bootstrap root and `tf:ovh`.
+- Each secret lives where its consumer resolves it. Task resolves a
+  dotenv path against the task's directory, and skips a missing file
+  without a word, so a task that loads one carries a `preconditions`
+  check. A root's connection secrets live in the root, as a git-ignored
+  `*.local.auto.tfvars`. Packer keeps `<node>.local.pkrvars.hcl` in
+  `packer/hosts/`.
+- Name a secret file for the scope it opens, never for one of its
+  consumers. The role comes first, a vendor only qualifies it.
+- Two git-ignored dotenv files at the repository root, mode 600.
+  `.env.tf` holds what every OpenTofu task needs, under the native names
+  of its consumer. `.env.account.ovh.tf` holds the OVH account
+  credential, read only by the bootstrap root and `ovh:cli`.
 - Never edit `roles/vendors/` or `collections/vendors/` content. A patch
   means a fork pin in `requirements.yml` or a copy in `roles/local/`.
 - Never enable `display_args_to_stdout` or `[diff] always`: task arguments
@@ -124,6 +123,14 @@ bare metal. Use `host` only when the system type is unknown.
 - `tofu init -backend=false` cannot read a local state that OpenTofu native
   encryption protects. It fails with `Unsupported state file format`, and
   `-reconfigure` and `-upgrade` do not help. Run `task tf:init` instead.
+- The `encryption` block is OpenTofu-only, and a Terraform-schema linter
+  rejects it. `.pi-lens.json` keeps the two backend files out of its
+  scans. `tofu validate` and `tflint` are authoritative, and `task
+  verify` runs both. `terraform/README.md` has the editor setup.
+- The OpenTofu S3 backend speaks the AWS dialect. On the OVH endpoint it
+  needs `skip_region_validation`, `skip_credentials_validation` (OVH has
+  no STS), and a static `endpoints` value.
+  `terraform/proxmox/jarvis/backend.tf` shows the set.
 - The OVH S3 policy API drops actions it does not support, such as
   `s3:GetObjectVersion`. A dropped action shows a diff on every plan. Keep
   the policy to the minimal allowlist.
@@ -150,5 +157,7 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
 - `docs/runbooks/build-base-image.md` — build the golden LXC images.
 - `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
+- `docs/runbooks/provision-pve-ct.md` — a golden image as an LXC
+  workload through Terraform.
 - `terraform/BACKEND.md` — Terraform state design and recovery.
 - `CHANGELOG.md` — notable changes.

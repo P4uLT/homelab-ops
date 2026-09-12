@@ -27,13 +27,24 @@ when the first release is cut.
   and a name carrying the lineage, per-node local connection file, journald
   container logs), `task packer:*` recipes, and the build runbook. The
   build contacts the node and needs owner approval.
+- First PVE layer: the shared `terraform/proxmox/modules/lxc/` module
+  wraps one LXC workload (golden image clone, DHCP, Docker-ready
+  features), and the `terraform/proxmox/jarvis/` root holds one module
+  call per workload through the bpg provider. Encrypted remote state on
+  the shared OVH bucket with an S3 lockfile. The tree groups by provider
+  category: `proxmox/` holds the PVE root and its shared modules, and
+  `bootstrap/ovh/` holds the state backend root. `task tf:jarvis-{plan,apply,
+  output}` recipes, and the provisioning runbook. Root credentials live
+  in git-ignored `*.local.auto.tfvars` beside their root. The shared
+  `.env.tf` carries native names (`TF_VAR_*`, `AWS_*`), and the OVH
+  account file is `.env.account.ovh.tf`.
 
 ### Security
 
-- Secrets are declared per task: the OVH credentials and the state
-  passphrase moved from the globally loaded `.env` to `.env.tf` and
-  `.env.bootstrap.tf`, read only by the `tf:*` tasks, so a third-party
-  binary another task spawns no longer inherits them. `task tf:ovh` runs
-  the OVHcloud CLI with them.
+- Secrets are declared per task: `.env.tf` carries the OpenTofu inputs
+  and the state-backend `AWS_*` keys, and `.env.account.ovh.tf` carries
+  the OVH account credential. Only the `tf:*` and `ovh:cli` tasks read
+  them, so a third-party binary another task spawns inherits no secret.
+  The age-key path comes from the committed `mise.toml`.
 - SOPS + age baseline: encrypted group_vars, age keypairs (main + backup),
   creation rules, canary enforcement, `docs/sops.md` procedures.

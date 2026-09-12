@@ -5,33 +5,39 @@ version: "3"
 # OpenTofu helpers. The bootstrap root owns the state backend; see
 # terraform/BACKEND.md.
 #
-# Secrets come from task-level dotenv files, never from the environment
-# every task inherits. A file belongs to a credential domain, not to a root:
+# Secrets come from task-level dotenv files at the repository root. A file
+# is named for the consumer that resolves it, role first.
 #
-#   .env.tf            what every root needs: the state passphrase, and the
-#                      S3 credentials the state backend authenticates with
-#   .env.bootstrap.tf  what only the bootstrap root needs: the OVH account
-#                      API credential, which can act on the whole account
+# Dotenv files at the repository root:
 #
-# A new root declares .env.tf and its own file, never .env.bootstrap.tf.
-# Three traps worth knowing. Task reads dotenv after its own requires check,
-# so none of these tasks carries requires.vars. Task resolves a dotenv path
-# against the task's dir, so these tasks use tofu -chdir instead of dir:.
-# A missing dotenv file is skipped without a word, so a wrong path shows up
-# as an empty value later, not as an error here.
+#   .env.tf — every OpenTofu task. Native names of its consumer:
+#     TF_VAR_* for tofu, AWS_* for the S3 backend.
+#   .env.account.ovh.tf — the OVH account credential. The bootstrap root
+#     and `task ovh:cli` read it.
+#
+# A root-specific credential never enters a dotenv. It lives in the root's
+# git-ignored *.local.auto.tfvars, which tofu resolves itself.
+#
+# Three traps. Task reads dotenv after its own requires check, so these
+# tasks carry preconditions. Task resolves a dotenv path against the task's
+# dir, so these tasks use tofu -chdir. Task skips a missing dotenv file
+# without a word.
 
 vars:
-  # The dotenv values to TF_VAR_ mapping, in one place. The shell expands
-  # the references at run time; Task only substitutes the string.
-  TF_ENV: >-
-    TF_VAR_state_passphrase="$TF_STATE_PASSPHRASE"
-    TF_VAR_project_id="$OVH_CLOUD_PROJECT_SERVICE"
-    TF_VAR_bucket_name="$OVH_BUCKET"
-    TF_VAR_region="$OVH_REGION"
+  # The only bridge line. The project id feeds the tofu variable and the
+  # ovhcloud CLI, which read different native names.
+  TF_ENV: 'TF_VAR_project_id="$OVH_CLOUD_PROJECT_SERVICE"'
 
-  # OpenTofu roots, by directory name under terraform/. Keep the list
-  # explicit so a future modules/ directory stays out of the loop.
-  TF_ROOTS: [bootstrap]
+  # OpenTofu roots, by path under terraform/. Keep the list explicit: the
+  # categories hold roots and modules, so no tool may guess a root.
+  TF_ROOTS: [bootstrap/ovh, proxmox/jarvis]
+
+  # Per-root partial backend args. The shell expands the references at run
+  # time. bootstrap owns the bucket, so it needs none. See BACKEND.md.
+  TF_INIT_BACKEND:
+    map:
+      bootstrap/ovh: ""
+      proxmox/jarvis: '-backend-config="bucket=$TF_VAR_bucket_name"'
 
 tasks:
   fmt:
@@ -49,14 +55,20 @@ tasks:
 
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
-        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false
+        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
       - task: init
       - for: { var: TF_ROOTS, as: ROOT }
@@ -64,30 +76,77 @@ tasks:
 
   bootstrap-plan:
     desc: Plan the state backend.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf", ".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
+      - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
+        msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap plan
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh plan
 
   bootstrap-apply:
     desc: Create the state bucket and the access chain. Idempotent.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf", ".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
+      - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
+        msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap apply {{.CLI_ARGS}}
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh apply {{.CLI_ARGS}}
 
   bootstrap-output:
     desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf", ".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap output {{.CLI_ARGS}}
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh output {{.CLI_ARGS}}
 
   bootstrap-state-list:
     desc: List resources tracked in the bootstrap state.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap state list
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh state list
 
-  ovh:
-    desc: Run the OVHcloud CLI with the account credential. Pass its arguments after --.
-    dotenv: [".env.tf", ".env.bootstrap.tf"]
+  jarvis-plan:
+    desc: Plan the jarvis root. Contacts the PVE node. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
+        msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
     cmds:
-      - mise exec -- ovhcloud {{.CLI_ARGS}}
+      - mise exec -- tofu -chdir=terraform/proxmox/jarvis plan {{.CLI_ARGS}}
+
+  jarvis-apply:
+    desc: Apply the jarvis root. Changes the PVE node. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
+        msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
+    cmds:
+      - mise exec -- tofu -chdir=terraform/proxmox/jarvis apply {{.CLI_ARGS}}
+
+  jarvis-output:
+    desc: Read one jarvis output. Pass the args after -- (for example, -json lxcs).
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+    cmds:
+      - mise exec -- tofu -chdir=terraform/proxmox/jarvis output {{.CLI_ARGS}}

@@ -19,8 +19,6 @@ packer = "1.16.0"
 "github:ovh/ovhcloud-cli" = "0.14.0"
 
 [env]
-# Local secrets injection (gitignored .env). See docs/sops.md.
-_.file = ".env"
 # Absolute, cwd-proof age-key path: [env] entries support {{ config_root }}
-# templating and take precedence over _.file dotenv values.
+# templating, so the path resolves from any directory.
 SOPS_AGE_KEY_FILE = "{{ config_root }}/.age.key.txt"

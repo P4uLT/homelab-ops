@@ -1,0 +1,6 @@
+# Template for jarvis.local.auto.tfvars (git-ignored, mode 600). Tofu
+# loads it in this root. The PVE API token can act on the whole node:
+# mint it once on the node, see docs/runbooks/provision-pve-ct.md.
+
+pve_endpoint = "https://<address>:8006/"
+pve_api_token = "terraform@pve!tf=<secret>"

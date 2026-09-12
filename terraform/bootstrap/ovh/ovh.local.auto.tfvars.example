@@ -1,0 +1,5 @@
+# Local inputs of the state backend root. Git-ignored, like every
+# *.local.auto.tfvars. Copy from the .example and fill in.
+#
+# Bucket region. The project API wants uppercase. Pick a region.
+region = ""

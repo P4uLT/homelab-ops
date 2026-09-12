@@ -2,13 +2,13 @@
 #   task tf:bootstrap-output -- -raw s3_secret_key
 
 output "s3_access_key" {
-  description = "S3 access key for the state bucket. Copy to OVH_S3_ACCESS_KEY."
+  description = "S3 access key for the state bucket. Copy to AWS_ACCESS_KEY_ID in .env.tf."
   value       = ovh_cloud_project_user_s3_credential.state.access_key_id
   sensitive   = true
 }
 
 output "s3_secret_key" {
-  description = "S3 secret key for the state bucket. Copy to OVH_S3_SECRET_KEY."
+  description = "S3 secret key for the state bucket. Copy to AWS_SECRET_ACCESS_KEY in .env.tf."
   value       = ovh_cloud_project_user_s3_credential.state.secret_access_key
   sensitive   = true
 }

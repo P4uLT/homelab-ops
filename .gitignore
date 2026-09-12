@@ -4,9 +4,8 @@ docs/superpowers/
 # Local secrets and credentials
 .env
 .env.*
-!.env.example
 !.env.tf.example
-!.env.bootstrap.tf.example
+!.env.account.ovh.tf.example
 .age.key.txt
 .age.key.txt.secours
 ovh.conf

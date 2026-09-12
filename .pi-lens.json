@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "terraform/bootstrap/ovh/backend.tf",
+    "terraform/proxmox/jarvis/backend.tf"
+  ]
+}
