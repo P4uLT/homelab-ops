@@ -41,7 +41,7 @@ A clone without the age key fails on every Ansible run. The failure occurs at va
 2. Run `mise install`.
 3. Put your age key file at the repository root as `.age.key.txt`. Use the main key or the backup key.
 4. Run `git status --ignored`. Check that Git ignores `.age.key.txt`.
-5. Run `task verify`. A green run shows that recovery works. You do not need an `.env` file. The committed `mise.toml` sets the key path. The first run needs network for the vendor, provider, and plugin downloads.
+5. Run `task verify`. Its OpenTofu leg needs the state passphrase from `.env.tf`; without it, `tf:init` stops on the encrypted state. The age recovery itself is proven by the Ansible leg, which needs no `.env` file: the committed `mise.toml` sets the key path. The first run needs network for the vendor, provider, and plugin downloads.
 
 ## Lost main key
 

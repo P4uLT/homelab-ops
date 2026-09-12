@@ -7,8 +7,9 @@ converges.
 
 ## Prerequisites
 
-- The `OVH_*` and `TF_STATE_PASSPHRASE` values from `.env.example`,
-  filled into your local `.env` file.
+- The `OVH_*` values from `.env.bootstrap.tf.example` and
+  `TF_STATE_PASSPHRASE` from `.env.tf.example`, filled into the matching
+  local files.
 - Owner approval, because this creates billable resources.
 - The design in `terraform/BACKEND.md`.
 
@@ -18,8 +19,8 @@ The OVH API needs three values: an application key, an application
 secret, and a consumer key. The key pair identifies an API
 application. The consumer key binds that application to your account.
 They can touch your whole account, so treat them like the age key.
-They stay in the git-ignored `.env` and in the recovery kit. Never in
-a tracked file, shell history, or ticket.
+They stay in the git-ignored `.env.bootstrap.tf` and in the recovery kit.
+Never in a tracked file, shell history, or ticket.
 
 Pick one of the two paths below. Path A is faster. Path B creates the
 keys by hand, so you control the exact rules.
@@ -30,7 +31,7 @@ keys by hand, so you control the exact rules.
 2. The CLI prints a URL. Open it in a browser.
 3. Log in to your OVHcloud account. Approve the access request.
 4. Run `mise exec -- ovhcloud config show`. It lists the three keys.
-5. Copy them into `.env`: `OVH_APPLICATION_KEY`,
+5. Copy them into `.env.bootstrap.tf`: `OVH_APPLICATION_KEY`,
    `OVH_APPLICATION_SECRET`, `OVH_CONSUMER_KEY`.
 
 The login flow creates a full-access credential. The CLI keeps its own
@@ -84,7 +85,8 @@ copy under `~/.config/ovhcloud/`, outside the repository.
    For a durable scoped setup, use an OAuth2 service account with an
    IAM policy. See Least privilege below.
 
-5. Submit. The page shows all three keys once. Copy them into `.env`
+5. Submit. The page shows all three keys once. Copy them into
+   `.env.bootstrap.tf`
    right away: `OVH_APPLICATION_KEY`, `OVH_APPLICATION_SECRET`,
    `OVH_CONSUMER_KEY`.
 
@@ -94,15 +96,11 @@ tool of your choice instead.
 
 ### Check the credentials
 
-Reload your shell first (`exec zsh`, or open a new terminal). Your
-shell keeps previously exported `OVH_*` values and passes them to the
-CLI ahead of `.env`. A fresh `mise exec --` call re-reads `.env`, so it
-always sees the current values.
-
-Run `mise exec -- ovhcloud cloud project list`. It lists your Public
-Cloud projects. The command proves the three keys work. Note the
-`project_id` of your project. It is the value for
-`OVH_CLOUD_PROJECT_SERVICE` in `.env`.
+Run `task tf:ovh -- cloud project list`. It lists your Public Cloud
+projects, which proves the three keys work. The task loads
+`.env.bootstrap.tf` for that one command, so no value is exported into
+your shell. Note the `project_id`; it is the value for
+`OVH_CLOUD_PROJECT_SERVICE` in `.env.bootstrap.tf`.
 
 ### Least privilege (later)
 
@@ -149,13 +147,14 @@ A start-up failure that names no resource comes from `/auth/details`.
 
 ## Steps
 
-1. Fill the credential values from the section above into `.env`.
-   Restrict the file to your user: `chmod 600 .env`.
+1. Fill the credential values from the section above into
+   `.env.bootstrap.tf`, and `TF_STATE_PASSPHRASE` into `.env.tf`. Restrict
+   both files to your user: `chmod 600`.
 2. Choose the bucket name and the region. Fill `OVH_BUCKET` and
-   `OVH_REGION` in `.env`. Keep the name out of any tracked file. Use a
-   3-AZ region, and enter it in uppercase exactly as the project API
-   reports it (`EU-WEST-PAR`, `EU-SOUTH-MIL`). Lowercase returns
-   `Invalid region parameter`.
+   `OVH_REGION` in `.env.bootstrap.tf`. Keep the name out of any tracked
+   file. Use a 3-AZ region, and enter it in uppercase exactly as the
+   project API reports it (`EU-WEST-PAR`, `EU-SOUTH-MIL`). Lowercase
+   returns `Invalid region parameter`.
 3. Initialize the root: `task tf:init`. It downloads the OVH provider.
 4. Preview: `task tf:bootstrap-plan`. Expect five resources to add.
 5. Create: `task tf:bootstrap-apply`.
@@ -167,7 +166,7 @@ A start-up failure that names no resource comes from `/auth/details`.
    task tf:bootstrap-output -- -raw s3_secret_key
    ```
 
-   Copy them into `.env` (`OVH_S3_ACCESS_KEY`, `OVH_S3_SECRET_KEY`) and
+   Copy them into `.env.tf` (`OVH_S3_ACCESS_KEY`, `OVH_S3_SECRET_KEY`) and
    into the off-site recovery kit.
 7. Check the bucket. Versioning shows `enabled`:
 

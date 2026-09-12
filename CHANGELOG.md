@@ -30,5 +30,10 @@ when the first release is cut.
 
 ### Security
 
+- Secrets are declared per task: the OVH credentials and the state
+  passphrase moved from the globally loaded `.env` to `.env.tf` and
+  `.env.bootstrap.tf`, read only by the `tf:*` tasks, so a third-party
+  binary another task spawns no longer inherits them. `task tf:ovh` runs
+  the OVHcloud CLI with them.
 - SOPS + age baseline: encrypted group_vars, age keypairs (main + backup),
   creation rules, canary enforcement, `docs/sops.md` procedures.

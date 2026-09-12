@@ -60,8 +60,21 @@ ansible/
   key, every run fails loudly. That is by design, not a bug.
 - The age key file is local (`.age.key.txt`, git-ignored). The committed
   `mise.toml` sets `SOPS_AGE_KEY_FILE`.
-- `.env` is git-ignored. It holds the OVH API credential, which can act on
-  the whole account. Keep it at mode 600.
+- `.env` is git-ignored. It holds what every task may see, and nothing
+  else.
+- Secrets are declared per task: a task that needs one loads it with
+  `dotenv`. Never put a secret in the environment every task inherits.
+- Secret files live at the repository root, so one `.gitignore` family
+  covers them all. A task that loads one must not set `dir`: Task resolves
+  the dotenv path against the task's directory, and a missing dotenv file
+  is skipped without a word.
+- A secret file belongs to a credential domain, never to a root or a
+  directory.
+- Two secret files, both git-ignored and mode 600. `.env` is loaded by
+  mise for every task. `.env.tf` holds what every OpenTofu root needs.
+  A file per credential domain carries the rest: `.env.bootstrap.tf`
+  holds the OVH account credential, which can act on the whole account,
+  read only by the bootstrap root and `tf:ovh`.
 - Never edit `roles/vendors/` or `collections/vendors/` content. A patch
   means a fork pin in `requirements.yml` or a copy in `roles/local/`.
 - Never enable `display_args_to_stdout` or `[diff] always`: task arguments
@@ -98,8 +111,10 @@ bare metal. Use `host` only when the system type is unknown.
   Use the file form instead: `-e @/tmp/vars.yml`.
 - `task verify` works offline after the first `galaxy` install, the
   first OpenTofu provider download (`task tf:init`), and the first Packer
-  plugin download (`task packer:init`). `galaxy-reinstall` needs network
-  and wipes manual changes in `vendors/`.
+  plugin download (`task packer:init`). Its OpenTofu leg also needs the
+  state passphrase from `.env.tf`, or `tf:init` stops on the encrypted
+  state. `galaxy-reinstall` needs network and wipes manual changes in
+  `vendors/`.
 - The golden LXC images ship without apt package lists. An apt task on a
   clone needs `update_cache: true` or `cache_valid_time`, or it fails with
   `Unable to locate package`.

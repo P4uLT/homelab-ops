@@ -4,10 +4,25 @@ version: "3"
 
 # OpenTofu helpers. The bootstrap root owns the state backend; see
 # terraform/BACKEND.md.
+#
+# Secrets come from task-level dotenv files, never from the environment
+# every task inherits. A file belongs to a credential domain, not to a root:
+#
+#   .env.tf            what every root needs: the state passphrase, and the
+#                      S3 credentials the state backend authenticates with
+#   .env.bootstrap.tf  what only the bootstrap root needs: the OVH account
+#                      API credential, which can act on the whole account
+#
+# A new root declares .env.tf and its own file, never .env.bootstrap.tf.
+# Three traps worth knowing. Task reads dotenv after its own requires check,
+# so none of these tasks carries requires.vars. Task resolves a dotenv path
+# against the task's dir, so these tasks use tofu -chdir instead of dir:.
+# A missing dotenv file is skipped without a word, so a wrong path shows up
+# as an empty value later, not as an error here.
 
 vars:
-  # .env to TF_VAR_ mapping, in one place. The shell expands the
-  # references at run time; Task only substitutes the string.
+  # The dotenv values to TF_VAR_ mapping, in one place. The shell expands
+  # the references at run time; Task only substitutes the string.
   TF_ENV: >-
     TF_VAR_state_passphrase="$TF_STATE_PASSPHRASE"
     TF_VAR_project_id="$OVH_CLOUD_PROJECT_SERVICE"
@@ -34,41 +49,45 @@ tasks:
 
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
       - task: init
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
 
   bootstrap-plan:
-    desc: Plan the state backend. Needs the OVH_* values in .env.
-    dir: terraform/bootstrap
-    requires:
-      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
+    desc: Plan the state backend.
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu plan
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap plan
 
   bootstrap-apply:
     desc: Create the state bucket and the access chain. Idempotent.
-    dir: terraform/bootstrap
-    requires:
-      vars: [TF_STATE_PASSPHRASE, OVH_CLOUD_PROJECT_SERVICE, OVH_BUCKET, OVH_REGION, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY]
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu apply {{.CLI_ARGS}}
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap apply {{.CLI_ARGS}}
 
   bootstrap-output:
     desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
-    dir: terraform/bootstrap
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu output {{.CLI_ARGS}}
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap output {{.CLI_ARGS}}
 
   bootstrap-state-list:
     desc: List resources tracked in the bootstrap state.
-    dir: terraform/bootstrap
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu state list
+      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap state list
+
+  ovh:
+    desc: Run the OVHcloud CLI with the account credential. Pass its arguments after --.
+    dotenv: [".env.tf", ".env.bootstrap.tf"]
+    cmds:
+      - mise exec -- ovhcloud {{.CLI_ARGS}}

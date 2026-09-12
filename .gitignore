@@ -5,6 +5,8 @@ docs/superpowers/
 .env
 .env.*
 !.env.example
+!.env.tf.example
+!.env.bootstrap.tf.example
 .age.key.txt
 .age.key.txt.secours
 ovh.conf
