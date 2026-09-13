@@ -163,7 +163,7 @@ variable "nesting" {
 }
 
 variable "keyctl" {
-  description = "PVE keyctl feature. Docker in an unprivileged container needs it."
+  description = "PVE keyctl feature. PVE lets only the real root@pam login change feature flags other than nesting: a token-authenticated root gets a 403 at create. Leave false unless the root authenticates as root@pam."
   type        = bool
   default     = false
 }

@@ -80,6 +80,10 @@ resource "proxmox_virtual_environment_container" "this" {
     }
   }
 
+  # Wait for the guest to report an address. A Docker image also brings
+  # docker0 up, and its 172.17.0.1 can satisfy the wait before the
+  # container interface holds a DHCP lease: ct_ipv4 stays null until
+  # the guest reports one there.
   wait_for_ip {
     ipv4 = var.wait_for_ipv4
   }

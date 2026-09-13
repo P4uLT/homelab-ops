@@ -22,9 +22,10 @@ module "tf_test" {
   storage = local.storage
   bridge  = local.bridge
 
-  # Docker in an unprivileged container needs nesting and keyctl.
+  # Nesting is the one feature flag an API token may set; keyctl is
+  # root@pam-only in PVE. The golden image carries Docker, and the
+  # local-lvm storage needs no fuse workaround.
   nesting = true
-  keyctl  = true
 }
 
 # <purpose>: <one line on the workload's role>.

@@ -52,8 +52,10 @@ when the first release is cut.
 - The shared LXC module takes the full trfore surface: static IPv4 with
   optional gateway (DHCP stays the default), VLAN tag, stable MAC,
   swap, boot flag with order and delays, mount points, PVE protection
-  flag, and a wait-for-IPv4 so `ct_ipv4` is usable at the end of an
-  apply. Patterns adapted from `trfore/terraform-bpg-proxmox`
+  flag, and a wait-for-IPv4 so `ct_ipv4` fills in from the guest. A
+  Docker image reports `docker0` too, so `ct_ipv4` reads the named
+  interface and stays null until that one holds a lease. Patterns
+  adapted from `trfore/terraform-bpg-proxmox`
   (Apache-2.0).
 - Backend config split: the shared OVH S3 facts (region, endpoint,
   validation skips, lockfile) move to the tracked partial config

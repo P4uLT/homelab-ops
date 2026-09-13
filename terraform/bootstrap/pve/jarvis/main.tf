@@ -22,14 +22,17 @@ resource "proxmox_virtual_environment_role" "terraform_provisioning" {
   role_id = "Terraform_Provisioning"
 
   # The lean operational set for unprivileged LXC workloads from the
-  # template storages, plus the full VM.Config.* set PVE defines: mount
-  # points need nothing beyond it. A missing privilege fails with 403,
-  # and the PVE log names it. An unknown one fails with 400, and PVE
-  # rejects the whole role: check the API list before adding one.
+  # template storages, plus the full VM.Config.* set PVE defines (mount
+  # points need nothing beyond it) and SDN.Use, checked when a NIC
+  # attaches to a bridge inside an SDN zone. A missing privilege fails
+  # with 403, and the PVE log names it. An unknown one fails with 400,
+  # and PVE rejects the whole role: check the API list before adding
+  # one.
   privileges = [
     "Datastore.AllocateSpace",
     "Datastore.Audit",
     "Pool.Allocate",
+    "SDN.Use",
     "Sys.Audit",
     "Sys.Console",
     "Sys.Modify",
