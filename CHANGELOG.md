@@ -39,6 +39,15 @@ when the first release is cut.
   `.env.tf` carries native names (`TF_VAR_*`, `AWS_*`), and the OVH
   account file is `.env.account.ovh.tf`.
 
+### Changed
+
+- The shared LXC module takes the full trfore surface: static IPv4 with
+  optional gateway (DHCP stays the default), VLAN tag, stable MAC,
+  swap, boot flag with order and delays, mount points, PVE protection
+  flag, and a wait-for-IPv4 so `ct_ipv4` is usable at the end of an
+  apply. Patterns adapted from `trfore/terraform-bpg-proxmox`
+  (Apache-2.0).
+
 ### Security
 
 - Secrets are declared per task: `.env.tf` carries the OpenTofu inputs

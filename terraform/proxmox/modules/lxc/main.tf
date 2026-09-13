@@ -1,20 +1,30 @@
-# One LXC workload: a container cloned from a golden image, started,
-# addressed by DHCP. The repo keeps IP addresses out of tracked files,
-# so DHCP is the only addressing this module offers.
+# Shared LXC module. One instance per container workload: a container
+# cloned from a golden image, started, addressed over DHCP. The node
+# facts come from the calling root; the module owns none.
+#
+# IP policy: DHCP is the default. A static value only ever comes from a
+# git-ignored tfvars file, never a tracked one.
+#
+# The boot, VLAN, mount point, and MAC patterns are adapted from
+# trfore/terraform-bpg-proxmox (Apache-2.0).
 
 resource "proxmox_virtual_environment_container" "this" {
-  node_name    = var.node
-  vm_id        = var.id
-  unprivileged = var.unprivileged
-  started      = var.started
-  tags         = var.tags
+  node_name     = var.node
+  vm_id         = var.id
+  description   = var.description
+  unprivileged  = var.unprivileged
+  started       = var.started
+  start_on_boot = var.start_on_boot
+  protection    = var.protection
+  tags          = var.tags
 
   initialization {
     hostname = var.hostname
 
     ip_config {
       ipv4 {
-        address = "dhcp"
+        address = var.ipv4.address
+        gateway = var.ipv4.gateway
       }
     }
   }
@@ -25,6 +35,7 @@ resource "proxmox_virtual_environment_container" "this" {
 
   memory {
     dedicated = var.ram
+    swap      = var.swap
   }
 
   disk {
@@ -32,9 +43,22 @@ resource "proxmox_virtual_environment_container" "this" {
     size         = var.disk
   }
 
+  dynamic "mount_point" {
+    for_each = var.mountpoints != null ? var.mountpoints : []
+    content {
+      volume    = mount_point.value.volume
+      path      = mount_point.value.path
+      size      = mount_point.value.size
+      backup    = mount_point.value.backup
+      read_only = mount_point.value.read_only
+    }
+  }
+
   network_interface {
-    name   = "eth0"
-    bridge = var.bridge
+    name        = var.interface_name
+    bridge      = var.bridge
+    vlan_id     = var.vlan_id
+    mac_address = var.mac_address
   }
 
   features {
@@ -45,5 +69,18 @@ resource "proxmox_virtual_environment_container" "this" {
   operating_system {
     template_file_id = var.template
     type             = var.os_type
+  }
+
+  dynamic "startup" {
+    for_each = var.startup != null ? [var.startup] : []
+    content {
+      order      = startup.value.order
+      up_delay   = startup.value.up_delay
+      down_delay = startup.value.down_delay
+    }
+  }
+
+  wait_for_ip {
+    ipv4 = var.wait_for_ipv4
   }
 }
