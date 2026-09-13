@@ -46,6 +46,10 @@ when the first release is cut.
   group, user, ACL) and mints the API token as code: one-time import
   blocks, `prevent_destroy` everywhere, token-only user. Runbook
   `docs/runbooks/bootstrap-pve-access.md`, tasks `task tf:pve-jarvis-*`.
+- Plan-time checks in the jarvis root: the storages its images and
+  disks address must exist and be active, the node must run PVE 8+,
+  and every container tagged `terraform` on the node must belong to
+  the root — a drifted or hand-made container fails the plan.
 
 ### Changed
 
