@@ -130,7 +130,7 @@ bare metal. Use `host` only when the system type is unknown.
 - The OpenTofu S3 backend speaks the AWS dialect. On the OVH endpoint it
   needs `skip_region_validation`, `skip_credentials_validation` (OVH has
   no STS), and a static `endpoints` value.
-  `terraform/proxmox/jarvis/backend.tf` shows the set.
+  `terraform/backend.s3.ovh.hcl` shows the set.
 - The OVH S3 policy API drops actions it does not support, such as
   `s3:GetObjectVersion`. A dropped action shows a diff on every plan. Keep
   the policy to the minimal allowlist.

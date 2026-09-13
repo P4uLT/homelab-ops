@@ -33,11 +33,13 @@ vars:
   TF_ROOTS: [bootstrap/ovh, proxmox/jarvis]
 
   # Per-root partial backend args. The shell expands the references at run
-  # time. bootstrap owns the bucket, so it needs none. See BACKEND.md.
+  # time. bootstrap owns the bucket, so it needs none. The shared OVH S3
+  # facts live in terraform/backend.s3.ovh.hcl, reached relative to the
+  # root. See BACKEND.md.
   TF_INIT_BACKEND:
     map:
       bootstrap/ovh: ""
-      proxmox/jarvis: '-backend-config="bucket=$TF_VAR_bucket_name"'
+      proxmox/jarvis: '-backend-config=../../backend.s3.ovh.hcl -backend-config="bucket=$TF_VAR_bucket_name"'
 
 tasks:
   fmt:

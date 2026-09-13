@@ -2,18 +2,41 @@
 # from a Packer golden image, so the chain stays end to end: Packer
 # builds the archive, Terraform clones it, Ansible will configure the
 # clone later. A new container is a new call, plus a line in outputs.tf.
+#
+# Calls read top to bottom: identity, image, then the node facts of
+# locals.tf, then per-container features. Calls sort by id. The image
+# names a Packer chain: local.images.<chain> pins the volid in locals.tf.
 
 # vmid space: 1000+ are Terraform-managed LXC workloads.
+
+# tf-test: scratch container that exercises the provisioning chain.
 module "tf_test" {
-  source   = "../modules/lxc"
-  node     = local.node
+  source = "../modules/lxc"
+
   id       = 1000
   hostname = "tf-test"
+
   template = local.images.docker
-  storage  = local.storage
-  bridge   = local.bridge
+
+  node    = local.node
+  storage = local.storage
+  bridge  = local.bridge
 
   # Docker in an unprivileged container needs nesting and keyctl.
   nesting = true
   keyctl  = true
 }
+
+# <purpose>: <one line on the workload's role>.
+# module "<name>" {
+#   source = "../modules/lxc"
+#
+#   id       = 1001
+#   hostname = "<name>"
+#
+#   template = local.images.base
+#
+#   node    = local.node
+#   storage = local.storage
+#   bridge  = local.bridge
+# }

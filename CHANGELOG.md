@@ -38,6 +38,9 @@ when the first release is cut.
   in git-ignored `*.local.auto.tfvars` beside their root. The shared
   `.env.tf` carries native names (`TF_VAR_*`, `AWS_*`), and the OVH
   account file is `.env.account.ovh.tf`.
+- OVH object storage conventions (`docs/object-storage.md`): one bucket
+  per data class, one allowlisted user per bucket, client-side encryption
+  for non-state payloads. `task ovh:s3-ls` lists the state bucket.
 
 ### Changed
 
@@ -47,6 +50,14 @@ when the first release is cut.
   flag, and a wait-for-IPv4 so `ct_ipv4` is usable at the end of an
   apply. Patterns adapted from `trfore/terraform-bpg-proxmox`
   (Apache-2.0).
+- Backend config split: the shared OVH S3 facts (region, endpoint,
+  validation skips, lockfile) move to the tracked partial config
+  `terraform/backend.s3.ovh.hcl` that the tf tasks pass at init. Each
+  root keeps only its `key`. Values are unchanged, so no state moves.
+- State keys mirror the root path (`<path>/terraform.tfstate`) instead
+  of chosen names, so the planned Terragrunt adoption needs no state
+  migration. The `jarvis` state moved to
+  `proxmox/jarvis/terraform.tfstate` (object copy; the state is empty).
 
 ### Security
 

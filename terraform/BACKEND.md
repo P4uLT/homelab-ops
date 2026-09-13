@@ -20,7 +20,7 @@ below.
 | Item | Decision |
 | --- | --- |
 | Provider | OVHcloud S3-compatible object storage |
-| Layout | One bucket, one prefix per root (`key = <root-name>`) |
+| Layout | One bucket, one state key per root: `<path>/terraform.tfstate`, mirroring the root path |
 | Versioning | Enabled. Every state write keeps the previous version |
 | Lifecycle | Noncurrent versions expire after 90 days |
 | Encryption at rest (OVH) | SSE with AES256 |
@@ -89,10 +89,21 @@ account-level users, and application buckets get sibling roots. Never
 add them here. The bootstrap policy limits its user to the state
 bucket. A user for another purpose belongs to another root.
 
-Every root declares its backend key in its own `backend.tf`
-(`key = "<name>"`). The key is a chosen name, not a value derived from
-the directory path. The path carries no technical meaning. A root can
-move with `git mv`, and its state stays in place.
+Every root declares its backend key in its own `backend.tf`. The key
+mirrors the root path under `terraform/` plus `terraform.tfstate`: the
+`proxmox/jarvis` root stores at `proxmox/jarvis/terraform.tfstate`.
+This is the Terragrunt template (`${path_relative_to_include()}`), and
+Terragrunt is the planned automation layer, so its adoption needs no
+state migration. The accepted cost: a root moved with `git mv` moves
+its state with it.
+
+The OVH S3 dialect facts (region, endpoint, validation skips, lockfile)
+live once, in `terraform/backend.s3.ovh.hcl`. The tf tasks pass the
+file to every `init` as a partial config. The file holds nothing
+secret, and it stays tracked: a reader sees where the state goes. Only
+the key stays per root, and the bucket name keeps its env-only path
+through `.env.tf`. Bucket-level conventions — classes, users, regions —
+live in `docs/object-storage.md`.
 
 The tree groups by provider category: `proxmox/`, and later `truenas/`
 or `dns/`. A category holds one root per target, plus its own

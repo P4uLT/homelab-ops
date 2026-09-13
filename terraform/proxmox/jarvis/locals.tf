@@ -6,8 +6,10 @@ locals {
   storage = "local-lvm"
   bridge  = "vmbr0"
 
-  # Image pins, one per Packer chain image. Bump here when Packer bumps
-  # the build number.
+  # Image pins. The key names the Packer chain: local.images.docker
+  # builds from packer/images/docker.pkr.hcl, and the value is the
+  # volid that chain last published. A bump is one line here; the
+  # module calls never change.
   images = {
     base   = "NAS:vztmpl/debian-13-standard-base_13.6-1_amd64.tar.zst"
     docker = "NAS:vztmpl/debian-13-standard-base-docker_13.6-1_amd64.tar.zst"
