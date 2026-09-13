@@ -30,7 +30,7 @@ vars:
 
   # OpenTofu roots, by path under terraform/. Keep the list explicit: the
   # categories hold roots and modules, so no tool may guess a root.
-  TF_ROOTS: [bootstrap/ovh, proxmox/jarvis]
+  TF_ROOTS: [bootstrap/ovh, bootstrap/pve/jarvis, proxmox/jarvis]
 
   # Per-root partial backend args. The shell expands the references at run
   # time. bootstrap owns the bucket, so it needs none. The shared OVH S3
@@ -39,6 +39,7 @@ vars:
   TF_INIT_BACKEND:
     map:
       bootstrap/ovh: ""
+      bootstrap/pve/jarvis: '-backend-config=../../../backend.s3.ovh.hcl -backend-config="bucket=$TF_VAR_bucket_name"'
       proxmox/jarvis: '-backend-config=../../backend.s3.ovh.hcl -backend-config="bucket=$TF_VAR_bucket_name"'
 
 tasks:
@@ -121,6 +122,37 @@ tasks:
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
       - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh state list
+
+  pve-jarvis-plan:
+    desc: Plan the jarvis PVE access root. Contacts the PVE node. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
+        msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
+    cmds:
+      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis plan {{.CLI_ARGS}}
+
+  pve-jarvis-apply:
+    desc: Apply the jarvis PVE access root. Changes the PVE node. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
+        msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
+    cmds:
+      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis apply {{.CLI_ARGS}}
+
+  pve-jarvis-output:
+    desc: Read one jarvis access output. Pass the args after -- (for example, -raw token_value).
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+    cmds:
+      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis output {{.CLI_ARGS}}
 
   jarvis-plan:
     desc: Plan the jarvis root. Contacts the PVE node. Owner approval required.

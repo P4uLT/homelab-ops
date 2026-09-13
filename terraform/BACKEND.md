@@ -73,13 +73,14 @@ through the graph.
 | Root | Covers | Cadence |
 | --- | --- | --- |
 | `bootstrap/ovh/` | the state bucket, its user, and its policy | once |
+| `bootstrap/pve/jarvis/` | the Terraform access chain on jarvis: role, group, user, ACL, API token | once |
 | `proxmox/jarvis/` | the PVE server jarvis | often |
 | `truenas/` (planned) | NAS import | sometimes |
 | `dns/` (planned) | public DNS zone | sometimes |
 | `ovh-project/` (planned) | account-level users | rare |
 
 A new PVE server gets its own root, named after the server, with its
-own state key and its own token.
+own state key, and its own access root under `bootstrap/pve/`.
 
 `bootstrap/ovh/` stays frozen and narrow. Its guards (`prevent_destroy`, the
 local backend, the run-once contract) hold only while its scope is the
@@ -107,9 +108,9 @@ live in `docs/object-storage.md`.
 
 The tree groups by provider category: `proxmox/`, and later `truenas/`
 or `dns/`. A category holds one root per target, plus its own
-`modules/` for what its roots share. `bootstrap/` is the category of the
-state backend, with one target per cloud vendor: `bootstrap/ovh/` holds
-the frozen root. Root discovery is the explicit `TF_ROOTS` list in the
+`modules/` for what its roots share. `bootstrap/` is the category of
+frozen roots that mint credentials: the state backend (`ovh/`) and
+each PVE node's Terraform access chain (`pve/<node>/`). Root discovery is the explicit `TF_ROOTS` list in the
 tf tasks, so validation never treats a module as a root.
 
 ## Region choice, and no replica

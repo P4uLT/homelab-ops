@@ -18,33 +18,18 @@ Prerequisites:
 - Owner approval for every run. A plan reads the node. An apply changes
   it.
 
-## Mint the PVE API credential, one time
+## PVE API access
 
-Run on the node, as root:
-
-```sh
-pveum user add terraform@pve --comment "OpenTofu root jarvis"
-pveum role add Terraform -privs "Datastore.AllocateSpace Datastore.Audit \
-  VM.Allocate VM.Audit VM.Config.Network VM.Config.Options \
-  VM.Monitor VM.PowerMgmt"
-pveum aclmod / --users terraform@pve --roles Terraform
-pveum user token add terraform@pve tf --privsep 0
-```
-
-The privilege set is the lean set for an unprivileged container from
-the template storages: create, start, stop, destroy, and read. A call
-that misses a privilege fails with `403 Permission check error`. The
-PVE log names the privilege. Add it to the role and retry, and record
-the addition here.
-
-The token prints once, at creation. Copy the whole
-`terraform@pve!tf=<secret>` value. A loss means a new token.
+The role, the group, the user `terraform-prov@pve`, the ACL, and the
+API token are Terraform-managed by `terraform/bootstrap/pve/jarvis/`.
+Run that root once, following `docs/runbooks/bootstrap-pve-access.md`,
+and copy its `token_value` output.
 
 Then create `terraform/proxmox/jarvis/jarvis.local.auto.tfvars` from
 `jarvis.local.auto.tfvars.example`, mode 600:
 
 - `pve_endpoint`: the node address on your LAN, port 8006.
-- `pve_api_token`: the full token value.
+- `pve_api_token`: the full token value, `terraform-prov@pve!tf=<secret>`.
 
 The root sets `insecure = true` in code, because PVE ships a
 self-signed certificate.
@@ -99,6 +84,7 @@ the image with a bumped build number, then change its pin in the
 ## A second PVE server
 
 Copy the pattern, not the code: a new root named after the new server,
-its own state key, its own token, its own `.env.<server>.tf`. The root
+its own state key, its own access root under
+`terraform/bootstrap/pve/`, its own git-ignored tfvars. The root
 consumes the same `proxmox/modules/lxc/` and declares the new node's
 facts in its `locals.tf`.

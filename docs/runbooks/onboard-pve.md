@@ -7,7 +7,9 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 1. Add the node leaf group to `ansible/inventory/servers/groups.yml`, then the hostname to `hosts.yml`.
 2. Store `ansible_host` and `ansible_user` in the node group's `secrets.sops.yaml` file. A non-root
    node also stores its `ansible_become_password` there.
-3. Store shared PVE variables under `ansible/inventory/servers/group_vars/grp_servers_proxmox/`.
+3. Store the shared PVE host-plane variables — the storages and the
+   non-Terraform users — in
+   `ansible/inventory/servers/group_vars/grp_servers_proxmox/secrets.sops.yaml`.
 4. Add the node to `~/.ssh/config`. Use `StrictHostKeyChecking accept-new` and the root SSH key.
 5. Pin the node host key. See `docs/ssh.md`.
    `task ansible:hostkey -- <node-ip>`, compare on the node console, then
@@ -15,7 +17,7 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 
 6. Run the local checks: `task verify`.
 7. Preview the changes: `task ansible:converge-check`.
-8. Create users, groups, roles, and ACLs, without storages:
+8. Create the non-Terraform users, without storages:
 
    ```sh
    echo 'pve_storages: []' > /tmp/skip-storages.yml
@@ -24,7 +26,12 @@ Keep addresses and credentials in SOPS-encrypted group variables.
 
    The file form survives the shell layers. An inline `-e "pve_storages=[]"`
    becomes the string `[]` and breaks the role.
-9. Test the new credentials:
+
+   The Terraform access chain is not part of this run. It comes from the
+   node's own frozen root under `terraform/bootstrap/pve/`, created by
+   copying `terraform/bootstrap/pve/jarvis/`. See
+   `docs/runbooks/bootstrap-pve-access.md`.
+9. Run the node's access root, then test the token it minted:
    `task ansible:playbook -- playbooks/oper/credential_check.yml`.
 10. Apply the storage configuration: `task ansible:converge`.
     Before running it: create the NFS export `/export/Proxmox` on the NAS

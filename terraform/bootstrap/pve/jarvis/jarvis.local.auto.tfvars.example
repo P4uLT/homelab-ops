@@ -1,0 +1,9 @@
+# Template for jarvis.local.auto.tfvars (git-ignored, mode 600). Tofu
+# loads it in this root. The password is the one-time minting
+# credential: see docs/runbooks/bootstrap-pve-access.md.
+
+pve_endpoint = "https://<address>:8006/"
+pve_password = "<minting account password>"
+
+# The minting account defaults to the built-in PVE admin account.
+# pve_username = "root@pam"

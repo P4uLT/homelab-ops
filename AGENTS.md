@@ -20,6 +20,8 @@ task ansible:galaxy-reinstall                 # purge and reinstall. Needs netwo
 task tf:init                                  # initialize every OpenTofu root
 task tf:bootstrap-plan                        # plan the state backend. Read-only.
 task tf:bootstrap-apply -- -auto-approve      # create. Needs owner approval.
+task tf:pve-jarvis-plan                       # plan the PVE access bootstrap. Read-only.
+task tf:pve-jarvis-apply -- -auto-approve     # mint the token. Needs owner approval.
 ```
 
 `task verify` is the required local check. Run it before you claim success.
@@ -157,6 +159,7 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
 - `docs/runbooks/build-base-image.md` — build the golden LXC images.
 - `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
+- `docs/runbooks/bootstrap-pve-access.md` — one-time PVE access bootstrap for the Terraform roots.
 - `docs/runbooks/provision-pve-ct.md` — a golden image as an LXC
   workload through Terraform.
 - `terraform/BACKEND.md` — Terraform state design and recovery.

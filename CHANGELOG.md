@@ -41,6 +41,11 @@ when the first release is cut.
 - OVH object storage conventions (`docs/object-storage.md`): one bucket
   per data class, one allowlisted user per bucket, client-side encryption
   for non-state payloads. `task ovh:s3-ls` lists the state bucket.
+- PVE access bootstrap: the frozen `terraform/bootstrap/pve/jarvis/`
+  root takes the whole Terraform access chain from Ansible (role,
+  group, user, ACL) and mints the API token as code: one-time import
+  blocks, `prevent_destroy` everywhere, token-only user. Runbook
+  `docs/runbooks/bootstrap-pve-access.md`, tasks `task tf:pve-jarvis-*`.
 
 ### Changed
 
@@ -58,6 +63,10 @@ when the first release is cut.
   of chosen names, so the planned Terragrunt adoption needs no state
   migration. The `jarvis` state moved to
   `proxmox/jarvis/terraform.tfstate` (object copy; the state is empty).
+- The Proxmox Ansible plane retracts the Terraform identity: role,
+  group, user, and ACL leave `vars.yml`; the `terraform-prov` password
+  leaves the SOPS file (token-only user now); and `credential_check`
+  tests the API token instead of a password ticket.
 
 ### Security
 
