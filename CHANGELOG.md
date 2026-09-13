@@ -61,6 +61,13 @@ when the first release is cut.
   validation skips, lockfile) move to the tracked partial config
   `terraform/backend.s3.ovh.hcl` that the tf tasks pass at init. Each
   root keeps only its `key`. Values are unchanged, so no state moves.
+- The Proxmox Ansible plane retracts the Terraform identity: role,
+  group, user, and ACL leave `vars.yml`; the `terraform-prov` password
+  leaves the SOPS file (token-only user now); and `credential_check`
+  tests the API token instead of a password ticket.
+- `task ansible:verify` now runs the SOPS canary playbook: a broken
+  SOPS structure fails the local check instead of surfacing at the
+  next converge.
 - State keys mirror the root path (`<path>/terraform.tfstate`) instead
   of chosen names, so the planned Terragrunt adoption needs no state
   migration. The `jarvis` state moved to

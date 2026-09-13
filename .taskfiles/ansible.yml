@@ -42,6 +42,11 @@ tasks:
     cmds:
       - uv run ansible-lint playbooks/
 
+  canary:
+    desc: Assert the SOPS canary and that the inventory variables resolve
+    cmds:
+      - uv run ansible-playbook playbooks/oper/sops_canary_check.yml
+
   run:
     desc: Run the verification playbook against localhost
     cmds:
@@ -71,12 +76,13 @@ tasks:
     cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} >> config/known_hosts
 
   verify:
-    desc: Verify the shell — deps, galaxy, syntax, lint, local run
+    desc: Verify the shell — deps, galaxy, syntax, lint, canary, local run
     cmds:
       - task: deps
       - task: galaxy
       - task: syntax
       - task: lint
+      - task: canary
       - task: run
 
   converge-check:
