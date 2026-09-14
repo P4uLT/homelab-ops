@@ -65,7 +65,7 @@ Use this path when you want to choose the rules the key carries.
    | --- | --- |
    | GET | `/*` |
    | POST | `/*` |
-   | PUT | `/*` |
+   | `PUT` | `/*` |
    | DELETE | `/*` |
 
    This is the configuration the provider expects, and the one other users
@@ -80,7 +80,7 @@ Use this path when you want to choose the rules the key carries.
    | Method | Path |
    | --- | --- |
    | GET | `/auth/details` |
-   | GET, POST, PUT, DELETE | `/cloud/project/*` |
+   | `GET`, `POST`, `PUT`, `DELETE` | `/cloud/project/*` |
 
    Two caveats:
 

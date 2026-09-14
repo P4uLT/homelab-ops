@@ -66,8 +66,8 @@ ansible/
   `dotenv`. Never put a secret in the environment every task inherits.
 - Each secret lives where its consumer resolves it. Task resolves a
   dotenv path against the task's directory, and skips a missing file
-  without a word, so a task that loads one carries a `preconditions`
-  check. A root's connection secrets live in the root, as a git-ignored
+  without a word. A task that loads one therefore carries a
+  `preconditions` check. A root's connection secrets live in the root, as a git-ignored
   `*.local.auto.tfvars`. Packer keeps `<node>.local.pkrvars.hcl` in
   `packer/hosts/`.
 - Name a secret file for the scope it opens, never for one of its
@@ -138,6 +138,9 @@ bare metal. Use `host` only when the system type is unknown.
   the policy to the minimal allowlist.
 - A plan that waits for approval fails with `error asking for approval:
   EOF` without a terminal. Pass `-auto-approve` after `--`.
+- Vale fails a run on an `error` alert only. A rule left at the
+  `suggestion` or `warning` level it ships with reports findings and still
+  exits 0, so `.vale.ini` raises every rule it enables to `error`.
 - The legacy sibling repository that fed the migration keeps a read-only
   status. Never change it.
 

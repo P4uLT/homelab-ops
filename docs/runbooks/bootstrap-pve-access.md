@@ -1,9 +1,9 @@
 # Bootstrap the PVE access of the Terraform roots
 
 The `terraform/bootstrap/pve/jarvis/` root owns the whole access chain
-Terraform uses on the node jarvis: the role, the group, the user
-`terraform-prov@pve`, the ACL on `/`, and the API token. Nothing Ansible
-declares anymore. The root is frozen: it runs once, every resource carries
+Terraform uses on the node jarvis. That chain is the role, the group, the
+user `terraform-prov@pve`, the ACL on `/`, and the API token. Nothing
+Ansible declares anymore. The root is frozen: it runs once, every resource carries
 `prevent_destroy`, and any change is a reviewed commit.
 
 The root authenticates as the minting account, `root@pam` by default. That
@@ -22,9 +22,9 @@ approval before step 3.
 1. Create `terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars` from its
    `.example`, mode 600, with the endpoint and the minting account password.
 2. Plan: `mise exec -- task tf:pve-jarvis-plan`. The plan imports the existing
-   role, group, user, and ACL (Ansible created them before this root existed),
-   creates the token, and shows one expected normalization: the group comment
-   cleanup.
+   role, group, user, and ACL, which Ansible created before this root existed.
+   It creates the token, and shows one expected normalization: the group
+   comment cleanup.
 3. Apply: `mise exec -- task tf:pve-jarvis-apply -- -auto-approve`. Owner
    approval: the apply writes to the node.
 4. Read the mint: `mise exec -- task tf:pve-jarvis-output -- -raw token_value`.

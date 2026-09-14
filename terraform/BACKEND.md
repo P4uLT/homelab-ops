@@ -131,9 +131,9 @@ control:
 
 A replica inside OVHcloud would cover a region loss only, and never the
 loss of the account. The off-site copies cover both. A replica would
-add a second copy under the same provider for little gain, at the cost
-of a second bucket, a second lifecycle rule, and a writer scope that
-must stay narrow to avoid diverging the two states.
+add a second copy under the same provider for little gain. It costs a
+second bucket, a second lifecycle rule, and a writer scope. That scope
+must stay narrow, or the two states diverge.
 
 ## Credential flow
 

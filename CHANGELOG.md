@@ -8,7 +8,7 @@ when the first release is cut.
 
 ### Added
 
-- Monorepo root skeleton: documentation, ignore policy, task/mise/sops
+- Monorepo root skeleton: documentation, ignore policy, Task, mise, and SOPS
   placeholders, top-level architecture directories with purpose markers.
 - Ansible shell: complete directory topology (inventory, playbooks,
   roles, collections, plugins), `ansible.cfg`, Python toolchain lock
@@ -50,13 +50,17 @@ when the first release is cut.
   disks address must exist and be active, the node must run PVE 8+,
   and every container tagged `terraform` on the node must belong to
   the root. A drifted or hand-made container fails the plan.
-- Prose gate: `task docs:check` runs Vale with eight rules vendored from
+- Prose gate: `task docs:check` runs Vale with nine rules vendored from
   the Google style guide, versioned with the repository so the check stays
   offline, pinned in `mise.toml`, and wired into `task verify`. The rules
   cover the spaced em dash, contractions, semicolons, timeless wording,
-  excessive claims, Latin abbreviations, American spelling, and
-  anthropomorphism. `docs/writing.md` records the rules, the tooling, and
-  the source behind each one.
+  excessive claims, Latin abbreviations, American spelling,
+  anthropomorphism, and unfamiliar acronyms. Vale's own `Vale.Terms` adds
+  the exact casing of every term in the project vocabulary. Every rule is
+  raised to `error`, because Vale fails a run on an error alert only. The
+  vocabulary lives under `.vale/styles/config/vocabularies/House/` and
+  follows the Host terminology section of `AGENTS.md`. `docs/writing.md`
+  records the rules, the tooling, and the source behind each one.
 
 ### Changed
 

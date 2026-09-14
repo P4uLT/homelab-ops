@@ -24,8 +24,8 @@ with an implicit "About".
 
 ## Prose
 
-Eight rules, each one published, all enforced by `task docs:check`. `.vale.ini`
-enables exactly these eight.
+Ten rules, each one published, all enforced by `task docs:check`. `.vale.ini`
+enables exactly these ten.
 
 | Rule | Says |
 | --- | --- |
@@ -37,6 +37,13 @@ enables exactly these eight.
 | No Latin abbreviations | `for example`, not `e.g.` |
 | American spelling | `color`, not `colour` |
 | No anthropomorphism | Software returns, rejects, stores. It doesn't see or tell |
+| Spell out an unfamiliar acronym | On first use, or add the term to the vocabulary |
+| Exact casing for a domain term | `PVE`, not `pve`. The vocabulary is the list |
+
+The vocabulary lives in `.vale/styles/config/vocabularies/House/accept.txt`, one
+expression per line. It follows the Host terminology section of
+[Agent instructions](../AGENTS.md). Add a domain term there rather than
+silencing a rule.
 
 The rest is judgment, and no linter checks it:
 
@@ -89,15 +96,20 @@ rules govern.
 
 | Command | Does |
 | --- | --- |
-| `task docs:check` | The eight prose rules, over every tracked Markdown file |
+| `task docs:check` | The ten prose rules, over every tracked Markdown file |
 | `task verify` | Everything, `docs:check` included |
 | `mise exec -- vale --config=.vale.ini <path>` | The same rules on one path while you write |
 
+Vale fails a run on an `error` alert only. A rule left at the `suggestion`
+level it ships with reports findings and still exits 0, so `.vale.ini` raises
+every enabled rule to `error`. A report that can't fail isn't a gate.
+
 ### Setting the check up elsewhere
 
-Copy three things into the other repository: the `vale` pin from `mise.toml`,
-`.vale.ini`, and `.vale/styles/Google/`. No `vale sync` runs, so the check
-works offline from the first clone.
+Copy four things into the other repository: the `vale` pin from `mise.toml`,
+`.vale.ini`, `.vale/styles/Google/`, and the vocabulary folder
+`.vale/styles/config/vocabularies/`. No `vale sync` runs, so the check works
+offline from the first clone.
 
 ## Provenance
 

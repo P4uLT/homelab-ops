@@ -82,16 +82,16 @@ mise exec -- task tf:jarvis-apply -- -destroy -auto-approve
 ```
 
 The destroy removes the container and its disk. The golden image stays in the
-template storage. To move a workload to a newer image, rebuild the image with
-a bumped build number, then change its pin in the `images` map of the root's
+template storage. To move a workload to a newer image, rebuild it with a
+bumped build number. Then change its pin in the `images` map of the root's
 `locals.tf`.
 
 ## A second PVE server
 
-Copy the pattern, not the code: a new root named after the new server, its own
-state key, its own access root under `terraform/bootstrap/pve/`, its own
-git-ignored tfvars. The root consumes the same `proxmox/modules/lxc/` and
-declares the new node's facts in its `locals.tf`.
+Copy the pattern, not the code. A new root named after the new server, with
+its own state key, its own access root under `terraform/bootstrap/pve/`, and
+its own git-ignored tfvars. The root consumes the same `proxmox/modules/lxc/`
+and declares the new node's facts in its `locals.tf`.
 
 ## Next steps
 
