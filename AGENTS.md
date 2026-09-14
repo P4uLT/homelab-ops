@@ -169,3 +169,4 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/README.md`: the documentation index. Start here.
 - `docs/writing.md`: the writing rules, the tooling, and each rule's source.
 - `terraform/BACKEND.md`: Terraform state design and recovery.
+- `.agents/skills/docs-sync`: the loop that resyncs the docs after a change.
