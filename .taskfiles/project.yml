@@ -12,6 +12,7 @@ tasks:
   verify:
     desc: Verify the project locally (Ansible shell, Terraform and Packer checks)
     cmds:
+      - task: docs:check
       - task: ansible:verify
       - task: tf:fmt-check
       - task: tf:lint

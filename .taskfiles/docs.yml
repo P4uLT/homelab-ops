@@ -1,0 +1,13 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Documentation checks. The rules and the tooling are in docs/writing.md.
+tasks:
+  check:
+    desc: Lint the prose against the house writing rules
+    # git ls-files keeps the scan to tracked files, so the ignored trees
+    # (ansible/.venv, .terraform, docs/superpowers) stay out of it. Vale does
+    # not read .gitignore itself, and reads 170 files without this.
+    cmds:
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- vale --config=.vale.ini

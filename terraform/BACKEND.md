@@ -101,7 +101,7 @@ its state with it.
 The OVH S3 dialect facts (region, endpoint, validation skips, lockfile)
 live once, in `terraform/backend.s3.ovh.hcl`. The tf tasks pass the
 file to every `init` as a partial config. The file holds nothing
-secret, and it stays tracked: a reader sees where the state goes. Only
+secret, and it stays tracked: the state location stays readable. Only
 the key stays per root, and the bucket name keeps its env-only path
 through `.env.tf`. Bucket-level conventions (classes, users, regions)
 live in `docs/object-storage.md`.
