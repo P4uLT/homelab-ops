@@ -152,6 +152,8 @@ bare metal. Use `host` only when the system type is unknown.
 
 - Rules, tooling, and sources: `docs/writing.md`. It wins on prose detail.
   The check is `task docs:check`.
+- Tools: keep their own name, `packer` and `uv` included. `mise exec --` is
+  a shell fallback, never written in a file.
 - Docs: short sentences. Active voice. Plain words.
 - Contractions: "don't", "isn't", "can't". A verbatim error string keeps
   its long form, in backticks.

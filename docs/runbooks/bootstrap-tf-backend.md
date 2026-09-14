@@ -34,10 +34,10 @@ hand, so you control the exact rules.
 
 The browser flow mints all three keys at once, with full access.
 
-1. Run `mise exec -- ovhcloud login`.
+1. Run `ovhcloud login`.
 2. The CLI prints a URL. Open it in a browser.
 3. Log in to your OVHcloud account. Approve the access request.
-4. Run `mise exec -- ovhcloud config show`. It lists the three keys.
+4. Run `ovhcloud config show`. It lists the three keys.
 5. Copy them into `.env.account.ovh.tf`: `OVH_APPLICATION_KEY`,
    `OVH_APPLICATION_SECRET`, `OVH_CONSUMER_KEY`.
 
@@ -139,7 +139,7 @@ root. Step 5 creates billable resources, so get owner approval first.
 7. Check the bucket. Versioning shows `enabled`:
 
    ```sh
-   mise exec -- ovhcloud cloud storage object bucket get <bucket-name> \
+   ovhcloud cloud storage object bucket get <bucket-name> \
      --cloud-project "$OVH_CLOUD_PROJECT_SERVICE"
    ```
 

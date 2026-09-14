@@ -101,9 +101,13 @@ rules govern.
 | --- | --- |
 | `task docs:check` | The prose rules over every tracked file: eleven for Markdown, nine for code comments |
 | `task verify` | Everything, `docs:check` included |
-| `mise exec -- vale --config=.vale.ini <path>` | The same rules on one path while you write |
+| `vale --config=.vale.ini <path>` | The same rules on one path while you write |
 | `task docs:links` | Every internal link, anchors included, without network |
 | `task docs:links-external` | The outbound links, over the network |
+
+A tool keeps its own name, in the pages and in the taskfiles: `packer fmt`,
+`uv run ansible-lint`. A shell without the mise hook prefixes the call
+instead: `mise exec -- task verify`.
 
 Vale fails a run on an `error` alert only. A rule left at the `suggestion`
 level it ships with reports findings and still exits 0, so `.vale.ini` raises

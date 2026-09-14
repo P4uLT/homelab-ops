@@ -13,7 +13,7 @@ tasks:
       - sh: test -s .env.account.ovh.tf
         msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
     cmds:
-      - mise exec -- ovhcloud {{.CLI_ARGS}}
+      - ovhcloud {{.CLI_ARGS}}
 
   s3-ls:
     desc: List the state-bucket objects, versions included. Extra args go to the list command.
@@ -29,4 +29,4 @@ tasks:
     cmds:
       - |
         test -n "{{.BUCKET}}" || { echo "TF_VAR_bucket_name not found in .env.tf"; exit 1; }
-        mise exec -- ovhcloud cloud storage object bucket object list "{{.BUCKET}}" --with-versions {{.CLI_ARGS}}
+        ovhcloud cloud storage object bucket object list "{{.BUCKET}}" --with-versions {{.CLI_ARGS}}

@@ -40,8 +40,8 @@ repository on a durable medium. Set its permissions with `chmod 600`.
 Every encrypted file accepts the backup key as a second recipient. The backup
 key alone decrypts every file.
 
-1. Run `mise exec -- age-keygen -y <backup-key-path>`. Compare the output with the recipients in `.sops.yaml`.
-2. Run `mise exec -- env SOPS_AGE_KEY_FILE=<backup-key-path> sops --decrypt ansible/inventory/servers/group_vars/all/secrets.sops.yaml > /dev/null`. A silent result shows that the backup key works.
+1. Run `age-keygen -y <backup-key-path>`. Compare the output with the recipients in `.sops.yaml`.
+2. Run `env SOPS_AGE_KEY_FILE=<backup-key-path> sops --decrypt ansible/inventory/servers/group_vars/all/secrets.sops.yaml > /dev/null`. A silent result shows that the backup key works.
 
 ## Fresh-clone recovery
 

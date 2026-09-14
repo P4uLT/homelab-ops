@@ -12,6 +12,7 @@ tasks:
   verify:
     desc: Verify the project locally (Ansible shell, Terraform and Packer checks)
     cmds:
+      - task: conventions
       - task: docs:check
       - task: docs:links
       - task: ansible:verify
@@ -20,6 +21,14 @@ tasks:
       - task: tf:validate
       - task: packer:fmt-check
       - task: packer:validate
+
+  conventions:
+    desc: Check the conventions no tool enforces (a tool keeps its own name)
+    # A taskfile that routes a tool through the mise prefix duplicates what the
+    # shell already carries, and hides which tool the line runs. The prefix
+    # belongs to an invocation, not to a file. See docs/writing.md.
+    # project.yml stays out: this guard's own pattern would match itself.
+    cmd: '! grep -rq "mise exec" --exclude=project.yml .taskfiles/ Taskfile.yml'
 
   lint:
     desc: Lint the Ansible playbooks

@@ -45,16 +45,16 @@ vars:
 tasks:
   fmt:
     desc: Format every Terraform file in the repository.
-    cmd: mise exec -- tofu fmt -recursive terraform/
+    cmd: tofu fmt -recursive terraform/
 
   fmt-check:
     desc: Check Terraform formatting without writing.
-    cmd: mise exec -- tofu fmt -check -recursive terraform/
+    cmd: tofu fmt -check -recursive terraform/
 
   lint:
     desc: Lint every OpenTofu root with tflint.
     dir: terraform
-    cmd: mise exec -- tflint --recursive
+    cmd: tflint --recursive
 
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
@@ -64,7 +64,7 @@ tasks:
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
-        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
+        cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
@@ -75,7 +75,7 @@ tasks:
     cmds:
       - task: init
       - for: { var: TF_ROOTS, as: ROOT }
-        cmd: mise exec -- env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
+        cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
 
   bootstrap-plan:
     desc: Plan the state backend.
@@ -88,7 +88,7 @@ tasks:
       - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
         msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh plan
+      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh plan
 
   bootstrap-apply:
     desc: Create the state bucket and the access chain. Idempotent.
@@ -101,7 +101,7 @@ tasks:
       - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
         msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh apply {{.CLI_ARGS}}
+      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh apply {{.CLI_ARGS}}
 
   bootstrap-output:
     desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
@@ -112,7 +112,7 @@ tasks:
       - sh: test -s .env.account.ovh.tf
         msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh output {{.CLI_ARGS}}
+      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh output {{.CLI_ARGS}}
 
   bootstrap-state-list:
     desc: List resources tracked in the bootstrap state.
@@ -121,7 +121,7 @@ tasks:
       - sh: test -s .env.tf
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
-      - mise exec -- env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh state list
+      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh state list
 
   pve-jarvis-plan:
     desc: Plan the jarvis PVE access root. Contacts the PVE node. Owner approval required.
@@ -132,7 +132,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis plan {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis plan {{.CLI_ARGS}}
 
   pve-jarvis-apply:
     desc: Apply the jarvis PVE access root. Changes the PVE node. Owner approval required.
@@ -143,7 +143,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis apply {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis apply {{.CLI_ARGS}}
 
   pve-jarvis-output:
     desc: Read one jarvis access output. Pass the args after -- (for example, -raw token_value).
@@ -152,7 +152,7 @@ tasks:
       - sh: test -s .env.tf
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/bootstrap/pve/jarvis output {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis output {{.CLI_ARGS}}
 
   jarvis-plan:
     desc: Plan the jarvis root. Contacts the PVE node. Owner approval required.
@@ -163,7 +163,7 @@ tasks:
       - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/proxmox/jarvis plan {{.CLI_ARGS}}
+      - tofu -chdir=terraform/proxmox/jarvis plan {{.CLI_ARGS}}
 
   jarvis-apply:
     desc: Apply the jarvis root. Changes the PVE node. Owner approval required.
@@ -174,7 +174,7 @@ tasks:
       - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/proxmox/jarvis apply {{.CLI_ARGS}}
+      - tofu -chdir=terraform/proxmox/jarvis apply {{.CLI_ARGS}}
 
   jarvis-output:
     desc: Read one jarvis output. Pass the args after -- (for example, -json lxcs).
@@ -183,4 +183,4 @@ tasks:
       - sh: test -s .env.tf
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
     cmds:
-      - mise exec -- tofu -chdir=terraform/proxmox/jarvis output {{.CLI_ARGS}}
+      - tofu -chdir=terraform/proxmox/jarvis output {{.CLI_ARGS}}

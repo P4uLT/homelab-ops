@@ -10,14 +10,14 @@ tasks:
     # pass covers the Markdown and the code comments. .vale/ is excluded, or
     # the rules would lint their own rule files.
     cmds:
-      - git ls-files ':(exclude).vale/**' ':(exclude)CLAUDE.md' | xargs -r mise exec -- vale --config=.vale.ini
+      - git ls-files ':(exclude).vale/**' ':(exclude)CLAUDE.md' | xargs -r vale --config=.vale.ini
 
   links:
     desc: Check every internal link, anchors included, without network
     cmds:
-      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- lychee --offline --include-fragments --no-progress
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r lychee --offline --include-fragments --no-progress
 
   links-external:
     desc: Check the outbound links. Needs network.
     cmds:
-      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- lychee --no-progress --max-concurrency 8
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r lychee --no-progress --max-concurrency 8

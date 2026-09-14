@@ -17,16 +17,16 @@ vars:
 tasks:
   fmt:
     desc: Format every Packer file in the repository.
-    cmd: mise exec -- packer fmt -recursive packer/
+    cmd: packer fmt -recursive packer/
 
   fmt-check:
     desc: Check Packer formatting without writing.
-    cmd: mise exec -- packer fmt -check -recursive packer/
+    cmd: packer fmt -check -recursive packer/
 
   init:
     desc: Install the Packer plugins declared in packer/images. Network on the first run only.
     dir: packer
-    cmd: mise exec -- packer init images
+    cmd: packer init images
 
   validate:
     desc: Validate every image offline. Runs init first.
@@ -38,7 +38,7 @@ tasks:
       # dummy password, and needs no node local file: a fresh clone still
       # validates.
       - for: { var: PKR_HOSTS, as: HOST }
-        cmd: mise exec -- packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
+        cmd: packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
       # The image playbooks and their inventory hosts are named inside a shell
       # string, so packer validate can't see a typo in either. These are the
       # cheap offline checks that can.
@@ -70,7 +70,7 @@ tasks:
           matrix:
             IMAGE: { ref: .PKR_IMAGES }
             HOST: { ref: .PKR_HOSTS }
-        cmd: mise exec -- packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+        cmd: packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
 
   build-one:
     desc: Build one golden image on one node. IMAGE=base|docker HOST=<node from PKR_HOSTS>. Owner approval required.
@@ -86,7 +86,7 @@ tasks:
       # One image at a time is what Packer's -only is for. The matrix in
       # build can't be narrowed from the command line: Task passes a string
       # where the for loop wants the list from this file.
-      - cmd: mise exec -- packer build -only=proxmox-lxc.{{.IMAGE}} -var-file=hosts/{{.HOST}}.pkrvars.hcl -var-file=hosts/{{.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+      - cmd: packer build -only=proxmox-lxc.{{.IMAGE}} -var-file=hosts/{{.HOST}}.pkrvars.hcl -var-file=hosts/{{.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
 
   # One task per image, on purpose: the shell completes task names, not
   # variable values, so "which image" has to be part of the name to be
