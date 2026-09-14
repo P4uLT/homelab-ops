@@ -1,6 +1,8 @@
 ---
 # Group tree: topology only, no hosts here. Hosts live in hosts.yml
 # and group variables in the adjacent group_vars/ directory.
+# Names read grp_<scope>_<specifics>: the machine tree under grp_servers_*,
+# the opt-in service memberships under grp_services_*.
 all:
   children:
     grp_servers:
@@ -10,4 +12,4 @@ all:
             grp_servers_proxmox_jarvis:
     # Opt-in service groups. Not topology: a host joins one when it runs that
     # service. An empty group is a skipped play.
-    grp_docker:
+    grp_services_docker:

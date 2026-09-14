@@ -1,0 +1,8 @@
+---
+# The Docker policy for the golden image. It mirrors the fleet copy in
+# inventory/servers/group_vars/grp_services_docker/vars.yml: Ansible shares no
+# group_vars between inventories, so each inventory declares its own. Keep the
+# two in step, unless the build genuinely needs something else.
+docker_service_daemon_options:
+  # journald caps itself; json-file grows without bound on a busy host.
+  log-driver: journald

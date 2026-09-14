@@ -162,10 +162,13 @@ task ansible:image -- --limit builder-base \
 
 Four touch points:
 
-1. `ansible/playbooks/image/<name>.yml`, the play: an include for the
-   interpreter, one for the roles of this image, and `image_finalize` last.
-2. `ansible/inventory/builders/hosts.yml`, with its own `builder-<name>` host:
-   the selection is the host limit, so a missing host skips the play.
+1. `ansible/playbooks/image/<name>.yml`, the play: imports for the
+   interpreter and the roles of this image, with `image_finalize` last.
+2. The builders inventory, in `ansible/inventory/builders/`: the
+   `grp_builders_<name>` leaf in `groups.yml`, then the `builder-<name>` host
+   under it in `hosts.yml`. The selection is the host limit, so a missing
+   host skips the play. An image that installs a service also joins that
+   service's group, which is where its policy lives, in `group_vars/`.
 3. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
    `<name>_parent`, and `<name>_ctid` variables: Packer variable and local
    names are global to the directory, so they carry the image name. Give it a

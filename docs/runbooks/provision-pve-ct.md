@@ -76,7 +76,7 @@ pct exec <ct_id> -- cat /etc/image-build-info
 ```
 
 The marker carries the image name, its version, and its parent, and the common
-spoke asserts it on cattle.
+layer asserts it on cattle.
 
 ## Destroy
 

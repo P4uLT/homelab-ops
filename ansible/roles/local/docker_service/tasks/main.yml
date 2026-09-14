@@ -1,0 +1,21 @@
+# code: language=ansible
+---
+# The role carries the mechanism, not the values: each inventory declares the
+# house Docker policy in its grp_services_docker group_vars, so the image build
+# and the runtime install Docker the same way. The assert below fails loudly
+# when the group carries no policy, instead of falling back to a vendor default
+# that nobody chose.
+- name: Assert the group carries the Docker policy
+  ansible.builtin.assert:
+    that:
+      - docker_service_daemon_options is defined
+    fail_msg: >-
+      Declare docker_service_daemon_options in the grp_services_docker
+      group_vars of the inventory this play runs against.
+    quiet: true
+
+- name: Apply the Docker service
+  ansible.builtin.import_role:
+    name: geerlingguy.docker
+  vars:
+    docker_daemon_options: "{{ docker_service_daemon_options }}"

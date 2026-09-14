@@ -1,0 +1,6 @@
+---
+# Every build container is reached the same way: the Proxmox API plugin runs
+# the module inside the container through pct exec. Packer adds the node, the
+# login, and the key as extra variables. These two are static.
+ansible_connection: community.proxmox.proxmox_pct_remote
+ansible_python_interpreter: /usr/bin/python3

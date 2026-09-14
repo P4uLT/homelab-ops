@@ -1,6 +1,6 @@
 # code: language=ansible
 ---
-# The mandatory spoke: it runs for every host in the chain. Population-aware
+# The mandatory layer: it runs for every host in the fleet. Population-aware
 # from the inside. A cattle host proves it carries a golden image and skips the
 # OS baseline, which the image owns. Every other host applies the profiles its
 # group enables, through common_profiles in that group's group_vars. No group

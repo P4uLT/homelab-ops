@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# The Docker service, for every host that joins grp_services_docker. The
+# policy lives in this inventory's grp_services_docker group_vars, so the play
+# stays a bare role call and the inventory shows the values.
+- name: Apply the Docker service
+  hosts: grp_services_docker
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Apply the Docker service
+      ansible.builtin.include_role:
+        name: docker_service

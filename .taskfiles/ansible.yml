@@ -35,7 +35,7 @@ tasks:
       - uv run ansible-playbook --syntax-check playbooks/site.yml
       - uv run ansible-playbook --syntax-check playbooks/verify.yml
       - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
-      - uv run ansible-playbook --syntax-check playbooks/servers/stacks/proxmox/converge.yml
+      - uv run ansible-playbook --syntax-check playbooks/stacks/proxmox/converge.yml
       - uv run ansible-playbook -i inventory/builders --syntax-check playbooks/image.yml
 
   lint:
@@ -89,12 +89,12 @@ tasks:
   converge-check:
     desc: Preview jarvis changes in check mode. Check mode can change the node.
     cmds:
-      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/stacks/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
 
   converge:
     desc: Converge jarvis. Pass extra variables after --.
     cmds:
-      - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
 
   image:
     desc: Provision a build container. Packer calls this. Pass the limit and the facts after --.

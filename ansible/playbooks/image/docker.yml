@@ -2,10 +2,8 @@
 ---
 # The Docker golden image, on the base artifact. Entry: playbooks/image.yml
 # with --limit builder-docker. Same shape as base.yml, one role different.
-# The vendor role is called directly: the house policy is those three
-# variables, and they're the same three in the runtime play
-# playbooks/servers/services/docker.yml. Keep the two in step; nothing
-# checks them offline.
+# The policy lives in the builders inventory's grp_services_docker group_vars,
+# so the image installs Docker the way the fleet does.
 - name: Build the docker golden image
   hosts: builder-docker
   gather_facts: false
@@ -18,16 +16,7 @@
 
     - name: Apply the Docker service
       ansible.builtin.import_role:
-        name: geerlingguy.docker
-      vars:
-        # journald caps itself; json-file grows without bound on a busy host.
-        docker_daemon_options:
-          log-driver: journald
-        # Nobody joins the docker group: the socket is root, and a member of
-        # that group is root by another name.
-        docker_users: []
-        # Compose comes as the plugin; the legacy standalone binary doesn't.
-        docker_install_compose: false
+        name: docker_service
 
     - name: Seal the image
       ansible.builtin.import_role:
