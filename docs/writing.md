@@ -24,8 +24,8 @@ with an implicit "About".
 
 ## Prose
 
-Ten rules, each one published, all enforced by `task docs:check`. `.vale.ini`
-enables exactly these ten.
+Eleven rules, each one published, all enforced by `task docs:check`.
+`.vale.ini` enables exactly these eleven.
 
 | Rule | Says |
 | --- | --- |
@@ -39,6 +39,7 @@ enables exactly these ten.
 | No anthropomorphism | Software returns, rejects, stores. It doesn't see or tell |
 | Spell out an unfamiliar acronym | On first use, or add the term to the vocabulary |
 | Exact casing for a domain term | `PVE`, not `pve`. The vocabulary is the list |
+| A sentence under 25 words | One idea per sentence. Split at the conjunction |
 
 The vocabulary lives in `.vale/styles/config/vocabularies/House/accept.txt`, one
 expression per line. It follows the Host terminology section of
@@ -96,9 +97,11 @@ rules govern.
 
 | Command | Does |
 | --- | --- |
-| `task docs:check` | The ten prose rules, over every tracked Markdown file |
+| `task docs:check` | The eleven prose rules, over every tracked Markdown file |
 | `task verify` | Everything, `docs:check` included |
 | `mise exec -- vale --config=.vale.ini <path>` | The same rules on one path while you write |
+| `task docs:links` | Every internal link, anchors included, without network |
+| `task docs:links-external` | The outbound links, over the network |
 
 Vale fails a run on an `error` alert only. A rule left at the `suggestion`
 level it ships with reports findings and still exits 0, so `.vale.ini` raises
@@ -106,10 +109,9 @@ every enabled rule to `error`. A report that can't fail isn't a gate.
 
 ### Setting the check up elsewhere
 
-Copy four things into the other repository: the `vale` pin from `mise.toml`,
-`.vale.ini`, `.vale/styles/Google/`, and the vocabulary folder
-`.vale/styles/config/vocabularies/`. No `vale sync` runs, so the check works
-offline from the first clone.
+To reproduce the check elsewhere, copy two things: the pins from `mise.toml`
+and the `.vale/` directory. No `vale sync` runs, so the check works offline
+from the first clone.
 
 ## Provenance
 
@@ -119,7 +121,7 @@ reason next to a choice that isn't standard.
 | Source | Contributes |
 | --- | --- |
 | [Google developer documentation style guide](https://developers.google.com/style) | The eight prose rules, excessive claims, timeless documentation |
-| [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/) | Brevity, contractions, conditions before instructions |
+| [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/) | Brevity, contractions, conditions before instructions |
 | [ASD-STE100](https://www.asd-ste100.org/) | One instruction per sentence, one word per meaning, no semicolons |
 | [Diátaxis](https://diataxis.fr/) | One type per file |
 | [Chromium documentation best practices](https://chromium.googlesource.com/chromium/src/+/main/docs/documentation_best_practices.md) | Delete dead documentation, duplication is evil, design docs are archives |

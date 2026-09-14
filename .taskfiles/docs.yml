@@ -11,3 +11,13 @@ tasks:
     # not read .gitignore itself, and reads 170 files without this.
     cmds:
       - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- vale --config=.vale.ini
+
+  links:
+    desc: Check every internal link, anchors included, without network
+    cmds:
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- lychee --offline --include-fragments --no-progress
+
+  links-external:
+    desc: Check the outbound links. Needs network.
+    cmds:
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- lychee --no-progress --max-concurrency 8

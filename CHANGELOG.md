@@ -16,66 +16,73 @@ when the first release is cut.
   contract (`task verify`) that needs no managed host.
 - PVE onboarding pattern and `converge` playbook for Proxmox pets
   (first node: jarvis).
-- Terraform state backend: frozen OpenTofu bootstrap root for the OVH S3
-  state bucket (versioning, SSE, 90-day lifecycle, allowlist policy without
-  `DeleteBucket` or `DeleteObjectVersion`), `terraform/BACKEND.md` design
-  record, onboarding runbook, and `task tf:*` recipes including offline
-  schema validation.
+- Terraform state backend: a frozen OpenTofu bootstrap root for the OVH S3
+  state bucket. The bucket carries versioning, SSE, a 90-day lifecycle, and
+  an allowlist policy without `DeleteBucket` or `DeleteObjectVersion`.
+  `terraform/BACKEND.md` is the design record, with an onboarding runbook
+  and `task tf:*` recipes including offline schema validation.
 - Packer golden images: versioned Debian 13 LXC artifacts built from the
-  node's official container template (SSH-driven `pct`, vzdump archive in
-  the template cache, images chained one on another with a pinned parent
-  and a name carrying the lineage, per-node local connection file, journald
-  container logs), `task packer:*` recipes, and the build runbook. The
-  build contacts the node and needs owner approval.
-- First PVE layer: the shared `terraform/proxmox/modules/lxc/` module
-  wraps one LXC workload (golden image clone, DHCP, Docker-ready
-  features), and the `terraform/proxmox/jarvis/` root holds one module
-  call per workload through the bpg provider. Encrypted remote state on
-  the shared OVH bucket with an S3 lockfile. The tree groups by provider
-  category: `proxmox/` holds the PVE root and its shared modules, and
-  `bootstrap/ovh/` holds the state backend root. `task tf:jarvis-{plan,apply,
-  output}` recipes, and the provisioning runbook. Root credentials live
-  in git-ignored `*.local.auto.tfvars` beside their root. The shared
-  `.env.tf` carries native names (`TF_VAR_*`, `AWS_*`), and the OVH
-  account file is `.env.account.ovh.tf`.
+  node's official container template. The build drives `pct` over SSH and
+  stores a vzdump archive in the template cache. Images chain one on another,
+  each pinning its parent, and the archive name carries the lineage. Each
+  node has a local connection file, and container logs go to journald.
+  Recipes are `task packer:*`, with the build runbook. The build contacts the
+  node and needs owner approval.
+- First PVE layer: the shared `terraform/proxmox/modules/lxc/` module wraps
+  one LXC workload, cloning a golden image over DHCP and enabling Docker.
+  The `terraform/proxmox/jarvis/` root holds one module call per workload
+  through the bpg provider. State is remote and encrypted on the shared OVH
+  bucket, with an S3 lockfile. The tree groups by provider category:
+  `proxmox/` holds the PVE root and its shared modules, and `bootstrap/ovh/`
+  holds the state backend root. Recipes are `task tf:jarvis-{plan,apply,
+  output}`, with the provisioning runbook. Root credentials live in
+  git-ignored `*.local.auto.tfvars` beside their root. The shared `.env.tf`
+  carries native names (`TF_VAR_*`, `AWS_*`), and the OVH account file is
+  `.env.account.ovh.tf`.
 - OVH object storage conventions (`docs/object-storage.md`): one bucket
   per data class, one allowlisted user per bucket, client-side encryption
   for non-state payloads. `task ovh:s3-ls` lists the state bucket.
-- PVE access bootstrap: the frozen `terraform/bootstrap/pve/jarvis/`
-  root takes the whole Terraform access chain from Ansible (role,
-  group, user, ACL) and mints the API token as code: one-time import
-  blocks, `prevent_destroy` everywhere, token-only user. Runbook
-  `docs/runbooks/bootstrap-pve-access.md`, tasks `task tf:pve-jarvis-*`.
-- Plan-time checks in the jarvis root: the storages its images and
-  disks address must exist and be active, the node must run PVE 8+,
-  and every container tagged `terraform` on the node must belong to
-  the root. A drifted or hand-made container fails the plan.
-- Prose gate: `task docs:check` runs Vale with nine rules vendored from
-  the Google style guide, versioned with the repository so the check stays
-  offline, pinned in `mise.toml`, and wired into `task verify`. The rules
-  cover the spaced em dash, contractions, semicolons, timeless wording,
-  excessive claims, Latin abbreviations, American spelling,
-  anthropomorphism, and unfamiliar acronyms. Vale's own `Vale.Terms` adds
-  the exact casing of every term in the project vocabulary. Every rule is
-  raised to `error`, because Vale fails a run on an error alert only. The
-  vocabulary lives under `.vale/styles/config/vocabularies/House/` and
-  follows the Host terminology section of `AGENTS.md`. `docs/writing.md`
-  records the rules, the tooling, and the source behind each one.
+- PVE access bootstrap: the frozen `terraform/bootstrap/pve/jarvis/` root
+  takes the whole Terraform access chain from Ansible. That chain is the
+  role, the group, the user, and the ACL. The root mints the API token as
+  code, with one-time import blocks, `prevent_destroy` everywhere, and a
+  token-only user. Runbook `docs/runbooks/bootstrap-pve-access.md`, tasks
+  `task tf:pve-jarvis-*`.
+- Plan-time checks in the jarvis root. The storages its images and disks
+  address must exist and be active, and the node must run PVE 8+. Every
+  container tagged `terraform` on the node must belong to the root. A
+  drifted or hand-made container fails the plan.
+- Prose gate: `task docs:check` runs Vale with eleven rules, wired into
+  `task verify`. Nine come vendored from the Google style guide, versioned
+  with the repository, so the check stays offline. The rules cover the
+  spaced em dash, contractions, semicolons, timeless wording, excessive
+  claims, Latin abbreviations, American spelling, anthropomorphism, and
+  unfamiliar acronyms. `Vale.Terms` adds the exact casing of every term in
+  the project vocabulary, and `Std.Readability.SentenceLength` caps a
+  sentence at 25 words. Every rule is raised to `error`, because Vale fails
+  a run on an error alert only. The vocabulary lives under
+  `.vale/styles/config/vocabularies/House/` and follows the Host terminology
+  section of `AGENTS.md`. `docs/writing.md` records the rules, the tooling,
+  and the source behind each one.
+- Link check: `task docs:links` runs lychee over the tracked Markdown, offline
+  and anchors included, and rides in `task verify`. `task docs:links-external`
+  checks the outbound links over the network.
 
 ### Changed
 
-- The shared LXC module takes the full trfore surface: static IPv4 with
-  optional gateway (DHCP stays the default), VLAN tag, stable MAC,
-  swap, boot flag with order and delays, mount points, PVE protection
-  flag, and a wait-for-IPv4 so `ct_ipv4` fills in from the guest. A
-  Docker image reports `docker0` too, so `ct_ipv4` reads the named
-  interface and stays null until that one holds a lease. Patterns
-  adapted from `trfore/terraform-bpg-proxmox`
+- The shared LXC module takes the full trfore surface. It covers static
+  IPv4 with an optional gateway, the VLAN tag, a stable MAC, and swap. DHCP
+  stays the default. It also covers the boot flag with its order and delays,
+  mount points, and the PVE protection flag. A wait-for-IPv4 makes `ct_ipv4`
+  fill in from the guest. A Docker image reports `docker0` too, so `ct_ipv4`
+  reads the named interface and stays null until that one holds a lease.
+  Patterns adapted from `trfore/terraform-bpg-proxmox`
   (Apache-2.0).
-- Backend config split: the shared OVH S3 facts (region, endpoint,
-  validation skips, lockfile) move to the tracked partial config
-  `terraform/backend.s3.ovh.hcl` that the tf tasks pass at init. Each
-  root keeps only its `key`. No value changed, so no state moves.
+- Backend config split: the shared OVH S3 facts move to the tracked partial
+  config `terraform/backend.s3.ovh.hcl`. Those facts are the region, the
+  endpoint, the validation skips, and the lockfile. The tf tasks pass the
+  file at init, and each root keeps only its `key`. No value changed, so no
+  state moves.
 - The Proxmox Ansible plane retracts the Terraform identity: role,
   group, user, and ACL leave `vars.yml`. The `terraform-prov` password
   leaves the SOPS file (token-only user now). `credential_check` tests
@@ -87,11 +94,10 @@ when the first release is cut.
   of chosen names, so the planned Terragrunt adoption needs no state
   migration. The `jarvis` state moved to
   `proxmox/jarvis/terraform.tfstate` (object copy). The state is empty.
-- Documentation tree restructured around one Diátaxis type per file:
-  `docs/README.md` is the index, `docs/ssh.md` keeps the reference and
-  hands the pinning procedure to `docs/runbooks/pin-host-keys.md`, and
-  the state backend runbook splits out
-  `docs/runbooks/rotate-s3-credential.md` and
+- Documentation tree restructured around one Diátaxis type per file.
+  `docs/README.md` is the index, and `docs/ssh.md` keeps the reference while
+  the pinning procedure moves to `docs/runbooks/pin-host-keys.md`. The state
+  backend runbook splits out `docs/runbooks/rotate-s3-credential.md` and
   `docs/ovh-least-privilege.md`. Every cross-reference is now a relative
   link, and the how-to pages end with next steps. The orphan
   `docs/bootstrap.md` stub is gone.
