@@ -6,7 +6,7 @@
 # longer declares any of these objects.
 #
 # The import blocks adopt, one time, the objects the Ansible plane
-# created before this root existed. After the first apply they are
+# created before this root existed. After the first apply they're
 # no-ops and stay as provenance.
 
 provider "proxmox" {

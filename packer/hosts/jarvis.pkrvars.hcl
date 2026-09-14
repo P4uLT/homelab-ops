@@ -3,7 +3,7 @@
 #
 # Everything set here overrides the global defaults of images/base.pkr.hcl.
 # jarvis reads the official template from the NFS share and writes the
-# artifacts there too, so every node sees the same artifacts.
+# artifacts there too, so every node uses the same artifacts.
 
 parent_template  = "NAS:vztmpl/debian-13-standard_13.6-1_amd64.tar.zst"
 artifact_storage = "NAS"

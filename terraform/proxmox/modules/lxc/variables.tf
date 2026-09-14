@@ -67,7 +67,7 @@ variable "disk" {
 }
 
 variable "mountpoints" {
-  description = "Extra mount points. volume is a host path, device, or directory; path is where the container sees it."
+  description = "Extra mount points. volume is a host path, device, or directory; path is where the container mounts it."
   type = list(object({
     volume    = string
     path      = string

@@ -25,7 +25,9 @@ with an implicit "About".
 ## Prose
 
 Eleven rules, each one published, all enforced by `task docs:check`.
-`.vale.ini` enables exactly these eleven.
+`.vale.ini` enables exactly these eleven. Nine of them also run over code
+comments. `Acronyms` and `Vale.Terms` stay out of those, because in a config
+file the same letters are identifiers, paths, and commands.
 
 | Rule | Says |
 | --- | --- |
@@ -97,7 +99,7 @@ rules govern.
 
 | Command | Does |
 | --- | --- |
-| `task docs:check` | The eleven prose rules, over every tracked Markdown file |
+| `task docs:check` | The prose rules over every tracked file: eleven for Markdown, nine for code comments |
 | `task verify` | Everything, `docs:check` included |
 | `mise exec -- vale --config=.vale.ini <path>` | The same rules on one path while you write |
 | `task docs:links` | Every internal link, anchors included, without network |

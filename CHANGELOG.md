@@ -62,8 +62,9 @@ when the first release is cut.
   sentence at 25 words. Every rule is raised to `error`, because Vale fails
   a run on an error alert only. The vocabulary lives under
   `.vale/styles/config/vocabularies/House/` and follows the Host terminology
-  section of `AGENTS.md`. `docs/writing.md` records the rules, the tooling,
-  and the source behind each one.
+  section of `AGENTS.md`. Nine of the rules also run over the comments in the
+  tracked YAML, TOML, HCL, shell, and config files. `docs/writing.md` records
+  the rules, the tooling, and the source behind each one.
 - Link check: `task docs:links` runs lychee over the tracked Markdown, offline
   and anchors included, and rides in `task verify`. `task docs:links-external`
   checks the outbound links over the network.

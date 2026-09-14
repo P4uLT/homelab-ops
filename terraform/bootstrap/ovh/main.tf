@@ -22,7 +22,7 @@ resource "ovh_cloud_project_user_s3_credential" "state" {
   }
 }
 
-# Allowlist for the S3 backend. No DeleteBucket: the user cannot remove
+# Allowlist for the S3 backend. No DeleteBucket: the user can't remove
 # the bucket. No DeleteObjectVersion: the backend never needs it, and it
 # would let the writer purge the versions recovery depends on.
 # DeleteObject stays for use_lockfile cleanup.

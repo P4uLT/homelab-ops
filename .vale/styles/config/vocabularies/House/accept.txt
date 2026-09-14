@@ -4,7 +4,8 @@
 # An entry joins the exception list of every enabled rule. Add a term here
 # rather than silencing a rule or editing a vendored one.
 #
-# The list follows the Host terminology section of AGENTS.md.
+# The list follows the Host terminology section of AGENTS.md, plus the file
+# formats the pages name.
 
 # Hypervisor and virtualization
 PVE
@@ -47,3 +48,8 @@ SSH
 CLI
 MIT
 ASD
+
+# File formats
+TOML
+HCL
+YAML

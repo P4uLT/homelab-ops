@@ -6,11 +6,11 @@ version: "3"
 tasks:
   check:
     desc: Lint the prose against the house writing rules
-    # git ls-files keeps the scan to tracked files, so the ignored trees
-    # (ansible/.venv, .terraform, docs/superpowers) stay out of it. Vale does
-    # not read .gitignore itself, and reads 170 files without this.
+    # Vale reads only the files its configuration has a section for, so one
+    # pass covers the Markdown and the code comments. .vale/ is excluded, or
+    # the rules would lint their own rule files.
     cmds:
-      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r mise exec -- vale --config=.vale.ini
+      - git ls-files ':(exclude).vale/**' ':(exclude)CLAUDE.md' | xargs -r mise exec -- vale --config=.vale.ini
 
   links:
     desc: Check every internal link, anchors included, without network

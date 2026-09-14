@@ -1,6 +1,6 @@
 # code: language=ansible
 ---
-# Check SOPS decryption and inventory variables. This playbook does not
+# Check SOPS decryption and inventory variables. This playbook doesn't
 # change a managed host or print variable values.
 - name: SOPS canary proof
   hosts: localhost

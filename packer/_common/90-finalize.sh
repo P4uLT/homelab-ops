@@ -3,13 +3,13 @@
 #
 # 1. Identity. The build boots the container, so systemd regenerates
 #    /etc/machine-id and sshd its host keys. Clearing them in an earlier
-#    image does not hold: the next boot recreates them. In a chain, only
+#    image doesn't hold: the next boot recreates them. In a chain, only
 #    the last build can leave a clean identity.
 # 2. apt. The lists must go after the last install, or every image hauls
 #    them around.
 set -eu
 
-# sshd does not generate missing host keys itself, so a oneshot unit does
+# sshd doesn't generate missing host keys itself, so a oneshot unit does
 # it before ssh starts.
 cat > /etc/systemd/system/ssh-host-keys.service <<'UNIT'
 [Unit]

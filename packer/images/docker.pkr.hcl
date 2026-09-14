@@ -15,12 +15,12 @@ variable "docker_dir" {
   description = "Filesystem path for this artifact. Empty to use the node artifact_dir."
 }
 
-# The pin is the artifact file name, not a volid: which artifact is a content
-# decision, which storage holds it is a node fact (artifact_storage).
+# The pin is the artifact file name, not a volid: the artifact is a content
+# decision, the storage holding it comes from a node fact (artifact_storage).
 variable "docker_parent" {
   type        = string
   default     = "debian-13-standard-base_13.6-1_amd64.tar.zst"
-  description = "Artifact this image builds on. A build fails here on a name the node storage does not have."
+  description = "Artifact this image builds on. A build fails here on a name the node storage doesn't have."
 }
 
 locals {
@@ -44,7 +44,7 @@ source "proxmox-lxc" "docker" {
   ssh_key_path = var.pve_ssh_key_path
 
   # A random root password, because the plugin would otherwise leave its
-  # known default on a container that runs sshd on the bridge while it is
+  # known default on a container that runs sshd on the bridge while it's
   # provisioned. 90-finalize.sh locks the account before the artifact is made.
   root_password = uuidv4()
 

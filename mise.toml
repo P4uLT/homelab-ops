@@ -2,7 +2,7 @@
 # Roadmap for later phases (uncomment as each lands):
 #   kubectl, talosctl, topf, flux, yq, just
 # topf's mise availability is unverified (architecture study). Check it before adding.
-# Versions are pinned to real releases and bumped deliberately, never "latest".
+# Versions are pinned to real releases and bumped deliberately, never a floating tag.
 
 [tools]
 task = "3.53.1"

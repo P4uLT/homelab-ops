@@ -5,7 +5,7 @@ version: "3"
 # Golden LXC images. fmt, fmt-check, and validate stay offline. build
 # contacts the PVE node over SSH and needs owner approval.
 #
-# PKR_IMAGES is ordered: it is the chain, each image building on the
+# PKR_IMAGES is ordered: it's the chain, each image building on the
 # artifact of the one before it.
 
 vars:
@@ -46,7 +46,7 @@ tasks:
     cmds:
       - task: init
       # The manifest post-processor writes its file but never creates the
-      # directory, and the directory is git-ignored, so it is missing on a
+      # directory, and the directory is git-ignored, so it's missing on a
       # fresh clone.
       - cmd: mkdir -p manifests
       # Each node brings its own git-ignored local var file for the address and

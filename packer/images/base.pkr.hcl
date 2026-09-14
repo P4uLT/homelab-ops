@@ -35,7 +35,7 @@ source "proxmox-lxc" "base" {
   ssh_key_path = var.pve_ssh_key_path
 
   # A random root password, because the plugin would otherwise leave its
-  # known default on a container that runs sshd on the bridge while it is
+  # known default on a container that runs sshd on the bridge while it's
   # provisioned. 90-finalize.sh locks the account before the artifact is made.
   root_password = uuidv4()
 
