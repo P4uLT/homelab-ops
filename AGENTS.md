@@ -25,6 +25,8 @@ task tf:pve-jarvis-apply -- -auto-approve     # mint the token. Needs owner appr
 ```
 
 `task verify` is the required local check. Run it before you claim success.
+On a fresh clone, run `mise install` before the first task: the pinned
+toolchain, `task` included, comes from it.
 In a shell without the mise hook, prefix commands with `mise exec --`.
 
 ## Task layout
@@ -143,18 +145,16 @@ bare metal. Use `host` only when the system type is unknown.
   exits 0, so `.vale.ini` raises every rule it enables to `error`.
 - The legacy sibling repository that fed the migration keeps a read-only
   status. Never change it.
+- Add at most one gotcha per PR, and only for a mistake it prevented or
+  fixed.
 
 ## Style
 
-- Rules, tooling, and sources: `docs/writing.md`. The check is
-  `task docs:check`.
+- Rules, tooling, and sources: `docs/writing.md`. It wins on prose detail.
+  The check is `task docs:check`.
 - Docs: short sentences. Active voice. Plain words.
-- No spaced em dash. Use a colon after a term, parentheses, or a comma
-  inside a sentence, or two sentences. Google and Microsoft both ban the
-  space around a dash.
-- Contractions: "don't", "isn't", "can't". A contraction costs one word
-  where the full form costs two. A verbatim error string keeps its long
-  form, in backticks.
+- Contractions: "don't", "isn't", "can't". A verbatim error string keeps
+  its long form, in backticks.
 - Comments: short. State the why, not the what. Delete a comment that
   restates the line under it.
 - Prefer the documented standard over a local trick. When a choice isn't
@@ -167,18 +167,5 @@ bare metal. Use `host` only when the system type is unknown.
 
 - `docs/README.md`: the documentation index. Start here.
 - `docs/writing.md`: the writing rules, the tooling, and each rule's source.
-- `docs/sops.md`: encrypt, decrypt, backup key, fresh-clone recovery.
-- `docs/ssh.md`: which key belongs where, config pattern, rotation.
-- `docs/object-storage.md`: bucket conventions, one class per bucket.
-- `docs/ovh-least-privilege.md`: why the bootstrap credential is broad.
-- `docs/runbooks/README.md`: the runbook index.
-- `docs/runbooks/onboard-pve.md`: add a Proxmox VE node.
-- `docs/runbooks/pin-host-keys.md`: pin a node host key before Ansible contacts it.
-- `docs/runbooks/build-base-image.md`: build the golden LXC images.
-- `docs/runbooks/bootstrap-tf-backend.md`: one-time state backend setup.
-- `docs/runbooks/rotate-s3-credential.md`: replace the state bucket key pair.
-- `docs/runbooks/bootstrap-pve-access.md`: one-time PVE access bootstrap for the Terraform roots.
-- `docs/runbooks/provision-pve-ct.md`: a golden image as an LXC
-  workload through Terraform.
 - `terraform/BACKEND.md`: Terraform state design and recovery.
 - `CHANGELOG.md`: notable changes.
