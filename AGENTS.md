@@ -62,7 +62,7 @@ ansible/
   key, every run fails loudly. That is by design, not a bug.
 - The age key file is local (`.age.key.txt`, git-ignored). The committed
   `mise.toml` sets `SOPS_AGE_KEY_FILE`.
-- Secrets are declared per task: a task that needs one loads it with
+- Each task declares its secrets: a task that needs one loads it with
   `dotenv`. Never put a secret in the environment every task inherits.
 - Each secret lives where its consumer resolves it. Task resolves a
   dotenv path against the task's directory, and skips a missing file
@@ -154,11 +154,17 @@ bare metal. Use `host` only when the system type is unknown.
 
 ## Pointers
 
+- `docs/README.md` — the documentation index. Start here.
 - `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
-- `docs/ssh.md` — keys, host-key pinning, access inventory.
+- `docs/ssh.md` — which key belongs where, config pattern, rotation.
+- `docs/object-storage.md` — bucket conventions, one class per bucket.
+- `docs/ovh-least-privilege.md` — why the bootstrap credential is broad.
+- `docs/runbooks/README.md` — the runbook index.
 - `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
+- `docs/runbooks/pin-host-keys.md` — pin a node host key before Ansible contacts it.
 - `docs/runbooks/build-base-image.md` — build the golden LXC images.
 - `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
+- `docs/runbooks/rotate-s3-credential.md` — replace the state bucket key pair.
 - `docs/runbooks/bootstrap-pve-access.md` — one-time PVE access bootstrap for the Terraform roots.
 - `docs/runbooks/provision-pve-ct.md` — a golden image as an LXC
   workload through Terraform.

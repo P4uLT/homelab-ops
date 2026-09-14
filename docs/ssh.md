@@ -1,31 +1,21 @@
-# SSH management
+# SSH key and host-key practices
 
-Key and host-key practices for every managed host: bare metal, NAS,
-Raspberry Pi, PVE nodes, and Terraform-created machines.
-
-## Host key pinning
-
-Before the first managed contact, pin the host key:
-
-1. Read the fingerprint from your machine: `task ansible:hostkey -- <node-ip>`.
-2. Read the fingerprint on the node console.
-3. Both match? Pin it: `task ansible:hostkey-pin -- <node-ip>`.
-
-The pinned keys live in `ansible/config/known_hosts` (git-ignored).
-Ansible verifies against this file on every run.
-
-One path does not verify the host key: the Packer image build. The
-Proxmox LXC plugin connects with host-key verification disabled. Treat
-that link as a trusted network; the pinning above covers Ansible and
-manual logins only.
+Which key belongs where, and what to rotate. This page is the reference for
+every managed host: bare metal, NAS, Raspberry Pi, PVE nodes, and
+Terraform-created machines. The procedure that pins a node's host key is in
+[Pin a host key](runbooks/pin-host-keys.md).
 
 ## Keys
+
+Three rules cover every key in the homelab:
 
 - One automation key per person or tool. Ansible uses a dedicated key.
 - One personal key per device. Never copy a private key between devices.
 - Normalized key comment: `user@device-purpose`.
 
 ## Config entry pattern
+
+Every managed host gets a block in `~/.ssh/config`:
 
 ```text
 Host <alias>
@@ -46,5 +36,13 @@ the repository. It is the revocation list for rotation and device loss.
 ## Rotation
 
 Rotate by event: lost device, departure, suspected leak. The PVE operator
-password rotates outside Ansible (the role creates accounts, it does not
-change existing passwords).
+password rotates outside Ansible, because the role creates accounts and does
+not change existing passwords.
+
+## Related
+
+- [Pin a host key](runbooks/pin-host-keys.md) — the pinning procedure, and the
+  Packer exception.
+- [Add a Proxmox VE node](runbooks/onboard-pve.md) — SSH access as one step of
+  a node onboarding.
+- [SOPS and age procedures](sops.md) — the secrets that carry the login.

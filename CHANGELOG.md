@@ -49,7 +49,7 @@ when the first release is cut.
 - Plan-time checks in the jarvis root: the storages its images and
   disks address must exist and be active, the node must run PVE 8+,
   and every container tagged `terraform` on the node must belong to
-  the root — a drifted or hand-made container fails the plan.
+  the root. A drifted or hand-made container fails the plan.
 
 ### Changed
 
@@ -64,26 +64,30 @@ when the first release is cut.
 - Backend config split: the shared OVH S3 facts (region, endpoint,
   validation skips, lockfile) move to the tracked partial config
   `terraform/backend.s3.ovh.hcl` that the tf tasks pass at init. Each
-  root keeps only its `key`. Values are unchanged, so no state moves.
+  root keeps only its `key`. No value changed, so no state moves.
 - The Proxmox Ansible plane retracts the Terraform identity: role,
-  group, user, and ACL leave `vars.yml`; the `terraform-prov` password
-  leaves the SOPS file (token-only user now); and `credential_check`
-  tests the API token instead of a password ticket.
+  group, user, and ACL leave `vars.yml`. The `terraform-prov` password
+  leaves the SOPS file (token-only user now). `credential_check` tests
+  the API token instead of a password ticket.
 - `task ansible:verify` now runs the SOPS canary playbook: a broken
   SOPS structure fails the local check instead of surfacing at the
   next converge.
 - State keys mirror the root path (`<path>/terraform.tfstate`) instead
   of chosen names, so the planned Terragrunt adoption needs no state
   migration. The `jarvis` state moved to
-  `proxmox/jarvis/terraform.tfstate` (object copy; the state is empty).
-- The Proxmox Ansible plane retracts the Terraform identity: role,
-  group, user, and ACL leave `vars.yml`; the `terraform-prov` password
-  leaves the SOPS file (token-only user now); and `credential_check`
-  tests the API token instead of a password ticket.
+  `proxmox/jarvis/terraform.tfstate` (object copy). The state is empty.
+- Documentation tree restructured around one Diátaxis type per file:
+  `docs/README.md` is the index, `docs/ssh.md` keeps the reference and
+  hands the pinning procedure to `docs/runbooks/pin-host-keys.md`, and
+  the state backend runbook splits out
+  `docs/runbooks/rotate-s3-credential.md` and
+  `docs/ovh-least-privilege.md`. Every cross-reference is now a relative
+  link, and the how-to pages end with next steps. The orphan
+  `docs/bootstrap.md` stub is gone.
 
 ### Security
 
-- Secrets are declared per task: `.env.tf` carries the OpenTofu inputs
+- Each task declares its secrets: `.env.tf` carries the OpenTofu inputs
   and the state-backend `AWS_*` keys, and `.env.account.ovh.tf` carries
   the OVH account credential. Only the `tf:*` and `ovh:cli` tasks read
   them, so a third-party binary another task spawns inherits no secret.

@@ -13,7 +13,7 @@ Kubernetes lab.
 | `ansible/` | Runtime configuration (hub-and-spoke playbooks) |
 | `kubernetes/` | Talos + Flux bare-metal lab |
 | `lab/` | Experiments, non-production |
-| `docs/` | Bootstrap, SOPS, runbooks |
+| `docs/` | [SOPS, SSH, storage conventions, and the runbooks](docs/README.md) |
 
 ## Phases
 
