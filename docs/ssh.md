@@ -28,6 +28,11 @@ Host <alias>
 No `User` line. Ansible takes the user from the encrypted group variables.
 For manual logins, pass the user explicitly: `ssh admin@<alias>`.
 
+The image build's Ansible run ignores this file. It connects through paramiko,
+which reads neither `~/.ssh/config` nor a password prompt, so the build takes
+its key from `pve_ssh_key_path` or from a loaded agent. Everything else,
+including every runtime play, goes through this block.
+
 ## Access inventory
 
 Keep an access inventory (node, account, key fingerprint, device) outside
@@ -42,7 +47,7 @@ not change existing passwords.
 ## Related
 
 - [Pin a host key](runbooks/pin-host-keys.md): the pinning procedure, and the
-  Packer exception.
+  two exceptions to it.
 - [Add a Proxmox VE node](runbooks/onboard-pve.md): SSH access as one step of
   a node onboarding.
 - [SOPS and age procedures](sops.md): the secrets that carry the login.

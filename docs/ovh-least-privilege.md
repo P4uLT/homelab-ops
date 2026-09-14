@@ -53,7 +53,7 @@ Three things make the durable option slower to adopt than the broad key:
 After the bootstrap root is stable. It changes a credential, not the
 Terraform code.
 
-## Next steps
+## Related
 
 - [Bootstrap the Terraform state backend](runbooks/bootstrap-tf-backend.md)
   for the root that mints the credential.

@@ -81,3 +81,11 @@ variable "ct_bridge" {
   type        = string
   description = "Node network bridge for the build container."
 }
+
+# What every image playbook needs to reach its build container. The facts come
+# from the same git-ignored per-node local var file the plugin reads, so the
+# key path is never duplicated, and the container id stays per image. The
+# interpreter is a static fact and lives in the image inventory instead.
+locals {
+  ansible_image_conn = "-e ansible_host=${var.pve_ssh_host} -e ansible_user=${var.pve_ssh_user} -e ansible_private_key_file=${var.pve_ssh_key_path}"
+}

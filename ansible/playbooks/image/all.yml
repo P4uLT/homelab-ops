@@ -1,0 +1,10 @@
+# code: language=ansible
+---
+# Every golden image, in chain order: the base builds on the official Debian
+# template, the Docker image on the base artifact. A build limits to one host,
+# so the other play matches nothing and is skipped.
+- name: Import the base image
+  ansible.builtin.import_playbook: base.yml
+
+- name: Import the Docker image
+  ansible.builtin.import_playbook: docker.yml

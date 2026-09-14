@@ -4,11 +4,10 @@ Golden LXC images for Proxmox VE, built by Packer on a PVE node.
 
 | Path | Holds |
 | ---- | ----- |
-| `images/<name>.pkr.hcl` | one image: build number, parent, resources, scripts |
+| `images/<name>.pkr.hcl` | one image: build number, parent, resources, pinned container id, and the playbook it runs |
 | `images/base.pkr.hcl` | the plugin, and the variables every image shares |
 | `hosts/<node>.pkrvars.hcl` | the node facts: template volid, artifact storage and dir, rootfs storage, bridge |
-| `hosts/<node>.local.pkrvars.hcl` | git-ignored: the node address, login, key, or password |
-| `_common/*.sh` | provisioning scripts. Every image lists its own, and `90-finalize.sh` always runs last |
+| `hosts/<node>.local.pkrvars.hcl` | git-ignored: the node address, login, and key. A key, not a password: the Ansible step runs through paramiko, which takes neither a password prompt nor `~/.ssh/config` |
 
 An image builds on the artifact of another, so the set is a chain:
 `debian-13-standard-base` on the official Debian template,
@@ -25,10 +24,10 @@ debian-13-standard-base-docker_13.6-1_amd64.tar.zst  base + docker
 ```
 
 An image pins its parent by file name (`docker_parent`). The storage comes
-from the node's `artifact_storage`, so a node keeping its artifacts
-elsewhere needs no image change. Each image carries only its build number:
-bump it when its content changes, never to rebuild the same content.
-Terraform instantiates the archives under that name.
+from the node's `artifact_storage`, so a node keeping its artifacts elsewhere
+needs no image change. Each image carries only its build number. Bump it when
+its content changes, never to rebuild the same content: an archive of the same
+name is overwritten. Terraform instantiates the archives under that name.
 
 What the images contain:
 
@@ -38,8 +37,20 @@ What the images contain:
 - the Docker image: the base plus Docker Engine from the upstream
   repository in deb822 source form, with the buildx and compose plugins.
   Container logs go to journald.
-- Every image ends with `90-finalize.sh`: no machine-id, no SSH host keys,
-  a locked root password, and no apt package lists. Each clone generates
-  fresh host keys on first start.
+- Every image ends with the `image_finalize` role: no machine-id, no SSH host
+  keys, a locked root password, and no apt package lists. Each clone generates
+  fresh host keys on first start. The role also writes
+  `/etc/image-build-info`, the image identity the common spoke asserts on
+  cattle.
 
-Build: `task packer:build`. Procedure: `docs/runbooks/build-base-image.md`.
+The build provisions through Ansible: `packer build` starts the container,
+then a `shell-local` provisioner runs `task ansible:image` from this
+workstation against it, through the PVE node. The build container needs no
+sshd and carries no credential. One role set serves both the images and the
+runtime baseline. The provisioning itself lives in `ansible/playbooks/image/`,
+one playbook per image.
+
+Build: `task packer:build` for everything, `task packer:build-base` or
+`task packer:build-docker` for one image, and
+`task packer:build-one IMAGE=<name> HOST=<node>` for one node. Procedure:
+`docs/runbooks/build-base-image.md`.

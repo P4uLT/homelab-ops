@@ -23,7 +23,7 @@ before the run.
 ## Images and workloads
 
 - [Build the golden images](build-base-image.md): Packer builds a container
-  template and packs it as a versioned archive.
+  template, Ansible provisions it, and Packer packs it as a versioned archive.
 - [Provision an LXC workload with Terraform](provision-pve-ct.md): clone a
   golden image into a running container.
 

@@ -1,0 +1,7 @@
+# code: language=ansible
+---
+# The image audience: one entry point for every golden image build. Packer
+# calls this file, and --limit picks the image, the same way a runtime run
+# picks a host.
+- name: Import the image orchestrator
+  ansible.builtin.import_playbook: image/all.yml

@@ -48,9 +48,10 @@ Four layers, one image lineage:
 - **OpenTofu:** provisions a workload by cloning a golden image, one root per
   server. State lives on OVH S3, encrypted with AES-GCM and covered by a
   lockfile.
-- **Ansible:** converges the runtime configuration of each host. Secrets stay
-  in SOPS files encrypted with age, and a canary variable loads on every
-  inventory run, so a run without the key fails loudly.
+- **Ansible:** provisions the golden images at build time and converges the
+  runtime configuration of each host, from one role set. Secrets stay in SOPS
+  files encrypted with age, and a canary variable loads on every inventory
+  run, so a run without the key fails loudly.
 - **Kubernetes:** holds the Talos and Flux lab for the bare-metal nodes. A
   later phase, with a placeholder in the tree.
 

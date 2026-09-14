@@ -18,8 +18,9 @@ target.
   Planned. The directory doesn't exist yet.
 - `talos-lab/` holds discovery VMs only. Production Talos nodes are
   bare metal and stay outside Terraform. Planned.
-- `bootstrap/ovh/` owns the state backend, and is the only root with a
-  local state.
+- `bootstrap/` mints credentials and stays frozen. `bootstrap/ovh/` owns the
+  state backend, and is the only root with a local state. `bootstrap/pve/<node>/`
+  owns one PVE node's Terraform access chain.
 
 State lives in the OVH S3 backend, never in git. Read `BACKEND.md`
 before the first stateful run.
@@ -29,8 +30,10 @@ before the first stateful run.
 One root covers one provider, one blast radius, and one apply cadence.
 Don't split roots by resource type. `bootstrap/ovh/` stays frozen and owns
 only the state backend. Every root declares its own state key in its
-`backend.tf`. Never derive the key from the directory path. See
-`BACKEND.md` for the full rules.
+`backend.tf`, mirroring its path under `terraform/`: the `proxmox/jarvis`
+root stores at `proxmox/jarvis/terraform.tfstate`. That's the Terragrunt
+template, so adopting Terragrunt needs no migration, and a root moved with
+`git mv` moves its state with it. See `BACKEND.md` for the full rules.
 
 ## Editor setup
 

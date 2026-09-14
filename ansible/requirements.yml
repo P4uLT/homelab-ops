@@ -6,6 +6,10 @@ roles:
   - name: lae.proxmox
     src: git+https://github.com/lae/ansible-role-proxmox.git
     version: v1.10.1
+  # Docker Engine for the golden images and for any host that runs the
+  # service. The house policy around it lives in roles/local/docker/.
+  - name: geerlingguy.docker
+    version: 8.0.0
 
 collections:
   - name: community.sops
@@ -16,3 +20,7 @@ collections:
   # Required by lae.proxmox: modprobe and zfs modules.
   - name: community.general
     version: 13.4.0
+  # proxmox_pct_remote: the image build reaches its container through the
+  # PVE node with pct exec, and the cattle runtime path will use it too.
+  - name: community.proxmox
+    version: 2.0.0

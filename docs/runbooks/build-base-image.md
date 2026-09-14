@@ -1,8 +1,9 @@
 # Build the golden images
 
-A golden image is a Packer build on a PVE node: a container template,
-provisioned by scripts, then packed with vzdump as a versioned archive.
-Terraform instantiates those archives. Never patch a clone in place.
+A golden image is a Packer build on a PVE node. The build creates a container
+template, Ansible provisions it, then Packer packs it with vzdump as a
+versioned archive. Terraform instantiates those archives. Never patch a clone
+in place.
 
 The images form a chain: the base builds on the official Debian template, the
 Docker image on the base.
@@ -54,16 +55,20 @@ access to it.
    They go into that same committed file. PVE mounts an NFS storage under
    `/mnt/pve/<id>`, with its templates in `template/cache`.
 
-3. Create `<node>.local.pkrvars.hcl`, mode 600, with the connection.
+3. Create `<node>.local.pkrvars.hcl`, mode 600, with the connection. The
+   build authenticates with `pve_ssh_key_path`. The Ansible step runs through
+   paramiko, which needs a key or an agent. A password-only file stops the
+   build at the playbook.
 
 4. Run `task packer:init` once. Later runs stay offline.
 
 ## Run the build
 
 `task packer:build` contacts the node. Get owner approval first. It builds
-every image of `PKR_IMAGES`, in order, on every node of `PKR_HOSTS`. For each
-one: a container from the parent template, the image scripts, a vzdump archive
-in the template storage, then Packer destroys the container.
+every image of `PKR_IMAGES`, in order, on every node of `PKR_HOSTS`. Each
+build creates a container from the parent template and runs the image playbook
+from this workstation. It then writes a vzdump archive in the template storage
+and destroys the container.
 
 The archive name carries the chain that produced it and the position in that
 chain:
@@ -77,14 +82,12 @@ a new one. Packer overwrites a file of the same name, so a rebuild without a
 bump replaces the archive already in the storage.
 
 An image pins its parent by file name, `<name>_parent`, and the storage comes
-from the node's `artifact_storage`. To rebuild one image alone, run its
-command from the task with `-only`:
+from the node's `artifact_storage`. To rebuild one image, on every node or on
+one:
 
 ```sh
-cd packer
-mise exec -- packer build -only=proxmox-lxc.docker \
-  -var-file=hosts/jarvis.pkrvars.hcl \
-  -var-file=hosts/jarvis.local.pkrvars.hcl images/
+task packer:build-docker
+task packer:build-one IMAGE=docker HOST=jarvis
 ```
 
 Each build writes `packer/manifests/<image>.json` (git-ignored): the artifact,
@@ -103,19 +106,75 @@ ip -br link show <bridge>
 ```
 
 The plugin destroys its container on any failure. Only a killed Packer process
-leaves one behind: run `pct list`, then `pct destroy <ctid>`.
+leaves one behind, and each image pins its build container id (`<name>_ctid`),
+so the next build reuses it. Destroy it first when its content is suspect:
+
+```sh
+pct list
+pct destroy <ctid>
+```
+
+## Verify a fresh image
+
+An archive is a container filesystem, so the contract is worth reading once on
+a throwaway clone. Create one from the archive, boot it, then check the four
+things `image_finalize` promised:
+
+```sh
+pct create 99900 NAS:vztmpl/<archive> --hostname image-check --unprivileged 1 \
+  --features nesting=1,keyctl=1 --rootfs local-lvm:8 --memory 512 --cores 1 \
+  --net0 name=eth0,bridge=vmbr0,ip=dhcp
+pct start 99900
+pct exec 99900 -- cat /etc/image-build-info
+pct exec 99900 -- passwd -S root
+pct exec 99900 -- ls -A /var/lib/apt/lists | wc -l
+pct stop 99900
+pct destroy 99900
+```
+
+Expected: the marker holds the image name, version, and parent. `passwd -S
+root` reports `root L`, the locked account. The apt list is empty. The clone
+generates its own host keys at that first boot, which is why `/etc/ssh` looks
+populated here and empty in the archive. Stop the container before the
+destroy: `pct destroy` refuses a running one.
+
+## When a build stops at the Ansible step
+
+The playbook is idempotent and the container id is pinned, so a failure is a
+fix-and-retry, not a rebuild:
+
+```sh
+task packer:build-one IMAGE=base HOST=jarvis -- -on-error=ask
+```
+
+Answer `retry` and Packer re-runs the provisioner on the container that's
+already there. To run the playbook by hand instead, call the same task Packer
+calls, with your own node facts:
+
+```sh
+task ansible:image -- --limit builder-base \
+  -e ansible_host=<node-ip> -e ansible_user=<node-login> \
+  -e ansible_private_key_file=<key-path> -e proxmox_vmid=900 \
+  -e image_name=base -e image_version=manual -e image_parent=manual
+```
 
 ## Add an image
 
 Four touch points:
 
-1. a numbered script in `_common/`. `90-finalize.sh` always runs last.
-2. `packer/images/<name>.pkr.hcl`, with its own `<name>_build` and
-   `<name>_parent` variables: Packer variable and local names are global to
-   the directory, so they carry the image name.
-3. a source and a build block named `<name>`, so `-only=proxmox-lxc.<name>`
+1. `ansible/playbooks/image/<name>.yml`, the play: an include for the
+   interpreter, one for the roles of this image, and `image_finalize` last.
+2. `ansible/inventory/builders/hosts.yml`, with its own `builder-<name>` host:
+   the selection is the host limit, so a missing host skips the play.
+3. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
+   `<name>_parent`, and `<name>_ctid` variables: Packer variable and local
+   names are global to the directory, so they carry the image name. Give it a
+   source and a build block named `<name>`, so `-only=proxmox-lxc.<name>`
    matches.
 4. `<name>` in `PKR_IMAGES` in `.taskfiles/packer.yml`.
+
+`task packer:validate` checks the last two exist before a build touches the
+node.
 
 ## Next steps
 

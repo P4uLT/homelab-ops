@@ -38,12 +38,12 @@ The two commands below read the node and then change it. Expect one container
 to add.
 
 ```sh
-mise exec -- task tf:jarvis-plan
-mise exec -- task tf:jarvis-apply -- -auto-approve
+task tf:jarvis-plan
+task tf:jarvis-apply -- -auto-approve
 ```
 
-The plan shows one container to add. The apply clones the archive of
-`ct_template` (the Docker golden image by default), starts the container, and
+The plan shows one container to add. The apply clones the archive pinned in
+`local.images.docker`, the Docker golden image, starts the container, and
 writes the state to the bucket.
 
 Two checks on this first run:
@@ -54,14 +54,15 @@ Two checks on this first run:
   reason in [Terraform state design](../../terraform/BACKEND.md), and run
   again.
 - The container boots with fresh SSH host keys, no machine-id, and no apt
-  package lists. That's the `90-finalize.sh` contract of the golden image.
+  package lists. That's the `image_finalize` role's contract for the golden
+  image.
 
 ## Check the container
 
 Read the workload list, then prove the chain end to end on the node.
 
 ```sh
-mise exec -- task tf:jarvis-output -- -json lxcs
+task tf:jarvis-output -- -json lxcs
 ```
 
 The `lxcs` output lists every workload with its `ct_id` and its `ct_ipv4`.
@@ -71,14 +72,18 @@ image with no manual step:
 
 ```sh
 pct exec <ct_id> -- docker run --rm hello-world
+pct exec <ct_id> -- cat /etc/image-build-info
 ```
+
+The marker carries the image name, its version, and its parent, and the common
+spoke asserts it on cattle.
 
 ## Destroy
 
 One command removes the container. The golden image is untouched.
 
 ```sh
-mise exec -- task tf:jarvis-apply -- -destroy -auto-approve
+task tf:jarvis-apply -- -destroy -auto-approve
 ```
 
 The destroy removes the container and its disk. The golden image stays in the

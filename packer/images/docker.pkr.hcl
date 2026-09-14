@@ -15,6 +15,16 @@ variable "docker_dir" {
   description = "Filesystem path for this artifact. Empty to use the node artifact_dir."
 }
 
+# The build container's id, pinned so the playbook knows where to enter and so
+# Packer can resume a failed build on the same container. A string, because
+# that's the type the plugin declares for `ctid`. Overridable per node in
+# hosts/<node>.pkrvars.hcl.
+variable "docker_ctid" {
+  type        = string
+  default     = "901"
+  description = "Pinned CTID of the build container."
+}
+
 # The pin is the artifact file name, not a volid: the artifact is a content
 # decision, the storage holding it comes from a node fact (artifact_storage).
 variable "docker_parent" {
@@ -45,8 +55,14 @@ source "proxmox-lxc" "docker" {
 
   # A random root password, because the plugin would otherwise leave its
   # known default on a container that runs sshd on the bridge while it's
-  # provisioned. 90-finalize.sh locks the account before the artifact is made.
+  # provisioned. The image_finalize role locks the account before the artifact
+  # is made.
   root_password = uuidv4()
+
+  # The pinned container the playbook enters. Without this line the plugin
+  # auto-assigns an id and the two sides disagree: the build provisions nothing
+  # and looks successful.
+  ctid = var.docker_ctid
 
   template    = local.docker_parent_volid
   storage     = var.ct_storage
@@ -68,10 +84,11 @@ source "proxmox-lxc" "docker" {
 build {
   sources = ["source.proxmox-lxc.docker"]
 
-  provisioner "shell" {
-    scripts = [
-      "${path.root}/../_common/20-docker.sh",
-      "${path.root}/../_common/90-finalize.sh",
+  # Same as base.pkr.hcl: the task owns the provisioning, the inventory and
+  # --limit pick the image, and the connection comes from the node local file.
+  provisioner "shell-local" {
+    inline = [
+      "mise exec -- task -d ${path.root}/../.. ansible:image -- --limit builder-docker ${local.ansible_image_conn} -e proxmox_vmid=${var.docker_ctid} -e image_name=docker -e image_version=${local.docker_artifact} -e image_parent=${local.docker_parent_volid}",
     ]
   }
 

@@ -1,5 +1,35 @@
 # code: language=ansible
 ---
-- name: Import common playbooks
-  hosts: all,!all
-  gather_facts: false
+# The mandatory spoke: it runs for every host in the chain. Population-aware
+# from the inside. A cattle host proves it carries a golden image and skips the
+# OS baseline, which the image owns. Every other host applies the profiles its
+# group enables, through common_profiles in that group's group_vars. No group
+# defines it yet: enabling a profile changes a host's state, so it stays a
+# deliberate act per population.
+- name: Apply the common baseline
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    common_is_cattle: "{{ group_names | select('match', '^grp_tf_') | list | length > 0 }}"
+  tasks:
+    - name: Read the golden image marker
+      ansible.builtin.stat:
+        path: /etc/image-build-info
+      register: common_image_marker
+      when: common_is_cattle
+
+    - name: Fail when a cattle host lost its image identity
+      ansible.builtin.assert:
+        that: common_image_marker.stat.exists
+        fail_msg: >-
+          {{ inventory_hostname }} runs a golden image but carries no
+          /etc/image-build-info. Rebuild the image before patching this host.
+        quiet: true
+      when: common_is_cattle
+
+    - name: Apply the profiles this host enables
+      ansible.builtin.include_role:
+        name: "{{ item }}"
+      loop: "{{ common_profiles | default([]) }}"
+      when: not common_is_cattle

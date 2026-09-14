@@ -1,0 +1,24 @@
+# code: language=ansible
+---
+# The Docker service, for every host that joins grp_docker. The golden image
+# applies the same vendor role with the same three variables: one policy, two
+# consumers. Keep this block in step with playbooks/image/docker.yml; nothing
+# checks them offline.
+- name: Apply the Docker service
+  hosts: grp_docker
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Apply the Docker service
+      ansible.builtin.include_role:
+        name: geerlingguy.docker
+      vars:
+        # journald caps itself; json-file grows without bound on a busy host.
+        docker_daemon_options:
+          log-driver: journald
+        # Nobody joins the docker group: the socket is root, and a member of
+        # that group is root by another name.
+        docker_users: []
+        # Compose comes as the plugin; the legacy standalone binary doesn't.
+        docker_install_compose: false

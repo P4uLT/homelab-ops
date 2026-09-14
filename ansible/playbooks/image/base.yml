@@ -1,0 +1,23 @@
+# code: language=ansible
+---
+# The base golden image, on the official Debian template. Entry:
+# playbooks/image.yml with --limit builder-base. Facts stay off until
+# image_python has put an interpreter in the container. Keep the finalization
+# import last: it seals the image.
+- name: Build the base golden image
+  hosts: builder-base
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Put an interpreter in the container
+      ansible.builtin.import_role:
+        name: image_python
+
+    - name: Apply the baseline
+      ansible.builtin.import_role:
+        name: os_base
+
+    - name: Seal the image
+      ansible.builtin.import_role:
+        name: image_finalize

@@ -1,0 +1,40 @@
+# code: language=ansible
+---
+# A build container from the Debian template has no interpreter we can rely
+# on, and pct exec provides none. raw is the one module that needs no Python,
+# so it probes and installs; everything after it can use modules. Guarded, so
+# a retry on an image that already has python3 installs nothing.
+#
+# The two raw tasks are the only shell-shaped steps in the image path, and
+# they earn it: without an interpreter there is no module to call. The Debian
+# 13 template already ships python3 and python3-apt, so in practice the
+# install is skipped; it stays for a template that lacks one.
+- name: Check whether the module interpreter is present
+  ansible.builtin.raw: test -x /usr/bin/python3 && echo present || echo missing
+  register: image_python_probe
+  changed_when: false
+
+- name: Install the interpreter and the apt Python bindings
+  ansible.builtin.raw: apt-get update && apt-get -y install python3 python3-apt
+  when: image_python_probe.stdout is search('missing')
+  # It only runs when the probe said missing, so when it runs it changed
+  # something. Saying so keeps lint's idempotency rule honest.
+  changed_when: true
+
+- name: Gather facts now that modules can run
+  ansible.builtin.setup:
+    gather_subset:
+      - "!devices"
+
+# The pin, checked with a fact rather than a shell: the plugin creates its
+# build container as builder-<ctid>, and this play only makes sense inside the
+# container Packer pinned. A mismatch means the two sides disagree, and the
+# build would provision the wrong thing.
+- name: Assert this is the container Packer pinned
+  ansible.builtin.assert:
+    that: ansible_facts.hostname == 'builder-' ~ (proxmox_vmid | default('') | string)
+    fail_msg: >-
+      Connected to {{ ansible_facts.hostname }}, but Packer pinned
+      builder-{{ proxmox_vmid | default('') }}. Check the ctid of the image in
+      packer/images/ against the proxmox_vmid the provisioner passes.
+    quiet: true

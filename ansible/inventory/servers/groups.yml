@@ -8,3 +8,6 @@ all:
         grp_servers_proxmox:
           children:
             grp_servers_proxmox_jarvis:
+    # Opt-in service groups. Not topology: a host joins one when it runs that
+    # service. An empty group is a skipped play.
+    grp_docker:

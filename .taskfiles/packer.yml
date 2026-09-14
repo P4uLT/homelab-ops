@@ -39,12 +39,24 @@ tasks:
       # validates.
       - for: { var: PKR_HOSTS, as: HOST }
         cmd: mise exec -- packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
+      # The image playbooks and their inventory hosts are named inside a shell
+      # string, so packer validate can't see a typo in either. These are the
+      # cheap offline checks that can.
+      - for: { var: PKR_IMAGES, as: IMAGE }
+        cmd: test -f ../ansible/playbooks/image/{{.IMAGE}}.yml
+      - for: { var: PKR_IMAGES, as: IMAGE }
+        cmd: grep -q "builder-{{.IMAGE}}:" ../ansible/inventory/builders/hosts.yml
 
   build:
     desc: Build every golden image on its PVE nodes. Owner approval required. Extra args go to packer build after --.
     dir: packer
     cmds:
       - task: init
+      # The build runs Ansible from the project environment, so the first run
+      # on a fresh machine needs paramiko, the pinned collection, and the
+      # pinned Docker role.
+      - task: :ansible:deps
+      - task: :ansible:galaxy
       # The manifest post-processor writes its file but never creates the
       # directory, and the directory is git-ignored, so it's missing on a
       # fresh clone.
@@ -59,3 +71,36 @@ tasks:
             IMAGE: { ref: .PKR_IMAGES }
             HOST: { ref: .PKR_HOSTS }
         cmd: mise exec -- packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+
+  build-one:
+    desc: Build one golden image on one node. IMAGE=base|docker HOST=<node from PKR_HOSTS>. Owner approval required.
+    dir: packer
+    # Both are required, so a missing one fails here instead of aiming the
+    # build at the wrong image or node.
+    requires:
+      vars: [IMAGE, HOST]
+    cmds:
+      - task: :ansible:deps
+      - task: :ansible:galaxy
+      - cmd: mkdir -p manifests
+      # One image at a time is what Packer's -only is for. The matrix in
+      # build can't be narrowed from the command line: Task passes a string
+      # where the for loop wants the list from this file.
+      - cmd: mise exec -- packer build -only=proxmox-lxc.{{.IMAGE}} -var-file=hosts/{{.HOST}}.pkrvars.hcl -var-file=hosts/{{.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+
+  # One task per image, on purpose: the shell completes task names, not
+  # variable values, so "which image" has to be part of the name to be
+  # completable. They keep the chain order and walk every node of PKR_HOSTS.
+  build-base:
+    desc: Build the base image on every node of PKR_HOSTS. Owner approval required.
+    cmds:
+      - for: { var: PKR_HOSTS, as: HOST }
+        task: build-one
+        vars: { IMAGE: base, HOST: '{{.HOST}}' }
+
+  build-docker:
+    desc: Build the docker image on every node of PKR_HOSTS. Runs after build-base. Owner approval required.
+    cmds:
+      - for: { var: PKR_HOSTS, as: HOST }
+        task: build-one
+        vars: { IMAGE: docker, HOST: '{{.HOST}}' }
