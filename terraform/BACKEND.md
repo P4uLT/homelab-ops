@@ -6,7 +6,7 @@ OpenTofu (`tofu`). "Terraform" here names the IaC layer and its
 conventions.
 
 The backend is an OVHcloud S3 bucket. One state file lives in one bucket
-prefix per Terraform root (`key = <root-name>`). The bucket is not
+prefix per Terraform root (`key = <root-name>`). The bucket isn't
 Terraform-managed by the roots that use it. A separate, frozen bootstrap
 root creates it once. This avoids the circular case where the backend
 bucket stores the state of the root that creates it.
@@ -66,7 +66,7 @@ changes nothing. `plan` doubles as a drift check.
 ## Root layout rules
 
 One root covers one triplet: provider, blast radius, and apply cadence.
-Do not split roots by resource type. Two resources with different
+Don't split roots by resource type. Two resources with different
 cadences never share a state. A plan must not touch unrelated resources
 through the graph.
 
@@ -103,7 +103,7 @@ live once, in `terraform/backend.s3.ovh.hcl`. The tf tasks pass the
 file to every `init` as a partial config. The file holds nothing
 secret, and it stays tracked: a reader sees where the state goes. Only
 the key stays per root, and the bucket name keeps its env-only path
-through `.env.tf`. Bucket-level conventions — classes, users, regions —
+through `.env.tf`. Bucket-level conventions (classes, users, regions)
 live in `docs/object-storage.md`.
 
 The tree groups by provider category: `proxmox/`, and later `truenas/`
@@ -116,7 +116,7 @@ tf tasks, so validation never treats a module as a root.
 ## Region choice, and no replica
 
 The bucket lives in a 3-AZ region. That survives the loss of one
-availability zone. It does not survive the loss of the whole region,
+availability zone. It doesn't survive the loss of the whole region,
 and the 90-day version history lives in the same bucket.
 
 There is no cross-region replica. Each failure has a designated

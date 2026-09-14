@@ -13,7 +13,7 @@ terraform {
   # Every root encrypts its state payload. This one holds the API token
   # value. TF_VAR_state_passphrase reaches this from .env.tf through
   # the tf tasks.
-  # pi-lens-ignore: Terraform:unknown — OpenTofu-only block, unknown to the
+  # pi-lens-ignore: Terraform:unknown. OpenTofu-only block, unknown to the
   # Terraform schema; `tofu validate` is authoritative.
   encryption {
     key_provider "pbkdf2" "state" {

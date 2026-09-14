@@ -1,6 +1,6 @@
 # code: language=ansible
 ---
-# Verification playbook — the executable proof of the shell.
+# Verification playbook: the executable proof of the shell.
 # Runs on the controller over a local connection: no managed host, no SSH,
 # no become, no credentials. Entry point: task ansible:verify.
 - name: Verify the Ansible shell is alive on the controller
@@ -24,5 +24,5 @@
       ansible.builtin.assert:
         that:
           - shell_dirs.results | map(attribute='stat.exists') | select('equalto', false) | list | length == 0
-        success_msg: "Ansible shell verified — {{ inventory_hostname }} is alive."
+        success_msg: "Ansible shell verified: {{ inventory_hostname }} is alive."
         quiet: true

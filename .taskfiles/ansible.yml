@@ -76,7 +76,7 @@ tasks:
     cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} >> config/known_hosts
 
   verify:
-    desc: Verify the shell — deps, galaxy, syntax, lint, canary, local run
+    desc: Verify the shell (deps, galaxy, syntax, lint, canary, local run)
     cmds:
       - task: deps
       - task: galaxy

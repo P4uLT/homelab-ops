@@ -7,7 +7,7 @@ Terraform instantiates those archives. Never patch a clone in place.
 The images form a chain: the base builds on the official Debian template, the
 Docker image on the base.
 
-The plugin connects to the node over plain SSH and runs `pct`. It does not use
+The plugin connects to the node over plain SSH and runs `pct`. It doesn't use
 the PVE API.
 
 ## Node files
@@ -42,7 +42,7 @@ access to it.
 
    Copy it into `parent_template` as a full volid. Proxmox ships several
    builds of the same release (`13.6-1`, `13.6-2`) and a build stops on a name
-   the node does not have.
+   the node doesn't have.
 
 2. Read the storage and bridge names off the node:
 
@@ -119,8 +119,8 @@ Four touch points:
 
 ## Next steps
 
-- [Provision an LXC workload with Terraform](provision-pve-ct.md) — instantiate
+- [Provision an LXC workload with Terraform](provision-pve-ct.md): instantiate
   the archive with a container.
-- [Add a Proxmox VE node](onboard-pve.md) — the node facts and the connection
+- [Add a Proxmox VE node](onboard-pve.md): the node facts and the connection
   file this build needs.
-- [Packaging notes](../../packer/README.md) — the Packer shell and its tasks.
+- [Packaging notes](../../packer/README.md): the Packer shell and its tasks.

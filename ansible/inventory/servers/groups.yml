@@ -1,5 +1,5 @@
 ---
-# Group tree — topology only, no hosts here. Hosts live in hosts.yml
+# Group tree: topology only, no hosts here. Hosts live in hosts.yml
 # and group variables in the adjacent group_vars/ directory.
 all:
   children:

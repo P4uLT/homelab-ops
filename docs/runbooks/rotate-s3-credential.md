@@ -37,7 +37,7 @@ state files in the bucket.
 
 4. Update `.env.tf` and the off-site recovery kit with the new pair.
 
-5. Restore the guard, and commit it. The rotation is not finished until the
+5. Restore the guard, and commit it. The rotation isn't finished until the
    guard is back.
 
 ## Next steps

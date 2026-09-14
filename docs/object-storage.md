@@ -31,9 +31,9 @@ OVH bills stored GiB-hours, egress, and request classes, not buckets.
 
 ## Related
 
-- [Terraform state design](../terraform/BACKEND.md) — the state bucket in
+- [Terraform state design](../terraform/BACKEND.md): the state bucket in
   context.
-- [Bootstrap the Terraform state backend](runbooks/bootstrap-tf-backend.md) —
+- [Bootstrap the Terraform state backend](runbooks/bootstrap-tf-backend.md):
   the one-time bucket creation.
-- [OVH least privilege](ovh-least-privilege.md) — the keys that reach these
+- [OVH least privilege](ovh-least-privilege.md): the keys that reach these
   buckets.

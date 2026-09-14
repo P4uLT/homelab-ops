@@ -84,6 +84,11 @@ when the first release is cut.
   `docs/ovh-least-privilege.md`. Every cross-reference is now a relative
   link, and the how-to pages end with next steps. The orphan
   `docs/bootstrap.md` stub is gone.
+- House style drops the spaced em dash: 66 occurrences across 26 files now
+  use a colon, parentheses, or a comma. The rule is in `AGENTS.md`.
+- Prose uses contractions: 39 occurrences of `do not`, `is not`, and
+  similar become `don't`, `isn't`. A verbatim error string keeps its
+  long form, in backticks. The rule is in `AGENTS.md`.
 
 ### Security
 

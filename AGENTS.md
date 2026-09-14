@@ -59,7 +59,7 @@ ansible/
 - Secrets live only in `*.sops.yaml` files (SOPS + age). Encrypt with
   `task sops:encrypt`. Procedures: `docs/sops.md`.
 - The canary variable loads on every inventory-based run. Without the age
-  key, every run fails loudly. That is by design, not a bug.
+  key, every run fails loudly. That's by design, not a bug.
 - The age key file is local (`.age.key.txt`, git-ignored). The committed
   `mise.toml` sets `SOPS_AGE_KEY_FILE`.
 - Each task declares its secrets: a task that needs one loads it with
@@ -80,7 +80,7 @@ ansible/
   means a fork pin in `requirements.yml` or a copy in `roles/local/`.
 - Never enable `display_args_to_stdout` or `[diff] always`: task arguments
   and diffs can leak secret values into logs.
-- Do not run `-vv` or `--diff` on secret-bearing plays.
+- Don't run `-vv` or `--diff` on secret-bearing plays.
 - Check mode can change the node. Get owner approval before any host contact.
 - A non-root node stores its `ansible_become_password` in the node group
   secrets file. Never a prompt setting in the config.
@@ -103,7 +103,7 @@ bare metal. Use `host` only when the system type is unknown.
 ## Gotchas
 
 - `group_vars` must sit beside the inventory source:
-  `inventory/servers/group_vars/`. Ansible does not walk parent
+  `inventory/servers/group_vars/`. Ansible doesn't walk parent
   directories. Files at `ansible/group_vars/` never load.
 - In a non-TTY harness, ansible refuses to run. Wrap the command in a
   pseudo-terminal: `script -qec '<command>' /dev/null`.
@@ -122,9 +122,9 @@ bare metal. Use `host` only when the system type is unknown.
 - The OVH project API takes the region in UPPERCASE (`EU-WEST-PAR`). The S3
   endpoint takes it lowercase. Lowercase in the API returns
   `Invalid region parameter`.
-- `tofu init -backend=false` cannot read a local state that OpenTofu native
+- `tofu init -backend=false` can't read a local state that OpenTofu native
   encryption protects. It fails with `Unsupported state file format`, and
-  `-reconfigure` and `-upgrade` do not help. Run `task tf:init` instead.
+  `-reconfigure` and `-upgrade` don't help. Run `task tf:init` instead.
 - The `encryption` block is OpenTofu-only, and a Terraform-schema linter
   rejects it. `.pi-lens.json` keeps the two backend files out of its
   scans. `tofu validate` and `tflint` are authoritative, and `task
@@ -133,7 +133,7 @@ bare metal. Use `host` only when the system type is unknown.
   needs `skip_region_validation`, `skip_credentials_validation` (OVH has
   no STS), and a static `endpoints` value.
   `terraform/backend.s3.ovh.hcl` shows the set.
-- The OVH S3 policy API drops actions it does not support, such as
+- The OVH S3 policy API drops actions it doesn't support, such as
   `s3:GetObjectVersion`. A dropped action shows a diff on every plan. Keep
   the policy to the minimal allowlist.
 - A plan that waits for approval fails with `error asking for approval:
@@ -144,9 +144,15 @@ bare metal. Use `host` only when the system type is unknown.
 ## Style
 
 - Docs: short sentences. Active voice. Plain words.
+- No spaced em dash. Use a colon after a term, parentheses, or a comma
+  inside a sentence, or two sentences. Google and Microsoft both ban the
+  space around a dash.
+- Contractions: "don't", "isn't", "can't". A contraction costs one word
+  where the full form costs two. A verbatim error string keeps its long
+  form, in backticks.
 - Comments: short. State the why, not the what. Delete a comment that
   restates the line under it.
-- Prefer the documented standard over a local trick. When a choice is not
+- Prefer the documented standard over a local trick. When a choice isn't
   standard, record the reason next to it.
 - Commits: `type(scope): summary`. Imperative. 72 characters max.
 - PRs follow `.github/pull_request_template.md`. Update `CHANGELOG.md` when
@@ -154,19 +160,19 @@ bare metal. Use `host` only when the system type is unknown.
 
 ## Pointers
 
-- `docs/README.md` — the documentation index. Start here.
-- `docs/sops.md` — encrypt, decrypt, backup key, fresh-clone recovery.
-- `docs/ssh.md` — which key belongs where, config pattern, rotation.
-- `docs/object-storage.md` — bucket conventions, one class per bucket.
-- `docs/ovh-least-privilege.md` — why the bootstrap credential is broad.
-- `docs/runbooks/README.md` — the runbook index.
-- `docs/runbooks/onboard-pve.md` — add a Proxmox VE node.
-- `docs/runbooks/pin-host-keys.md` — pin a node host key before Ansible contacts it.
-- `docs/runbooks/build-base-image.md` — build the golden LXC images.
-- `docs/runbooks/bootstrap-tf-backend.md` — one-time state backend setup.
-- `docs/runbooks/rotate-s3-credential.md` — replace the state bucket key pair.
-- `docs/runbooks/bootstrap-pve-access.md` — one-time PVE access bootstrap for the Terraform roots.
-- `docs/runbooks/provision-pve-ct.md` — a golden image as an LXC
+- `docs/README.md`: the documentation index. Start here.
+- `docs/sops.md`: encrypt, decrypt, backup key, fresh-clone recovery.
+- `docs/ssh.md`: which key belongs where, config pattern, rotation.
+- `docs/object-storage.md`: bucket conventions, one class per bucket.
+- `docs/ovh-least-privilege.md`: why the bootstrap credential is broad.
+- `docs/runbooks/README.md`: the runbook index.
+- `docs/runbooks/onboard-pve.md`: add a Proxmox VE node.
+- `docs/runbooks/pin-host-keys.md`: pin a node host key before Ansible contacts it.
+- `docs/runbooks/build-base-image.md`: build the golden LXC images.
+- `docs/runbooks/bootstrap-tf-backend.md`: one-time state backend setup.
+- `docs/runbooks/rotate-s3-credential.md`: replace the state bucket key pair.
+- `docs/runbooks/bootstrap-pve-access.md`: one-time PVE access bootstrap for the Terraform roots.
+- `docs/runbooks/provision-pve-ct.md`: a golden image as an LXC
   workload through Terraform.
-- `terraform/BACKEND.md` — Terraform state design and recovery.
-- `CHANGELOG.md` — notable changes.
+- `terraform/BACKEND.md`: Terraform state design and recovery.
+- `CHANGELOG.md`: notable changes.

@@ -7,8 +7,8 @@ Golden LXC images for Proxmox VE, built by Packer on a PVE node.
 | `images/<name>.pkr.hcl` | one image: build number, parent, resources, scripts |
 | `images/base.pkr.hcl` | the plugin, and the variables every image shares |
 | `hosts/<node>.pkrvars.hcl` | the node facts: template volid, artifact storage and dir, rootfs storage, bridge |
-| `hosts/<node>.local.pkrvars.hcl` | git-ignored: the node address, login, key or password |
-| `_common/*.sh` | provisioning scripts; every image lists its own, and `90-finalize.sh` always runs last |
+| `hosts/<node>.local.pkrvars.hcl` | git-ignored: the node address, login, key, or password |
+| `_common/*.sh` | provisioning scripts. Every image lists its own, and `90-finalize.sh` always runs last |
 
 An image builds on the artifact of another, so the set is a chain:
 `debian-13-standard-base` on the official Debian template,

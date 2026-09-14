@@ -10,9 +10,9 @@ version: "3"
 #
 # Dotenv files at the repository root:
 #
-#   .env.tf — every OpenTofu task. Native names of its consumer:
+#   .env.tf: every OpenTofu task. Native names of its consumer:
 #     TF_VAR_* for tofu, AWS_* for the S3 backend.
-#   .env.account.ovh.tf — the OVH account credential. The bootstrap root
+#   .env.account.ovh.tf: the OVH account credential. The bootstrap root
 #     and `task ovh:cli` read it.
 #
 # A root-specific credential never enters a dotenv. It lives in the root's

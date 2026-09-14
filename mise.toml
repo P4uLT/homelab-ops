@@ -1,4 +1,4 @@
-# Toolchain for homelab-ops — extended phase by phase.
+# Toolchain for homelab-ops: extended phase by phase.
 # Roadmap for later phases (uncomment as each lands):
 #   kubectl, talosctl, topf, flux, yq, just
 # topf's mise availability is unverified (architecture study). Check it before adding.

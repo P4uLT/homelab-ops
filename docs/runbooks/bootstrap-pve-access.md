@@ -54,9 +54,9 @@ and in the jarvis tfvars. A lost value means a rotation.
 
 ## Next steps
 
-- [Provision an LXC workload with Terraform](provision-pve-ct.md) — the root
+- [Provision an LXC workload with Terraform](provision-pve-ct.md): the root
   that consumes the token.
-- [Add a Proxmox VE node](onboard-pve.md) — copy this root for a second PVE
+- [Add a Proxmox VE node](onboard-pve.md): copy this root for a second PVE
   server.
-- [Terraform state design](../../terraform/BACKEND.md) — the bucket, the
+- [Terraform state design](../../terraform/BACKEND.md): the bucket, the
   guards, and the recovery path.

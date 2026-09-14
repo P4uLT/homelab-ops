@@ -15,7 +15,7 @@ target.
   its `locals.tf`.
 - `truenas/` imports datasets, NFS shares, and snapshots. Everything that
   democratic-csi creates stays out of Terraform management.
-  Planned. The directory does not exist yet.
+  Planned. The directory doesn't exist yet.
 - `talos-lab/` holds discovery VMs only. Production Talos nodes are
   bare metal and stay outside Terraform. Planned.
 - `bootstrap/ovh/` owns the state backend, and is the only root with a
@@ -27,7 +27,7 @@ before the first stateful run.
 ## Root rules
 
 One root covers one provider, one blast radius, and one apply cadence.
-Do not split roots by resource type. `bootstrap/ovh/` stays frozen and owns
+Don't split roots by resource type. `bootstrap/ovh/` stays frozen and owns
 only the state backend. Every root declares its own state key in its
 `backend.tf`. Never derive the key from the directory path. See
 `BACKEND.md` for the full rules.
@@ -36,9 +36,9 @@ only the state backend. Every root declares its own state key in its
 
 These files are OpenTofu. The HashiCorp Terraform language server
 rejects valid OpenTofu blocks such as `encryption` with
-"Blocks of type ... are not expected here". Use the OpenTofu extension
+`Blocks of type ... are not expected here`. Use the OpenTofu extension
 ([vscode-opentofu](https://marketplace.visualstudio.com/items?itemName=OpenTofu.vscode-opentofu))
 version 0.6.3 or newer: older versions bundle a language server whose
-schema does not know the `encryption` block and raises the same false
+schema doesn't know the `encryption` block and raises the same false
 error. Linting runs through `task tf:lint` with the repository
 `terraform/.tflint.hcl`.

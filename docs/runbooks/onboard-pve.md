@@ -22,7 +22,7 @@ Three steps put the node on paper before anything touches it.
 
 ## SSH access
 
-These two steps give you login and prove the host is the one you think it is.
+These two steps give you login and prove the host is the one you expect.
 
 1. Add the node to `~/.ssh/config`. Use `StrictHostKeyChecking accept-new` and
    the root SSH key. The block pattern is in
@@ -47,7 +47,7 @@ Four steps run the role and prove the credential it needs.
    The file form survives the shell layers. An inline `-e "pve_storages=[]"`
    becomes the string `[]` and breaks the role.
 
-   The Terraform access chain is not part of this run. It comes from the
+   The Terraform access chain isn't part of this run. It comes from the
    node's own frozen root under `terraform/bootstrap/pve/`, created by copying
    `terraform/bootstrap/pve/jarvis/`. See
    [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md).
@@ -81,9 +81,9 @@ Review `ansible/config/tmp/ansible.log`, then delete it.
 
 ## Next steps
 
-- [Provision an LXC workload with Terraform](provision-pve-ct.md) — the first
+- [Provision an LXC workload with Terraform](provision-pve-ct.md): the first
   container on the new node.
-- [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md) —
+- [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md):
   the access root you copied for this node.
-- [SSH key and host-key practices](../ssh.md) — the key and inventory rules
+- [SSH key and host-key practices](../ssh.md): the key and inventory rules
   the node now follows.

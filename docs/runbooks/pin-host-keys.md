@@ -19,7 +19,7 @@ verifies against this file on every run.
 
 ## The one exception
 
-The Packer image build does not verify the host key. The Proxmox LXC plugin
+The Packer image build doesn't verify the host key. The Proxmox LXC plugin
 connects with host-key verification disabled. Treat that link as a trusted
 network. The pin above covers Ansible and manual logins only. See
 [Build the golden images](build-base-image.md) for the build itself.

@@ -5,11 +5,11 @@ here.
 
 ## Reference
 
-- [SOPS and age procedures](sops.md) — encrypt, decrypt, back up the key,
+- [SOPS and age procedures](sops.md): encrypt, decrypt, back up the key,
   recover a fresh clone.
-- [SSH key and host-key practices](ssh.md) — which key belongs where, how to
+- [SSH key and host-key practices](ssh.md): which key belongs where, how to
   pin a host key, what to rotate and when.
-- [OVH object storage conventions](object-storage.md) — bucket per data class,
+- [OVH object storage conventions](object-storage.md): bucket per data class,
   one access boundary each.
 
 ## Runbooks
@@ -19,7 +19,7 @@ node, bootstrap the state backend, build a golden image, provision a container.
 
 ## Where the rest lives
 
-- [Terraform state design](../terraform/BACKEND.md) — backend layout, keys,
+- [Terraform state design](../terraform/BACKEND.md): backend layout, keys,
   recovery.
 - [Repository layout and commands](../README.md)
-- [Agent instructions](../AGENTS.md) — hard rules, gotchas, project structure.
+- [Agent instructions](../AGENTS.md): hard rules, gotchas, project structure.

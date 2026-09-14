@@ -1,6 +1,6 @@
 # code: language=ansible
 ---
-# Hub playbook — apply the server configuration from the inventory.
+# Hub playbook: apply the server configuration from the inventory.
 # This playbook can contact managed hosts.
 - name: Import the servers orchestrator
   ansible.builtin.import_playbook: main/servers.yml

@@ -9,7 +9,7 @@ one inventory, three host populations with separate authorities.
 | ---- | ------- |
 | `config/` | `ansible.cfg` (symlinked at `ansible/` for auto-discovery), logs, retry files, project `known_hosts` |
 | `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
-| `inventory/` | `servers/` — `groups.yml` (tree), `hosts.yml` (membership), `iac.tf.yml` (TF placeholder) — with adjacent `group_vars/` |
+| `inventory/` | `servers/`: `groups.yml` (tree), `hosts.yml` (membership), `iac.tf.yml` (TF placeholder), with adjacent `group_vars/` |
 | `inventory/servers/group_vars/` | Variables per inventory group (cleartext vars + `*.sops.yaml` secrets) |
 | `playbooks/` | Hub (`site.yml`), orchestrators (`main/`), spokes, `verify.yml` |
 | `roles/` | `local/` (ours), `profiles/` (composable baselines), `vendors/` (downloaded, ignored) |
@@ -19,14 +19,14 @@ one inventory, three host populations with separate authorities.
 
 ## Populations
 
-- **Cattle** — LXC born from a Packer golden image via Terraform. The image
-  owns the OS baseline. Patching means rebuilding the image. Do not upgrade
+- **Cattle**: LXC born from a Packer golden image via Terraform. The image
+  owns the OS baseline. Patching means rebuilding the image. Don't upgrade
   a cattle node in place. Playbooks guard on `/etc/image-build-info` and skip
   the baseline for cattle.
-- **Pets by nature** — hosts that carry state or hardware and cannot be
+- **Pets by nature**: hosts that carry state or hardware and can't be
   rebuilt from an image: `pve-one`, TrueNAS, OMV. They get the full
   baseline.
-- **Manual LXC** (`grp_lxc_manual`) — containers created by hand in the PVE
+- **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE
   UI, outside the TF+Packer pipeline. They get the full baseline.
 
 Talos nodes are out of scope for Ansible: no SSH, no playbooks, ever.

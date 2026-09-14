@@ -69,10 +69,10 @@ Use this path when you want to choose the rules the key carries.
    | DELETE | `/*` |
 
    This is the configuration the provider expects, and the one other users
-   report as working. It is also a broad credential that can act on the whole
+   report as working. It's also a broad credential that can act on the whole
    account. Treat it like the age key.
 
-   Do not add `PATCH`. The OVH form returns an internal server error.
+   Don't add `PATCH`. The OVH form returns an internal server error.
 
    **Scoped rules, if you accept the upkeep.** The known minimum for the
    bootstrap root is:
@@ -84,7 +84,7 @@ Use this path when you want to choose the rules the key carries.
 
    Two caveats:
 
-   - The star does not match the bare path `/cloud/project`. The
+   - The star doesn't match the bare path `/cloud/project`. The
      `cloud project list` command needs `GET /cloud/project` as well. Without
      it, read the project ID from the console.
    - Narrow paths produced further `403` errors for other users. The message
@@ -98,7 +98,7 @@ Use this path when you want to choose the rules the key carries.
    `.env.account.ovh.tf` right away: `OVH_APPLICATION_KEY`,
    `OVH_APPLICATION_SECRET`, `OVH_CONSUMER_KEY`.
 
-Path B does not configure the `ovhcloud` CLI, and step 7 below uses it. Run
+Path B doesn't configure the `ovhcloud` CLI, and step 7 below uses it. Run
 `ovhcloud login` afterwards, or check the bucket with a scoped tool of your
 choice instead.
 
@@ -108,7 +108,7 @@ One command proves the three keys reach your account.
 
 Run `task ovh:cli -- cloud project list`. It lists your Public Cloud projects,
 which proves the three keys work. The task loads `.env.account.ovh.tf` for
-that one command, so nothing lands in your shell. Note the `project_id`. It is
+that one command, so nothing lands in your shell. Note the `project_id`. It's
 the value for `OVH_CLOUD_PROJECT_SERVICE` in `.env.account.ovh.tf`.
 
 ## Create the bucket and its access chain
@@ -149,7 +149,7 @@ root. Step 5 creates billable resources, so get owner approval first.
 9. Run the local checks: `task verify`.
 
 The bootstrap root is frozen now. Use `task tf:bootstrap-plan` to check for
-drift. Do not add resources to this root.
+drift. Don't add resources to this root.
 
 ## When the API returns `403 This call has not been granted`
 
@@ -169,5 +169,5 @@ A start-up failure that names no resource comes from `/auth/details`.
   have leaked.
 - [OVH least privilege](../ovh-least-privilege.md) to stop using the broad
   account key on every apply.
-- [Provision an LXC workload with Terraform](provision-pve-ct.md) — the first
+- [Provision an LXC workload with Terraform](provision-pve-ct.md): the first
   root that writes state to this bucket.

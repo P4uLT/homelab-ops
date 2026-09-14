@@ -12,7 +12,7 @@ Run these steps once per machine:
 2. Run `mise install` in the repository root. This command installs SOPS 3.13.3 and age 1.3.2.
 3. Copy your age key file to the repository root. Name the file `.age.key.txt`.
 4. Run `chmod 600 .age.key.txt`.
-5. Do not create a `.env` file for this variable. The committed `mise.toml` sets `SOPS_AGE_KEY_FILE` to the repository key file. The path resolves from any directory, on every machine.
+5. Don't create a `.env` file for this variable. The committed `mise.toml` sets `SOPS_AGE_KEY_FILE` to the repository key file. The path resolves from any directory, on every machine.
 6. Run `task sops:decrypt -- ansible/inventory/servers/group_vars/all/secrets.sops.yaml > /dev/null`. A silent result shows that setup works.
 
 ## Encrypt, decrypt, and edit
@@ -22,7 +22,7 @@ ends in `.sops.yaml` gets encryption automatically.
 
 1. Create your file with plain values.
 2. Run `task sops:encrypt -- <path>`. The file content becomes encrypted.
-3. Run `task sops:decrypt -- <path>` when you need the plain values. Pipe the output to a tool or a review command. Do not write the output to a file.
+3. Run `task sops:decrypt -- <path>` when you need the plain values. Pipe the output to a tool or a review command. Don't write the output to a file.
 4. Run `task sops:edit -- <path>` to change values. The command opens the decrypted content in your editor. The command encrypts the file again when you close the editor.
 5. Check the encrypted file with `grep 'ENC\[AES256_GCM' <path>`. The command must show at least one encrypted value.
 
@@ -46,7 +46,7 @@ key alone decrypts every file.
 ## Fresh-clone recovery
 
 A clone without the age key fails on every Ansible run. The failure happens at
-variable load, so it is loud.
+variable load, so it's loud.
 
 1. Clone the repository.
 2. Run `mise install`.
@@ -55,7 +55,7 @@ variable load, so it is loud.
 5. Run `task verify`.
 
 Step 5 has two legs. The OpenTofu leg needs the state passphrase from
-`.env.tf`; without it, `tf:init` stops on the encrypted state. The Ansible leg
+`.env.tf`. Without it, `tf:init` stops on the encrypted state. The Ansible leg
 proves the age recovery on its own, because the committed `mise.toml` sets the
 key path. The first run needs network for the vendor, provider, and plugin
 downloads.
@@ -70,8 +70,8 @@ The backup key replaces the main key without re-encrypting anything:
 
 ## Next steps
 
-- [Bootstrap the Terraform state backend](runbooks/bootstrap-tf-backend.md) —
+- [Bootstrap the Terraform state backend](runbooks/bootstrap-tf-backend.md):
   the passphrase that `task verify` needs.
-- [OVH object storage conventions](object-storage.md) — where the state bucket
+- [OVH object storage conventions](object-storage.md): where the state bucket
   lives, and which key opens it.
-- [Agent instructions](../AGENTS.md) — why every run fails without the key.
+- [Agent instructions](../AGENTS.md): why every run fails without the key.

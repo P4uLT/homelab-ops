@@ -1,5 +1,5 @@
 ---
-# All vendor requirements — roles and collections, exact pins only.
+# All vendor requirements: roles and collections, exact pins only.
 # Installed to roles/vendors/ and collections/vendors/ (both git-ignored).
 # Entry: task ansible:galaxy
 roles:

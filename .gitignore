@@ -40,7 +40,7 @@ ansible/roles/vendors/*
 ansible/collections/vendors/*
 !ansible/collections/vendors/.gitkeep
 
-# Local agent tooling lockfile — not repo content
+# Local agent tooling lockfile: not repo content
 skills-lock.json
 
 # Local task-runner output

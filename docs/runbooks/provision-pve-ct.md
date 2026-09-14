@@ -54,7 +54,7 @@ Two checks on this first run:
   reason in [Terraform state design](../../terraform/BACKEND.md), and run
   again.
 - The container boots with fresh SSH host keys, no machine-id, and no apt
-  package lists. That is the `90-finalize.sh` contract of the golden image.
+  package lists. That's the `90-finalize.sh` contract of the golden image.
 
 ## Check the container
 
@@ -95,8 +95,8 @@ declares the new node's facts in its `locals.tf`.
 
 ## Next steps
 
-- [Add a Proxmox VE node](onboard-pve.md) — the node this root targets.
-- [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md) —
+- [Add a Proxmox VE node](onboard-pve.md): the node this root targets.
+- [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md):
   the token this root authenticates with.
-- [Terraform state design](../../terraform/BACKEND.md) — the bucket this root
+- [Terraform state design](../../terraform/BACKEND.md): the bucket this root
   writes to.

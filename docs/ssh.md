@@ -31,7 +31,7 @@ For manual logins, pass the user explicitly: `ssh admin@<alias>`.
 ## Access inventory
 
 Keep an access inventory (node, account, key fingerprint, device) outside
-the repository. It is the revocation list for rotation and device loss.
+the repository. It's the revocation list for rotation and device loss.
 
 ## Rotation
 
@@ -41,8 +41,8 @@ not change existing passwords.
 
 ## Related
 
-- [Pin a host key](runbooks/pin-host-keys.md) — the pinning procedure, and the
+- [Pin a host key](runbooks/pin-host-keys.md): the pinning procedure, and the
   Packer exception.
-- [Add a Proxmox VE node](runbooks/onboard-pve.md) — SSH access as one step of
+- [Add a Proxmox VE node](runbooks/onboard-pve.md): SSH access as one step of
   a node onboarding.
-- [SOPS and age procedures](sops.md) — the secrets that carry the login.
+- [SOPS and age procedures](sops.md): the secrets that carry the login.
