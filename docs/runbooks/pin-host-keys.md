@@ -1,8 +1,8 @@
 # Pin a host key
 
 Pin a node's SSH host key before Ansible or a manual login contacts it.
-Without the pin, the first connection trusts whatever answers, and the
-host-key check protects nothing.
+Without the pin, the first connection trusts whatever answers, and nothing
+verifies the host key.
 
 The pin is per node, and it survives reboots.
 

@@ -143,6 +143,8 @@ bare metal. Use `host` only when the system type is unknown.
 
 ## Style
 
+- Rules, tooling, and sources: `docs/writing.md`. The check is
+  `task docs:check`.
 - Docs: short sentences. Active voice. Plain words.
 - No spaced em dash. Use a colon after a term, parentheses, or a comma
   inside a sentence, or two sentences. Google and Microsoft both ban the
@@ -161,6 +163,7 @@ bare metal. Use `host` only when the system type is unknown.
 ## Pointers
 
 - `docs/README.md`: the documentation index. Start here.
+- `docs/writing.md`: the writing rules, the tooling, and each rule's source.
 - `docs/sops.md`: encrypt, decrypt, backup key, fresh-clone recovery.
 - `docs/ssh.md`: which key belongs where, config pattern, rotation.
 - `docs/object-storage.md`: bucket conventions, one class per bucket.
