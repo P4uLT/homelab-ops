@@ -160,12 +160,10 @@ bare metal. Use `host` only when the system type is unknown.
 - Prefer the documented standard over a local trick. When a choice isn't
   standard, record the reason next to it.
 - Commits: `type(scope): summary`. Imperative. 72 characters max.
-- PRs follow `.github/pull_request_template.md`. Update `CHANGELOG.md` when
-  user-visible behavior changes.
+- PRs follow `.github/pull_request_template.md`.
 
 ## Pointers
 
 - `docs/README.md`: the documentation index. Start here.
 - `docs/writing.md`: the writing rules, the tooling, and each rule's source.
 - `terraform/BACKEND.md`: Terraform state design and recovery.
-- `CHANGELOG.md`: notable changes.
