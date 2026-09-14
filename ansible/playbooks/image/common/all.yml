@@ -1,0 +1,5 @@
+# code: language=ansible
+---
+# The chain root's play. A second root image would add its line here.
+- name: Import the base golden image
+  ansible.builtin.import_playbook: base.yml

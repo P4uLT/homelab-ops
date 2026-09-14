@@ -1,0 +1,15 @@
+# code: language=ansible
+---
+# The first phase of every build: a build container from the template has no
+# reliable interpreter, so it goes in before any content role. Targets every
+# builder; the host limit picks the one being built. Facts stay off here: the
+# role gathers them itself once the interpreter runs.
+- name: Prepare the build container
+  hosts: grp_builders
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Put an interpreter in the container
+      ansible.builtin.import_role:
+        name: image_python

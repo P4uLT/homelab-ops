@@ -160,21 +160,28 @@ task ansible:image -- --limit builder-base \
 
 ## Add an image
 
-Four touch points:
+Five touch points:
 
-1. `ansible/playbooks/image/<name>.yml`, the play: imports for the
-   interpreter and the roles of this image, with `image_finalize` last.
-2. The builders inventory, in `ansible/inventory/builders/`: the
+1. The image play, in its category under `ansible/playbooks/image/`. A
+   service image sits at `services/<name>.yml` and imports the roles of this
+   image only. A stack image sits at `stacks/<name>.yml` with its own
+   `stacks/<name>/` directory of plays, like the fleet's `servers/stacks/`.
+2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
+   placeholder play that matches no host. The first stack replaces the
+   placeholder with its line and touches nothing else in the tree. The
+   phases every build shares live in `common/`: the interpreter prologue,
+   the base, and the seal.
+3. The builders inventory, in `ansible/inventory/builders/`: the
    `grp_builders_<name>` leaf in `groups.yml`, then the `builder-<name>` host
    under it in `hosts.yml`. The selection is the host limit, so a missing
    host skips the play. An image that installs a service also joins that
    service's group, which is where its policy lives, in `group_vars/`.
-3. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
+4. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
    `<name>_parent`, and `<name>_ctid` variables: Packer variable and local
    names are global to the directory, so they carry the image name. Give it a
    source and a build block named `<name>`, so `-only=proxmox-lxc.<name>`
    matches.
-4. `<name>` in `PKR_IMAGES` in `.taskfiles/packer.yml`.
+5. `<name>` in `PKR_IMAGES` in `.taskfiles/packer.yml`.
 
 `task packer:validate` checks the last two exist before a build touches the
 node.

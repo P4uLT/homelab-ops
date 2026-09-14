@@ -1,0 +1,15 @@
+# code: language=ansible
+---
+# The base golden image, on the official Debian template: the chain root, and
+# the track's common. Entry: playbooks/image.yml with --limit builder-base.
+# The interpreter comes from common/prologue.yml and the seal from
+# common/seal.yml, both applied by all.yml around this play.
+- name: Build the base golden image
+  hosts: builder-base
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Apply the baseline
+      ansible.builtin.import_role:
+        name: os_base

@@ -79,8 +79,9 @@ source "proxmox-lxc" "base" {
 build {
   sources = ["source.proxmox-lxc.base"]
 
-  # Provisioning lives in Ansible: one playbook per image, the same roles the
-  # runtime baseline uses. The task owns the command, the inventory and
+  # Provisioning lives in Ansible: one content play per image, wrapped in
+  # shared phases, using the same roles as the runtime baseline. The task owns
+  # the command, the inventory and
   # --limit pick the image, and the rest of the connection comes from the node
   # local file. pct exec means the build container needs no sshd and no
   # credential.

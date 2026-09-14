@@ -36,7 +36,7 @@ match reality. Record a divergence in the spec's status section instead.
 
 1. List what changed as facts: renames, moves, new files, new tasks, changed
    commands, changed defaults. One line each.
-2. Turn each fact into grep patterns: the old path (`playbooks/servers`), the
+2. Turn each fact into grep patterns: the old path (`main/servers.yml`), the
    old name (`grp_docker`), the old vocabulary (`spoke`), the removed file
    (`docker_service.yml`).
 3. Grep every pattern across the tracked tree, excluding `docs/superpowers`
