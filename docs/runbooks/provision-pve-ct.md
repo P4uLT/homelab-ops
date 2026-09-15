@@ -81,8 +81,8 @@ layer asserts it on cattle.
 
 ## The container joins the fleet
 
-The image carries the fleet's public keys, so the container answers SSH from
-birth, for Ansible and for you. A new device means a new public key in
+The image carries the fleet account, so the container answers SSH from birth,
+for Ansible and for you. A new device means a new public key in
 `ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, added with
 `task sops:edit`. Then rebuild the image chain: the old key stays trusted in
 every archive built before.

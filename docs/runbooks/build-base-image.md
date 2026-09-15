@@ -117,8 +117,8 @@ pct destroy <ctid>
 ## Verify a fresh image
 
 An archive is a container filesystem, so the contract is worth reading once on
-a throwaway clone. Create one from the archive, boot it, then check the four
-things `image_finalize` promised:
+a throwaway clone. Create one from the archive, boot it, then check what
+`image_finalize` promised, and that the fleet account answers:
 
 ```sh
 pct create 99900 NAS:vztmpl/<archive> --hostname image-check --unprivileged 1 \
@@ -135,7 +135,15 @@ pct destroy 99900
 Expected: the marker holds the image name, version, and parent. `passwd -S
 root` reports `root L`, the locked account. The apt list is empty. The clone
 generates its own host keys at that first boot, which is why `/etc/ssh` looks
-populated here and empty in the archive. Stop the container before the
+populated here and empty in the archive. Its account is the fleet's way in, so
+it answers SSH with the key baked into the archive:
+
+```sh
+pct exec 99900 -- hostname -I
+ssh -o StrictHostKeyChecking=accept-new admin@<the address>
+```
+
+`admin` is the name in the image secrets, unless you changed it there. Stop the container before the
 destroy: `pct destroy` refuses a running one.
 
 ## When a build stops at the Ansible step
