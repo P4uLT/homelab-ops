@@ -9,19 +9,9 @@
 # 2. apt. The lists must go after the last install, or every image hauls them
 #    around.
 #
-# The role owns no variable. Packer passes image_name, image_version, and
-# image_parent as extra variables, and the assert below fails loudly when one
-# is missing, so a wiring mistake never writes a marker with holes in it.
-- name: Assert the caller passed the image identity
-  ansible.builtin.assert:
-    that:
-      - image_name is defined and image_name | length > 0
-      - image_version is defined and image_version | length > 0
-      - image_parent is defined and image_parent | length > 0
-    fail_msg: >-
-      Packer must pass image_name, image_version, and image_parent as extra
-      variables. See the shell-local provisioner of the image.
-    quiet: true
+# The image identity comes from Packer as extra variables, and the role's
+# argument specs mark them required, so a build that misses one fails before
+# the first task runs.
 
 # sshd doesn't generate missing host keys itself, so a oneshot unit does it
 # before ssh starts.
@@ -93,9 +83,9 @@
     mode: "0644"
   vars:
     image_marker:
-      image: "{{ image_name }}"
-      version: "{{ image_version }}"
-      parent: "{{ image_parent }}"
+      image: "{{ image_finalize_name }}"
+      version: "{{ image_finalize_version }}"
+      parent: "{{ image_finalize_parent }}"
       built: "{{ ansible_facts.date_time.iso8601 }}"
 
 - name: Drop the packages no longer needed

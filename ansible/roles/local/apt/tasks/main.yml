@@ -4,16 +4,9 @@
 # alone. No vendor role: the maintained one stopped in 2021, its key path uses
 # a module that ansible-core removed, and it knows no deb822. Repositories and
 # keys belong to the roles that own them, Docker and Proxmox included. The
-# variable names follow the ecosystem, so a living role can replace this one
-# without touching the callers.
-- name: Assert the caller chose the upgrade behaviour
-  ansible.builtin.assert:
-    that: apt_upgrade is defined
-    fail_msg: >-
-      Declare apt_upgrade (no, safe, or full) in the group_vars of the
-      population that runs this role.
-    quiet: true
-
+# knobs are role defaults: no upgrade unless a population declares one, and
+# the baseline packages everywhere. The names follow the ecosystem, so a
+# living vendor role can replace this one without touching the callers.
 - name: Refresh the package index
   ansible.builtin.apt:
     update_cache: true
@@ -25,9 +18,9 @@
     dpkg_options: force-confold
   when: apt_upgrade != 'no'
 
-- name: Install the packages the population lists
+- name: Install the packages the policy lists
   ansible.builtin.apt:
-    name: "{{ apt_packages | default([]) }}"
+    name: "{{ apt_packages }}"
     state: present
     install_recommends: false
-  when: apt_packages | default([]) | length > 0
+  when: apt_packages | length > 0

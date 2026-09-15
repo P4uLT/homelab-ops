@@ -88,7 +88,7 @@ build {
   # inherits when task packer:build starts it.
   provisioner "shell-local" {
     inline = [
-      "task -d ${path.root}/../.. ansible:image -- --limit builder-base ${local.ansible_image_conn} -e proxmox_vmid=${var.base_ctid} -e image_name=base -e image_version=${local.base_artifact} -e image_parent=${var.parent_template}",
+      "task -d ${path.root}/../.. ansible:image -- --limit builder-base ${local.ansible_image_conn} -e image_python_vmid=${var.base_ctid} -e image_finalize_name=base -e image_finalize_version=${local.base_artifact} -e image_finalize_parent=${var.parent_template}",
     ]
   }
 

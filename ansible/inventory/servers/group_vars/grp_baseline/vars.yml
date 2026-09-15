@@ -1,7 +1,4 @@
 ---
-# The apt values of the baseline family. They mirror the builders inventory,
-# unless a host genuinely needs more.
+# The baseline family patches itself. The packages come from the role
+# defaults.
 apt_upgrade: safe
-apt_packages:
-  - curl
-  - ca-certificates

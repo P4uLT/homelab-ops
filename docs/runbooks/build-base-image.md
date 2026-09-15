@@ -162,8 +162,8 @@ calls, with your own node facts:
 ```sh
 task ansible:image -- --limit builder-base \
   -e ansible_host=<node-ip> -e ansible_user=<node-login> \
-  -e ansible_private_key_file=<key-path> -e proxmox_vmid=900 \
-  -e image_name=base -e image_version=manual -e image_parent=manual
+  -e ansible_private_key_file=<key-path> -e image_python_vmid=900 \
+  -e image_finalize_name=base -e image_finalize_version=manual -e image_finalize_parent=manual
 ```
 
 ## Add an image
