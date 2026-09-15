@@ -1,27 +1,10 @@
 # code: language=ansible
 ---
-# Check SOPS decryption and inventory variables. This playbook doesn't
-# change a managed host or print variable values.
-- name: SOPS canary proof
-  hosts: localhost
-  connection: local
-  gather_facts: false
-  tasks:
-    - name: Assert the canary variable decrypted
-      ansible.builtin.assert:
-        that: sops_canary | default('') | length > 0
-        quiet: true
+# The shell's offline proof that secrets and inventory variables resolve. One
+# file per check, each one runnable alone. Nothing here changes a managed
+# host, and nothing here prints a value.
+- name: Import the decryption check
+  ansible.builtin.import_playbook: canary/decrypt.yml
 
-- name: Inventory vars resolve for jarvis
-  hosts: jarvis
-  gather_facts: false
-  tasks:
-    - name: Assert connection variables exist
-      ansible.builtin.assert:
-        that:
-          - ansible_host is defined and ansible_host | length > 0
-          - ansible_user is defined and ansible_user | length > 0
-          # Terraform owns the access chain (terraform/bootstrap/pve/),
-          # so this group holds no PVE users: the storages anchor it.
-          - pve_storages is defined and pve_storages | length > 0
-        quiet: true
+- name: Import the inventory check
+  ansible.builtin.import_playbook: canary/connection.yml

@@ -1,0 +1,6 @@
+# code: language=ansible
+---
+# The Proxmox convergence, one file per step. Entry: the services router, or
+# this file alone.
+- name: Import the Proxmox convergence
+  ansible.builtin.import_playbook: proxmox/converge.yml

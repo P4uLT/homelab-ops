@@ -1,0 +1,16 @@
+# code: language=ansible
+---
+# The connection variables a run needs resolve. No value is printed.
+- name: Inventory vars resolve for jarvis
+  hosts: jarvis
+  gather_facts: false
+  tasks:
+    - name: Assert connection variables exist
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined and ansible_host | length > 0
+          - ansible_user is defined and ansible_user | length > 0
+          # Terraform owns the access chain (terraform/bootstrap/pve/),
+          # so this group holds no PVE users: the storages anchor it.
+          - pve_storages is defined and pve_storages | length > 0
+        quiet: true

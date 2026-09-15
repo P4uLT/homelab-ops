@@ -7,4 +7,4 @@
   ansible.builtin.import_playbook: docker.yml
 
 - name: Import the Proxmox convergence
-  ansible.builtin.import_playbook: proxmox/converge.yml
+  ansible.builtin.import_playbook: proxmox.yml
