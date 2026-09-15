@@ -36,11 +36,17 @@ tasks:
       - uv run ansible-playbook --syntax-check playbooks/verify.yml
       - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
       - uv run ansible-playbook --syntax-check playbooks/servers/stacks/proxmox/converge.yml
+      - uv run ansible-playbook -i inventory/builders --syntax-check playbooks/image.yml
 
   lint:
     desc: Lint all playbooks with ansible-lint
     cmds:
       - uv run ansible-lint playbooks/
+
+  canary:
+    desc: Assert the SOPS canary and that the inventory variables resolve
+    cmds:
+      - uv run ansible-playbook playbooks/oper/sops_canary_check.yml
 
   run:
     desc: Run the verification playbook against localhost
@@ -71,12 +77,13 @@ tasks:
     cmd: ssh-keyscan -t ed25519 {{.CLI_ARGS}} >> config/known_hosts
 
   verify:
-    desc: Verify the shell — deps, galaxy, syntax, lint, local run
+    desc: Verify the shell (deps, galaxy, syntax, lint, canary, local run)
     cmds:
       - task: deps
       - task: galaxy
       - task: syntax
       - task: lint
+      - task: canary
       - task: run
 
   converge-check:
@@ -88,6 +95,14 @@ tasks:
     desc: Converge jarvis. Pass extra variables after --.
     cmds:
       - uv run ansible-playbook playbooks/servers/stacks/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+
+  image:
+    desc: Provision a build container. Packer calls this. Pass the limit and the facts after --.
+    # The build containers come from inventory/builders, and Packer passes the
+    # node, the login, the key, the container id, and the image identity as
+    # extra variables. Never run this by hand without an existing container:
+    # the play provisions the container it's pointed at, nothing more.
+    cmd: uv run ansible-playbook -i inventory/builders playbooks/image.yml {{.CLI_ARGS}}
 
   inventory:
     desc: Show resolved inventory and host variables. Pass options after --.

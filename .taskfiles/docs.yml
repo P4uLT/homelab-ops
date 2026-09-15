@@ -1,0 +1,23 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Documentation checks. The rules and the tooling are in docs/writing.md.
+tasks:
+  check:
+    desc: Lint the prose against the house writing rules
+    # Vale reads only the files its configuration has a section for, so one
+    # pass covers the Markdown and the code comments. .vale/ is excluded, or
+    # the rules would lint their own rule files.
+    cmds:
+      - git ls-files ':(exclude).vale/**' ':(exclude)CLAUDE.md' | xargs -r vale --config=.vale.ini
+
+  links:
+    desc: Check every internal link, anchors included, without network
+    cmds:
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r lychee --offline --include-fragments --no-progress
+
+  links-external:
+    desc: Check the outbound links. Needs network.
+    cmds:
+      - git ls-files '*.md' ':(exclude)CLAUDE.md' | xargs -r lychee --no-progress --max-concurrency 8

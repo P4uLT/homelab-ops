@@ -1,0 +1,108 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# Golden LXC images. fmt, fmt-check, and validate stay offline. build
+# contacts the PVE node over SSH and needs owner approval.
+#
+# PKR_IMAGES is ordered: it's the chain, each image building on the
+# artifact of the one before it.
+
+vars:
+  # PVE nodes holding the artifacts.
+  PKR_HOSTS: [jarvis]
+  # One name per file under packer/images/.
+  PKR_IMAGES: [base, docker]
+
+tasks:
+  fmt:
+    desc: Format every Packer file in the repository.
+    cmd: packer fmt -recursive packer/
+
+  fmt-check:
+    desc: Check Packer formatting without writing.
+    cmd: packer fmt -check -recursive packer/
+
+  init:
+    desc: Install the Packer plugins declared in packer/images. Network on the first run only.
+    dir: packer
+    cmd: packer init images
+
+  validate:
+    desc: Validate every image offline. Runs init first.
+    dir: packer
+    cmds:
+      - task: init
+      # Validation never connects. The plugin refuses an unset address and an
+      # unset credential, so it passes the reserved .invalid address and a
+      # dummy password, and needs no node local file: a fresh clone still
+      # validates.
+      - for: { var: PKR_HOSTS, as: HOST }
+        cmd: packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
+      # The image playbooks and their inventory hosts are named inside a shell
+      # string, so packer validate can't see a typo in either. These are the
+      # cheap offline checks that can. A chain root lives in image/common/, a
+      # service image in image/services/, a stack image in image/stacks/, so
+      # the play check accepts any home.
+      - for: { var: PKR_IMAGES, as: IMAGE }
+        cmd: test -f ../ansible/playbooks/image/common/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/services/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/stacks/{{.IMAGE}}.yml
+      - for: { var: PKR_IMAGES, as: IMAGE }
+        cmd: grep -q "builder-{{.IMAGE}}:" ../ansible/inventory/builders/hosts.yml
+
+  build:
+    desc: Build every golden image on its PVE nodes. Owner approval required. Extra args go to packer build after --.
+    dir: packer
+    cmds:
+      - task: init
+      # The build runs Ansible from the project environment, so the first run
+      # on a fresh machine needs paramiko, the pinned collection, and the
+      # pinned Docker role.
+      - task: :ansible:deps
+      - task: :ansible:galaxy
+      # The manifest post-processor writes its file but never creates the
+      # directory, and the directory is git-ignored, so it's missing on a
+      # fresh clone.
+      - cmd: mkdir -p manifests
+      # Each node brings its own git-ignored local var file for the address and
+      # the login, so a missing one stops the build instead of aiming at
+      # another node. The matrix walks the images in order, base before
+      # docker, then the nodes, and one failure stops the chain. Packer names a
+      # build `<builder>.<source>`, so the selector is the image name once.
+      - for:
+          matrix:
+            IMAGE: { ref: .PKR_IMAGES }
+            HOST: { ref: .PKR_HOSTS }
+        cmd: packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+
+  build-one:
+    desc: Build one golden image on one node. IMAGE=base|docker HOST=<node from PKR_HOSTS>. Owner approval required.
+    dir: packer
+    # Both are required, so a missing one fails here instead of aiming the
+    # build at the wrong image or node.
+    requires:
+      vars: [IMAGE, HOST]
+    cmds:
+      - task: :ansible:deps
+      - task: :ansible:galaxy
+      - cmd: mkdir -p manifests
+      # One image at a time is what Packer's -only is for. The matrix in
+      # build can't be narrowed from the command line: Task passes a string
+      # where the for loop wants the list from this file.
+      - cmd: packer build -only=proxmox-lxc.{{.IMAGE}} -var-file=hosts/{{.HOST}}.pkrvars.hcl -var-file=hosts/{{.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+
+  # One task per image, on purpose: the shell completes task names, not
+  # variable values, so "which image" has to be part of the name to be
+  # completable. They keep the chain order and walk every node of PKR_HOSTS.
+  build-base:
+    desc: Build the base image on every node of PKR_HOSTS. Owner approval required.
+    cmds:
+      - for: { var: PKR_HOSTS, as: HOST }
+        task: build-one
+        vars: { IMAGE: base, HOST: '{{.HOST}}' }
+
+  build-docker:
+    desc: Build the docker image on every node of PKR_HOSTS. Runs after build-base. Owner approval required.
+    cmds:
+      - for: { var: PKR_HOSTS, as: HOST }
+        task: build-one
+        vars: { IMAGE: docker, HOST: '{{.HOST}}' }

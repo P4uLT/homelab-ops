@@ -3,6 +3,12 @@
 # and role content it lints.
 extends: default
 
+# Encrypted group secrets carry a `mac:` value that cannot wrap, so line
+# length can never pass on them. Both ansible-lint and the editor read this
+# file, and neither has anything to say about a ciphertext blob.
+ignore: |
+  inventory/*/group_vars/*/*.sops.yaml
+
 rules:
   comments:
     min-spaces-from-content: 1

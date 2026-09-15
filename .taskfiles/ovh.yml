@@ -1,0 +1,32 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+# OVHcloud CLI helpers. Ops only: mint a key once, debug the state bucket.
+# The pipeline runs on OpenTofu, not on this CLI. See terraform/BACKEND.md.
+
+tasks:
+  cli:
+    desc: Run the OVHcloud CLI with the account credential. Pass its arguments after --.
+    dotenv: [".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
+    cmds:
+      - ovhcloud {{.CLI_ARGS}}
+
+  s3-ls:
+    desc: List the state-bucket objects, versions included. Extra args go to the list command.
+    dotenv: [".env.account.ovh.tf"]
+    preconditions:
+      - sh: test -s .env.account.ovh.tf
+        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy its .example and fill it."
+    vars:
+      BUCKET:
+        sh: "sed -n 's/^TF_VAR_bucket_name=//p' .env.tf | tr -d '\"'"
+    cmds:
+      - |
+        test -n "{{.BUCKET}}" || { echo "TF_VAR_bucket_name not found in .env.tf"; exit 1; }
+        ovhcloud cloud storage object bucket object list "{{.BUCKET}}" --with-versions {{.CLI_ARGS}}

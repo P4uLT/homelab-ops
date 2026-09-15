@@ -1,0 +1,24 @@
+# Template for jarvis.local.auto.tfvars (git-ignored, mode 600). Tofu
+# loads it in this root. The token comes from the access root, run
+# once: see docs/runbooks/bootstrap-pve-access.md.
+
+pve_endpoint  = "https://<address>:8006/"
+pve_api_token = "terraform-prov@pve!tf=<secret>"
+
+# One entry per workload, keyed by hostname. The template is the volid of the
+# Packer chain the container clones: NAS:vztmpl/<artifact>. An entry without
+# ipv4 stays on DHCP, where the address can move on a reboot, and ct_ipv4 only
+# fills once the container reports a lease.
+#
+# cpu, ram, swap, and disk are optional: leaving them out keeps the module's
+# defaults.
+lxc_workloads = {
+  example = {
+    id       = 1000
+    template = "NAS:vztmpl/debian-13-standard-base-docker_13.6-1_amd64.tar.zst"
+    ipv4 = {
+      address = "10.0.0.5/24"
+      gateway = "10.0.0.1"
+    }
+  }
+}

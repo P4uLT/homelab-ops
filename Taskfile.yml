@@ -11,5 +11,11 @@ includes:
     dir: ansible
   sops:
     taskfile: .taskfiles/sops.yml
+  docs:
+    taskfile: .taskfiles/docs.yml
   tf:
     taskfile: .taskfiles/tf.yml
+  ovh:
+    taskfile: .taskfiles/ovh.yml
+  packer:
+    taskfile: .taskfiles/packer.yml

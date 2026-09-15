@@ -24,5 +24,4 @@ task verify
 - [ ] Encrypted files stay encrypted (`.sops.yaml` rules untouched)
 - [ ] Lint passes for the touched tooling (ansible-lint, yamllint,
       tflint, checkov, ...)
-- [ ] `CHANGELOG.md` updated when user-visible behavior changes
 - [ ] Docs and comments stay in plain language

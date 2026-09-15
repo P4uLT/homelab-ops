@@ -1,8 +1,6 @@
-# Toolchain for homelab-ops — extended phase by phase.
-# Roadmap for later phases (uncomment as each lands):
-#   packer, kubectl, talosctl, topf, flux, yq, just
-# topf's mise availability is unverified (architecture study). Check it before adding.
-# Versions are pinned to real releases and bumped deliberately, never "latest".
+# Toolchain for homelab-ops. Versions are pinned to real releases and bumped
+# deliberately, never a floating tag. A new tool joins with the change that
+# needs it.
 
 [tools]
 task = "3.53.1"
@@ -12,13 +10,17 @@ sops = "3.13.3"
 age = "1.3.2"
 opentofu = "1.12.6"
 tflint = "0.64.0"
+# Prose linting and link checking for the house writing rules. Offline: the
+# rules are committed under .vale/styles. See docs/writing.md.
+vale = "3.21.0"
+lychee = "0.24.2"
+# Packer drives the golden-image builds on the PVE node over SSH.
+packer = "1.16.0"
 # Ops-only OVHcloud CLI: mint API keys once, debug the state bucket.
 # The pipeline itself runs on OpenTofu, not on this CLI.
 "github:ovh/ovhcloud-cli" = "0.14.0"
 
 [env]
-# Local secrets injection (gitignored .env). See docs/sops.md.
-_.file = ".env"
 # Absolute, cwd-proof age-key path: [env] entries support {{ config_root }}
-# templating and take precedence over _.file dotenv values.
+# templating, so the path resolves from any directory.
 SOPS_AGE_KEY_FILE = "{{ config_root }}/.age.key.txt"

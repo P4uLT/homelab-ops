@@ -1,0 +1,9 @@
+# code: language=ansible
+---
+# The stack images, one play per image. Empty for now, like the monitoring
+# layer on the fleet side: the placeholder matches no host, so the import
+# stays wired and the first stack only replaces the placeholder with its
+# line.
+- name: Import the stack images
+  hosts: all,!all
+  gather_facts: false

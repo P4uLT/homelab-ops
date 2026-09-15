@@ -1,0 +1,6 @@
+# code: language=ansible
+---
+# The service images, one play per image. A new image adds its line here and
+# touches nothing else in this track.
+- name: Import the docker golden image
+  ansible.builtin.import_playbook: docker.yml

@@ -1,0 +1,9 @@
+# code: language=ansible
+---
+# The build entry: every golden image build. Packer calls this file, and
+# --limit picks the image, the same way a runtime run picks a host.
+# Why a second entry: a build seals its container (machine-id wiped, root
+# locked, host keys dropped). site.yml never imports this tree, so a fleet
+# run can't seal a live machine by mistake.
+- name: Import the image plays
+  ansible.builtin.import_playbook: image/all.yml

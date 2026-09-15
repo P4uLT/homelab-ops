@@ -6,7 +6,7 @@ OpenTofu (`tofu`). "Terraform" here names the IaC layer and its
 conventions.
 
 The backend is an OVHcloud S3 bucket. One state file lives in one bucket
-prefix per Terraform root (`key = <root-name>`). The bucket is not
+prefix per Terraform root (`key = <root-name>`). The bucket isn't
 Terraform-managed by the roots that use it. A separate, frozen bootstrap
 root creates it once. This avoids the circular case where the backend
 bucket stores the state of the root that creates it.
@@ -18,13 +18,13 @@ below.
 ## Design
 
 | Item | Decision |
-|---|---|
+| --- | --- |
 | Provider | OVHcloud S3-compatible object storage |
-| Layout | One bucket, one prefix per root (`key = <root-name>`) |
+| Layout | One bucket, one state key per root: `<path>/terraform.tfstate`, mirroring the root path |
 | Versioning | Enabled. Every state write keeps the previous version |
 | Lifecycle | Noncurrent versions expire after 90 days |
 | Encryption at rest (OVH) | SSE with AES256 |
-| Encryption of the state payload | OpenTofu native encryption (AES-GCM, passphrase in `.env`) |
+| Encryption of the state payload | OpenTofu native encryption (AES-GCM, passphrase in `.env.tf`) |
 | Access | One dedicated project user with the `objectstore_operator` role, an allowlist policy, and no `DeleteBucket` or `DeleteObjectVersion` |
 
 The two encryption layers are deliberate. SSE protects objects in the
@@ -34,7 +34,7 @@ without exposing secrets.
 
 ## The bootstrap root
 
-`terraform/bootstrap/` creates the whole access chain:
+`terraform/bootstrap/ovh/` creates the whole access chain:
 
 1. A dedicated project user with the `objectstore_operator` role.
    OVHcloud requires the role before an S3 policy can attach.
@@ -53,7 +53,8 @@ four guards:
 - The root is frozen. It runs once and only again for drift checks.
   Every resource carries `prevent_destroy`, so a destroy must be a
   deliberate code change. This also applies to the S3 credential:
-  rotation means lifting that guard in a reviewed commit.
+  rotation means lifting that guard in a reviewed commit. The procedure
+  is in the bootstrap runbook.
 - The bucket resource carries `prevent_destroy = true`.
 - The encrypted state file is part of the off-site recovery kit.
 - Worst case, you import the bucket into a fresh bootstrap root. The
@@ -65,19 +66,23 @@ changes nothing. `plan` doubles as a drift check.
 ## Root layout rules
 
 One root covers one triplet: provider, blast radius, and apply cadence.
-Do not split roots by resource type. Two resources with different
+Don't split roots by resource type. Two resources with different
 cadences never share a state. A plan must not touch unrelated resources
 through the graph.
 
 | Root | Covers | Cadence |
-|---|---|---|
-| `bootstrap/` | the state bucket, its user, and its policy | once |
-| `pve-one/`, `pve-two/` | one PVE server each | often |
-| `truenas/` | NAS import | sometimes |
+| --- | --- | --- |
+| `bootstrap/ovh/` | the state bucket, its user, and its policy | once |
+| `bootstrap/pve/jarvis/` | the Terraform access chain on jarvis: role, group, user, ACL, API token | once |
+| `proxmox/jarvis/` | the PVE server jarvis | often |
+| `truenas/` (planned) | NAS import | sometimes |
 | `dns/` (planned) | public DNS zone | sometimes |
 | `ovh-project/` (planned) | account-level users | rare |
 
-`bootstrap/` stays frozen and narrow. Its guards (`prevent_destroy`, the
+A new PVE server gets its own root, named after the server, with its
+own state key, and its own access root under `bootstrap/pve/`.
+
+`bootstrap/ovh/` stays frozen and narrow. Its guards (`prevent_destroy`, the
 local backend, the run-once contract) hold only while its scope is the
 state backend. A mutable resource conflicts with `prevent_destroy`: it
 needs regular change, but the root forbids destruction. DNS zones,
@@ -85,25 +90,40 @@ account-level users, and application buckets get sibling roots. Never
 add them here. The bootstrap policy limits its user to the state
 bucket. A user for another purpose belongs to another root.
 
-Every root declares its backend key in its own `backend.tf`
-(`key = "<name>"`). The key is a chosen name, not a value derived from
-the directory path. The path carries no technical meaning. A root can
-move with `git mv`, and its state stays in place. When a shared
-`modules/` tree appears, move the roots under `roots/`. Then make root
-discovery an explicit list, so `tf:validate` never treats a module as
-a root.
+Every root declares its backend key in its own `backend.tf`. The key
+mirrors the root path under `terraform/` plus `terraform.tfstate`: the
+`proxmox/jarvis` root stores at `proxmox/jarvis/terraform.tfstate`.
+This is the Terragrunt template (`${path_relative_to_include()}`), and
+Terragrunt is the planned automation layer, so its adoption needs no
+state migration. The accepted cost: a root moved with `git mv` moves
+its state with it.
+
+The OVH S3 dialect facts (region, endpoint, validation skips, lockfile)
+live once, in `terraform/backend.s3.ovh.hcl`. The tf tasks pass the
+file to every `init` as a partial config. The file holds nothing
+secret, and it stays tracked: the state location stays readable. Only
+the key stays per root, and the bucket name keeps its env-only path
+through `.env.tf`. Bucket-level conventions (classes, users, regions)
+live in `docs/object-storage.md`.
+
+The tree groups by provider category: `proxmox/`, and later `truenas/`
+or `dns/`. A category holds one root per target, plus its own
+`modules/` for what its roots share. `bootstrap/` is the category of
+frozen roots that mint credentials: the state backend (`ovh/`) and
+each PVE node's Terraform access chain (`pve/<node>/`). Root discovery is the explicit `TF_ROOTS` list in the
+tf tasks, so validation never treats a module as a root.
 
 ## Region choice, and no replica
 
 The bucket lives in a 3-AZ region. That survives the loss of one
-availability zone. It does not survive the loss of the whole region,
+availability zone. It doesn't survive the loss of the whole region,
 and the 90-day version history lives in the same bucket.
 
 There is no cross-region replica. Each failure has a designated
 control:
 
 | Failure | Control |
-|---|---|
+| --- | --- |
 | Disk, rack, or availability zone loss | The 3-AZ region |
 | Bad apply, or an overwritten state | The 90-day version history |
 | Bucket or region loss | The off-site copies below |
@@ -111,23 +131,30 @@ control:
 
 A replica inside OVHcloud would cover a region loss only, and never the
 loss of the account. The off-site copies cover both. A replica would
-add a second copy under the same provider for little gain, at the cost
-of a second bucket, a second lifecycle rule, and a writer scope that
-must stay narrow to avoid diverging the two states.
+add a second copy under the same provider for little gain. It costs a
+second bucket, a second lifecycle rule, and a writer scope. That scope
+must stay narrow, or the two states diverge.
 
 ## Credential flow
 
+Each secret lives where its consumer resolves it. The Task-resolved
+dotenv files stay at the repository root. A root's own connection
+secrets live in the root, as a git-ignored `*.local.auto.tfvars`.
+
 | Credential | Source | Home |
-|---|---|---|
-| OVH API key triple | Minted once (`ovhcloud login` or the createToken page) | `.env`, git-ignored |
-| Project ID, bucket name, region | OVHcloud account | `.env` |
-| State encryption passphrase | Chosen once | `.env` and the recovery kit |
-| S3 access and secret keys | Printed once by the bootstrap apply | `.env` and the recovery kit |
+| --- | --- | --- |
+| OVH API key triple | Minted once (`ovhcloud login` or the createToken page) | `.env.account.ovh.tf`, git-ignored |
+| Project ID | OVHcloud account | `.env.account.ovh.tf` (`OVH_CLOUD_PROJECT_SERVICE`) |
+| State encryption passphrase | Chosen once | `.env.tf` (`TF_VAR_state_passphrase`) and the recovery kit |
+| S3 access and secret keys | Printed once by the bootstrap apply | `.env.tf` (`AWS_*`) and the recovery kit |
+| Bucket name | Chosen once | `.env.tf` (`TF_VAR_bucket_name`) |
+| Bucket region | Chosen once | The root's `ovh.local.auto.tfvars`, git-ignored |
+| PVE API token, per node | Minted once on the node | The root's `<node>.local.auto.tfvars`, git-ignored |
 
 The S3 keys land in the bootstrap state too. This is why `backend.tf`
-enforces the state encryption. The `.env` copies feed the main
-roots, which read the S3 backend through environment variables. No
-credential is ever written to a tracked file.
+enforces the state encryption. The `.env.tf` copies feed the main
+roots, which read the S3 backend through its native `AWS_*` variable
+names. No credential is ever written to a tracked file.
 
 ## Tasks
 
@@ -137,11 +164,15 @@ task tf:bootstrap-plan     # preview; safe to repeat
 task tf:bootstrap-apply    # create; idempotent
 task tf:bootstrap-output   # read the S3 keys after the apply
 task tf:bootstrap-state-list
+task tf:jarvis-plan        # preview the PVE workload; reads the node
+task tf:jarvis-apply       # change the node; owner approval
 task tf:fmt-check          # offline format check, part of task verify
 task tf:validate           # init, then schema-check every root
 ```
 
-The full procedure lives in `docs/runbooks/bootstrap-tf-backend.md`.
+The bootstrap procedure lives in
+`docs/runbooks/bootstrap-tf-backend.md`. The workload procedure lives
+in `docs/runbooks/provision-pve-ct.md`.
 
 ## Recovery
 

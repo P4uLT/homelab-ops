@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# The last phase of every build: one shared identity, asserted. Targets every
+# builder; the host limit picks the one being built. The image facts come from
+# Packer as extra variables and pass through untouched.
+- name: Seal the image
+  hosts: grp_builders
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Seal the image
+      ansible.builtin.import_role:
+        name: image_finalize

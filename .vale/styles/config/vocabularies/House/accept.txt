@@ -1,0 +1,55 @@
+# Domain terminology for the prose gate. One entry per line, read as a regular
+# expression. A comment is a hash followed by a space, so "#term" is an entry.
+#
+# An entry joins the exception list of every enabled rule. Add a term here
+# rather than silencing a rule or editing a vendored one.
+#
+# The list follows the Host terminology section of AGENTS.md, plus the file
+# formats the pages name.
+
+# Hypervisor and virtualization
+PVE
+LXC
+VM
+NAS
+OMV
+ARM
+TTY
+
+# Network
+DHCP
+DNS
+NFS
+LAN
+VLAN
+MAC
+ACL
+SSE
+TLS
+
+# OVH and cloud
+OVH
+IAM
+URN
+S3
+AWS
+STS
+AZ
+EU
+
+# Secrets and crypto
+SOPS
+AES
+GCM
+
+# Protocols, tools, and standards
+API
+SSH
+CLI
+MIT
+ASD
+
+# File formats
+TOML
+HCL
+YAML

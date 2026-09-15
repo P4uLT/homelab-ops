@@ -4,7 +4,8 @@ docs/superpowers/
 # Local secrets and credentials
 .env
 .env.*
-!.env.example
+!.env.tf.example
+!.env.account.ovh.tf.example
 .age.key.txt
 .age.key.txt.secours
 ovh.conf
@@ -39,8 +40,14 @@ ansible/roles/vendors/*
 ansible/collections/vendors/*
 !ansible/collections/vendors/.gitkeep
 
-# Local agent tooling lockfile — not repo content
+# Local agent tooling lockfile: not repo content
 skills-lock.json
 
 # Local task-runner output
 .pi/
+
+# Local node connection facts: address, login, key
+packer/hosts/*.local.pkrvars.hcl
+
+# Packer build records
+packer/manifests/

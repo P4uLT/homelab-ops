@@ -1,0 +1,143 @@
+# code: language=ansible
+---
+# Last role of every image, for two reasons.
+#
+# 1. Identity. The build boots the container, so systemd regenerates
+#    /etc/machine-id and sshd its host keys. Clearing them in an earlier role
+#    doesn't hold: the next boot recreates them. Only the last build can leave
+#    a clean identity.
+# 2. apt. The lists must go after the last install, or every image hauls them
+#    around.
+# 2. apt. The lists must go after the last install, or every image hauls them
+#    around.
+#
+# The role owns no variable. Packer passes image_name, image_version, and
+# image_parent as extra variables, and the assert below fails loudly when one
+# is missing, so a wiring mistake never writes a marker with holes in it.
+- name: Assert the caller passed the image identity
+  ansible.builtin.assert:
+    that:
+      - image_name is defined and image_name | length > 0
+      - image_version is defined and image_version | length > 0
+      - image_parent is defined and image_parent | length > 0
+    fail_msg: >-
+      Packer must pass image_name, image_version, and image_parent as extra
+      variables. See the shell-local provisioner of the image.
+    quiet: true
+
+# sshd doesn't generate missing host keys itself, so a oneshot unit does it
+# before ssh starts.
+- name: Install the host-key generator unit
+  ansible.builtin.copy:
+    src: ssh-host-keys.service
+    dest: /etc/systemd/system/ssh-host-keys.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable it
+  ansible.builtin.systemd_service:
+    name: ssh-host-keys.service
+    enabled: true
+    daemon_reload: true
+
+# A shared root password or a shared host key in the template would leak into
+# every clone.
+- name: Lock the root password
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+
+- name: Find the host keys
+  ansible.builtin.find:
+    paths: /etc/ssh
+    patterns: "ssh_host_*"
+  register: image_finalize_host_keys
+
+- name: Remove them
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ image_finalize_host_keys.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Check mode, so the module reports whether it would still change something.
+# It compares the shadow entry itself: no shell, and no secret in the log.
+- name: Check the lock holds
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+  check_mode: true
+  register: image_finalize_root_check
+
+- name: Assert the root password is locked
+  ansible.builtin.assert:
+    that: not image_finalize_root_check.changed
+    fail_msg: root still accepts a password.
+    quiet: true
+
+- name: Empty the machine id
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/machine-id
+    owner: root
+    group: root
+    mode: "0444"
+    force: true
+
+- name: Record the image identity
+  ansible.builtin.copy:
+    content: "{{ image_marker | to_nice_json }}\n"
+    dest: /etc/image-build-info
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    image_marker:
+      image: "{{ image_name }}"
+      version: "{{ image_version }}"
+      parent: "{{ image_parent }}"
+      built: "{{ ansible_facts.date_time.iso8601 }}"
+
+- name: Drop the packages no longer needed
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+    clean: true
+
+# A stale list pins clones to old package versions, and an apt task on a clone
+# updates the cache itself. The directory stays, because apt expects it.
+- name: Drop the apt lists
+  ansible.builtin.file:
+    path: /var/lib/apt/lists
+    state: absent
+
+- name: Recreate the empty directory apt expects
+  ansible.builtin.file:
+    path: /var/lib/apt/lists
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# End state, asserted rather than assumed: an image missing any of these leaks
+# one identity into every clone. The shadow check prints no value.
+- name: Read the machine id file
+  ansible.builtin.stat:
+    path: /etc/machine-id
+  register: image_finalize_machine_id
+
+- name: Find the remaining host keys
+  ansible.builtin.find:
+    paths: /etc/ssh
+    patterns: "ssh_host_*"
+  register: image_finalize_remaining_keys
+
+- name: Assert the image carries no shared identity
+  ansible.builtin.assert:
+    that:
+      - image_finalize_machine_id.stat.exists
+      - image_finalize_machine_id.stat.size == 0
+      - image_finalize_remaining_keys.matched == 0
+    quiet: true
