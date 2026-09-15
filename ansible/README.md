@@ -11,7 +11,7 @@ scope, two inventories, three host populations with separate authorities.
 | `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
 | `inventory/` | `servers/`: the machines Ansible manages, with `groups.yml` (tree) and `hosts.yml` (membership). A Terraform-created container lands here as a generated group, written by the workload root. `builders/`: the Packer build containers, one host per image. Group names read `grp_<scope>_<specifics>`: `grp_servers_*` for the machine tree, `grp_builders_*` for the build containers, `grp_services_*` for opt-in service memberships |
 | `inventory/*/group_vars/` | Each inventory owns its own. One directory per group that carries variables, named after the group: `vars.yml` for cleartext, `secrets.sops.yaml` for secrets. A directory holds one or both |
-| `playbooks/` | Two tracks, two entries. `site.yml` runs `servers/`, the fleet layers `common`, `monitoring`, `services`, `stacks`, plus `bootstrap`. `image.yml` runs `image/`, the build chain: `common/base.yml` is the track's common. `services/<name>.yml` and `stacks/<name>.yml` hold the images that add a service or a whole stack. Two entries on purpose: a build seals its container, and the fleet entry must never seal a live machine. `verify.yml` proves the shell |
+| `playbooks/` | Two tracks, two entries. `site.yml` runs `servers/`, the fleet layers `common`, `monitoring`, `services`, `stacks`. `image.yml` runs `image/`, the build chain: `common/base.yml` is the track's common. `services/<name>.yml` and `stacks/<name>.yml` hold the images that add a service or a whole stack. Two entries on purpose: a build seals its container, and the fleet entry must never seal a live machine. `verify.yml` proves the shell |
 | `roles/` | `local/` (ours, hand-written), `vendors/` (downloaded, exact pins, ignored) |
 | `collections/` | `local/` (ours), `vendors/` (downloaded, ignored except the marker) |
 | `plugins/` | Local filter, lookup, callback, and module code |
@@ -28,7 +28,8 @@ scope, two inventories, three host populations with separate authorities.
   through it. Rotating one, like patching, means rebuilding the image. Don't
   upgrade a cattle node in place. The common layer asserts
   `/etc/image-build-info` for cattle and skips the baseline. The `bootstrap`
-  playbook does their application wiring.
+  layer is reserved for their application wiring, and `site.yml` doesn't
+  import it yet.
 - **Pets by nature**: the PVE hosts, the NAS, and any appliance that carries
   state or hardware and can't be rebuilt from an image.
 - **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE
@@ -42,7 +43,7 @@ by the common layer today.
 ## Services
 
 A service is opt-in per inventory group, independent of the population. The
-group lists who runs it, and both tracks call the same locL'idée c'est d'avoir la même chose dans les deux, serveur et image. Stacks, cela permet de déployer des stacks complètes, 4 versus... al role. The
+group lists who runs it, and both tracks call the same local role. The
 runtime runs `servers/services/docker.yml`. The golden image build runs
 `image/services/docker.yml`. The role carries the mechanism. Each inventory
 declares the policy in its own `group_vars/<group>/vars.yml`, because Ansible
