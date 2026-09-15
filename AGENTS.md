@@ -48,7 +48,6 @@ ansible/
 ├── inventory/servers/
 │   ├── groups.yml          # group tree. No hosts here.
 │   ├── hosts.yml           # host membership only
-│   ├── iac.tf.yml          # Terraform-generated placeholder
 │   └── group_vars/         # variables live HERE. See the gotcha below.
 ├── roles/vendors/          # galaxy-installed. Git-ignored. Never edit.
 └── collections/vendors/    # same
