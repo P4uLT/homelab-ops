@@ -19,3 +19,12 @@ variable "pve_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "tf_test_ipv4" {
+  description = "Static IPv4 of the tf-test workload, in CIDR form and with its gateway. Null keeps DHCP. Source: jarvis.local.auto.tfvars, git-ignored."
+  type = object({
+    address = string
+    gateway = optional(string)
+  })
+  default = null
+}

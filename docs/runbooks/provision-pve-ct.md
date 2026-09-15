@@ -95,10 +95,23 @@ Then the container is a fleet host like any other:
    `ct_ipv4` from the output above. `ansible_user` is `root`, the only account
    the image carries.
 
-**Choose the address.** The module defaults to DHCP, so `ansible_host` can
-move on a reboot and the SSH habit with it. A workload you reach often wants a
-static `ipv4.address` in the root's git-ignored tfvars, never in a tracked
-file.
+**Set the address.** The module defaults to DHCP, so `ansible_host` can move
+on a reboot and the SSH habit with it. A workload you reach often takes a
+static address instead, in the root's git-ignored tfvars:
+
+```hcl
+tf_test_ipv4 = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
+```
+
+A static address has a second effect. The provider reads the interface's
+address right after creation, so the `ct_ipv4` output is true at apply time.
+DHCP leaves it null until the container reports a lease, and the Docker bridge
+answers the provider's wait before that.
+
+**A DHCP workload drifts.** The provider reads the container's address after
+creation, so a workload left on DHCP can show `dhcp` turning into the leased
+address. Applying that pins the address without anyone deciding it. Declare the
+address here when you want it fixed.
 
 Then converge the one host, with owner approval:
 

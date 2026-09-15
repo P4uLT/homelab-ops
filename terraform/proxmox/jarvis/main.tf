@@ -22,6 +22,11 @@ module "tf_test" {
   storage = local.storage
   bridge  = local.bridge
 
+  # Null keeps DHCP. A static address from the git-ignored tfvars gives the
+  # container its address at start, so ct_ipv4 is true at apply time and the
+  # workload keeps the same address across reboots.
+  ipv4 = var.tf_test_ipv4
+
   # Nesting is the one feature flag an API token may set; keyctl is
   # root@pam-only in PVE. The golden image carries Docker, and the
   # local-lvm storage needs no fuse workaround.

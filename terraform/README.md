@@ -11,7 +11,8 @@ target.
   `proxmox/jarvis/` is live: one `modules/lxc/` call per LXC workload.
   A later PVE server gets its own root, named after it.
 - `proxmox/modules/lxc/` wraps one LXC workload: a golden image clone,
-  started, addressed by DHCP. Node facts live in the calling root, in
+  started, addressed by DHCP unless the caller pins a static address from its
+  git-ignored tfvars. Node facts live in the calling root, in
   its `locals.tf`.
 - `truenas/` imports datasets, NFS shares, and snapshots. Everything that
   democratic-csi creates stays out of Terraform management.

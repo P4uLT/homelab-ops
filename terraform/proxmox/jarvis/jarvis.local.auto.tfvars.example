@@ -4,3 +4,8 @@
 
 pve_endpoint  = "https://<address>:8006/"
 pve_api_token = "terraform-prov@pve!tf=<secret>"
+
+# Optional. A workload you reach often takes a static address, which keeps
+# ct_ipv4 true at apply time and the address stable across reboots. Leave it
+# out to stay on DHCP.
+# tf_test_ipv4 = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
