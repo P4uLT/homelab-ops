@@ -79,30 +79,13 @@ pct exec <ct_id> -- cat /etc/image-build-info
 The marker carries the image name, its version, and its parent, and the common
 layer asserts it on cattle.
 
-## First contact, then the inventory
+## The container joins the fleet
 
-Ansible reaches every other host over SSH with a key. A golden image carries
-no key, on purpose, and the container has no password to fall back on. So the
-node gives the container its first key, through `pct`.
-
-Run these commands on the node. `<public-key-path>` is the public half of the
-automation key:
-
-```sh
-pct exec <ct_id> -- install -d -m 700 /root/.ssh
-pct push <ct_id> <public-key-path> /root/.ssh/authorized_keys
-pct exec <ct_id> -- chmod 600 /root/.ssh/authorized_keys
-```
-
-The container answers SSH for that key now, for Ansible and for you. Add your
-own device key to the same file: one automation key, one personal key per
-device, as [SSH key and host-key practices](../ssh.md) requires. The node
-gets you in without any key at all, which suits a quick look at the logs:
-
-```sh
-pct enter <ct_id>
-pct exec <ct_id> -- journalctl -u <unit>
-```
+The image carries the fleet's public keys, so the container answers SSH from
+birth, for Ansible and for you. A new device means a new public key in
+`ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, added with
+`task sops:edit`. Then rebuild the image chain: the old key stays trusted in
+every archive built before.
 
 Then the container is a fleet host like any other:
 
@@ -127,6 +110,14 @@ The common layer asserts `/etc/image-build-info` on a cattle host, so it proves
 the image and skips the OS baseline. The rest comes from `common_profiles` in
 the group's `group_vars`. No group defines that variable yet, so the first
 convergence changes nothing.
+
+**Without SSH.** An image built before the keys, or a container you want to
+reach with no key at all, still answers on the node:
+
+```sh
+pct enter <ct_id>
+pct exec <ct_id> -- journalctl -u <unit>
+```
 
 See [the Ansible shell](../../ansible/README.md) for the cattle model, and
 [Add a Proxmox VE node](onboard-pve.md) for the same inventory mechanics on a

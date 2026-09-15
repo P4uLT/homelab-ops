@@ -5,6 +5,7 @@
     "terraform/proxmox/jarvis/backend.tf",
     "ansible/inventory/servers/group_vars/all/secrets.sops.yaml",
     "ansible/inventory/servers/group_vars/grp_servers_proxmox/secrets.sops.yaml",
-    "ansible/inventory/servers/group_vars/grp_servers_proxmox_jarvis/secrets.sops.yaml"
+    "ansible/inventory/servers/group_vars/grp_servers_proxmox_jarvis/secrets.sops.yaml",
+    "ansible/inventory/builders/group_vars/all/secrets.sops.yaml"
   ]
 }

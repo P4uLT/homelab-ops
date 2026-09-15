@@ -21,13 +21,14 @@ scope, two inventories, three host populations with separate authorities.
 
 - **Cattle**: LXC born from a Packer golden image via Terraform. Each one
   joins the fleet as `grp_tf_<host>` under `grp_servers`, the family the
-  common layer keys on. The image owns the OS baseline, and no secret, key,
-  or credential is ever baked into it. A fresh container gets its keys at
-  first contact.
+  common layer keys on. The image owns the OS baseline, and no secret and no
+  private key is ever baked into it. It does carry the fleet's public keys, so
+  a clone answers SSH from birth.
   [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md) walks
-  through it. Patching means rebuilding the image. Don't upgrade a cattle node in
-  place. The common layer asserts `/etc/image-build-info` for cattle and skips
-  the baseline. The `bootstrap` playbook does their application wiring.
+  through it. Rotating one, like patching, means rebuilding the image. Don't
+  upgrade a cattle node in place. The common layer asserts
+  `/etc/image-build-info` for cattle and skips the baseline. The `bootstrap`
+  playbook does their application wiring.
 - **Pets by nature**: the PVE hosts, the NAS, and any appliance that carries
   state or hardware and can't be rebuilt from an image.
 - **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE
