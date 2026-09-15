@@ -26,9 +26,7 @@
     # authorized_keys and validates sudoers with visudo.
     - name: Assert the caller passed the fleet account
       ansible.builtin.assert:
-        that:
-          - fleet_users is defined
-          - fleet_users | length > 0
+        that: fleet_users | default([]) | length > 0
         fail_msg: >-
           The image carries its own way in. Fill fleet_users in
           ansible/inventory/builders/group_vars/all/secrets.sops.yaml with the

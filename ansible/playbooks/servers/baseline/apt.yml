@@ -1,0 +1,13 @@
+# code: language=ansible
+---
+# The apt policy of the Debian hosts we build by hand. A PVE node stays out of
+# this play, because its own role owns the packages. The knobs are role
+# defaults, so a population overrides them in its group_vars.
+- name: The baseline of the hosts we build by hand
+  hosts: grp_baseline
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the apt baseline
+      ansible.builtin.import_role:
+        name: apt
