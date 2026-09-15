@@ -42,7 +42,7 @@ so no play targets them.
 ## Services
 
 A service is opt-in per inventory group, independent of the population. The
-group lists who runs it, and both tracks call the same local role. The
+group lists who runs it, and both tracks call the same vendor role. The
 runtime runs `servers/services/docker.yml`. The golden image build runs
 `image/services/docker.yml`. The role carries the mechanism. Each inventory
 declares the policy in its own `group_vars/<group>/vars.yml`, because Ansible
