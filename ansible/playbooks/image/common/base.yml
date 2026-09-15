@@ -13,3 +13,23 @@
     - name: Apply the baseline
       ansible.builtin.import_role:
         name: os_base
+
+    # The image must have a way in. The caller passes the fleet account: a
+    # user, its keys, and its sudo options. The vendor role writes
+    # authorized_keys and validates sudoers with visudo.
+    - name: Assert the caller passed the fleet account
+      ansible.builtin.assert:
+        that:
+          - image_users is defined
+          - image_users | length > 0
+        fail_msg: >-
+          The image carries its own way in. Fill image_users in
+          ansible/inventory/builders/group_vars/all/secrets.sops.yaml with the
+          fleet account and its keys: task sops:edit.
+        quiet: true
+
+    - name: Create the fleet account
+      ansible.builtin.import_role:
+        name: robertdebock.users
+      vars:
+        users: "{{ image_users }}"

@@ -77,36 +77,6 @@
     fail_msg: root still accepts a password.
     quiet: true
 
-# The image must have a way in: a clone with no key answers nobody, and the
-# fleet configures every host over SSH. The caller passes public keys, which
-# open nothing by themselves. A private key never travels here.
-- name: Assert the caller passed the fleet keys
-  ansible.builtin.assert:
-    that:
-      - image_authorized_keys is defined
-      - image_authorized_keys | length > 0
-    fail_msg: >-
-      The image carries its own way in. Fill
-      ansible/inventory/builders/group_vars/all/secrets.sops.yaml with the
-      fleet keys: task sops:edit.
-    quiet: true
-
-- name: Create the ssh directory
-  ansible.builtin.file:
-    path: /root/.ssh
-    state: directory
-    owner: root
-    group: root
-    mode: "0700"
-
-- name: Authorize the fleet keys
-  ansible.builtin.copy:
-    content: "{{ image_authorized_keys | join('\n') }}\n"
-    dest: /root/.ssh/authorized_keys
-    owner: root
-    group: root
-    mode: "0600"
-
 - name: Empty the machine id
   ansible.builtin.copy:
     content: ""
@@ -152,8 +122,7 @@
     mode: "0755"
 
 # End state, asserted rather than assumed: an image missing any of these leaks
-# one identity into every clone, or answers nobody. The shadow check prints no
-# value.
+# one identity into every clone. The shadow check prints no value.
 - name: Read the machine id file
   ansible.builtin.stat:
     path: /etc/machine-id
@@ -165,22 +134,10 @@
     patterns: "ssh_host_*"
   register: image_finalize_remaining_keys
 
-- name: Read the authorized keys
-  ansible.builtin.stat:
-    path: /root/.ssh/authorized_keys
-  register: image_finalize_authorized_keys
-
 - name: Assert the image carries no shared identity
   ansible.builtin.assert:
     that:
       - image_finalize_machine_id.stat.exists
       - image_finalize_machine_id.stat.size == 0
       - image_finalize_remaining_keys.matched == 0
-    quiet: true
-
-- name: Assert the image carries its way in
-  ansible.builtin.assert:
-    that:
-      - image_finalize_authorized_keys.stat.exists
-      - image_finalize_authorized_keys.stat.mode == "0600"
     quiet: true

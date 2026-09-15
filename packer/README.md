@@ -42,7 +42,9 @@ What the images contain:
   fresh host keys on first start. The role also writes
   `/etc/image-build-info`, the image identity the common layer asserts on
   cattle.
-- The fleet's public keys, in `/root/.ssh/authorized_keys`. They come from
+- The fleet account: a user, its public keys in `authorized_keys`, and its
+  sudo options, validated by `visudo`. The `robertdebock.users` role creates
+  it from the data in
   `ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, encrypted
   like every other secret. A public key opens nothing by itself, so it can
   travel in a versioned artifact. The private halves never do.

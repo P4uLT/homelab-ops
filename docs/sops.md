@@ -32,6 +32,12 @@ skips encrypted files and `.sops.yaml`.
 Run `task sops:check-all` to check all encrypted files without printing their
 values.
 
+## Comments stay at the top
+
+A comment nested inside a mapping or a list is encrypted with the rest. SOPS
+doesn't decrypt it back, and the editor shows a blob. Keep comments at the top
+level, where they survive a round trip.
+
 ## The backup key
 
 The backup key file is `.age.key.txt.secours`. Store this file outside the

@@ -22,8 +22,8 @@ scope, two inventories, three host populations with separate authorities.
 - **Cattle**: LXC born from a Packer golden image via Terraform. Each one
   joins the fleet as `grp_tf_<host>` under `grp_servers`, the family the
   common layer keys on. The image owns the OS baseline, and no secret and no
-  private key is ever baked into it. It does carry the fleet's public keys, so
-  a clone answers SSH from birth.
+  private key is ever baked into it. It does carry the fleet account: a user,
+  its public keys, and its sudo options, so a clone answers SSH from birth.
   [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md) walks
   through it. Rotating one, like patching, means rebuilding the image. Don't
   upgrade a cattle node in place. The common layer asserts

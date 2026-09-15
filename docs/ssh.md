@@ -35,10 +35,11 @@ including every runtime play, goes through this block.
 
 ## Terraform-created machines
 
-The golden image carries the fleet's public keys, so a fresh container answers
-SSH from birth. They come from the builders' encrypted group secrets, and the
-build refuses an empty list. Adding a device means adding its public key there
-and rebuilding the image chain. The old key stays trusted in every archive
+The golden image carries the fleet account, with its public keys, so a fresh
+container answers SSH from birth. The account and its keys come from the
+builders' encrypted group secrets, and the build refuses an empty list. Adding
+a device means adding its public key there and rebuilding the image chain. The
+old key stays trusted in every archive
 built before the change. Its address matters too. The workload
 root defaults to DHCP, so a machine you reach often wants a static address from
 the git-ignored tfvars. The steps are in

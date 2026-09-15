@@ -7,9 +7,14 @@ roles:
     src: git+https://github.com/lae/ansible-role-proxmox.git
     version: v1.10.1
   # Docker Engine for the golden images and for any host that runs the
-  # service. The house policy around it lives in roles/local/docker/.
+  # service. The house policy around it lives in roles/local/docker_service/.
   - name: geerlingguy.docker
     version: 8.0.0
+  # The fleet account: a user, its authorized keys, and its sudo options,
+  # validated with visudo. The image build and the fleet both call it, and the
+  # data lives in each inventory's group_vars.
+  - name: robertdebock.users
+    version: 6.1.8
 
 collections:
   - name: community.sops

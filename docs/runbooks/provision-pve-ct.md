@@ -92,8 +92,13 @@ Then the container is a fleet host like any other:
 1. Add the leaf group `grp_tf_<host>` to `groups.yml`, under `grp_servers`.
 2. Add the host to `hosts.yml`, inside that group.
 3. Store the host in the group's `secrets.sops.yaml`. `ansible_host` is the
-   `ct_ipv4` from the output above. `ansible_user` is `root`, the only account
-   the image carries.
+   `ct_ipv4` from the output above. `ansible_user` is the fleet account,
+   `admin` unless you renamed it in the image secrets.
+
+**The console asks for a password.** The image carries none, on purpose: a
+shared one would leak into every clone. Reach a container with `pct enter
+<ct_id>` on the node instead. To use the console tab, hash a password with
+`openssl passwd -6`, add it to the account in the image secrets, and rebuild.
 
 **Set the address.** The module defaults to DHCP, so `ansible_host` can move
 on a reboot and the SSH habit with it. A workload you reach often takes a
