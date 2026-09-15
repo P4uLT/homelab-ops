@@ -1,5 +1,41 @@
 # code: language=ansible
 ---
-- name: Import bootstrap playbooks
-  hosts: all,!all
-  gather_facts: false
+# Cattle only: a container born from a golden image, which the workload root
+# writes into the grp_tf family. Two jobs.
+#
+# 1. Identity. The clone proves it carries the image, and that its address is
+#    recorded. A cattle host missing either is a wiring mistake, and it fails
+#    here rather than deep inside a connection.
+# 2. Application wiring. This is the only fleet layer that runs on cattle,
+#    since their image owns the baseline. No task yet: the first stack brings the
+#    first one.
+- name: Wire the cattle applications
+  hosts: grp_tf
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Read the golden image marker
+      ansible.builtin.stat:
+        path: /etc/image-build-info
+      register: bootstrap_image_marker
+
+    - name: Fail when a cattle host lost its image identity
+      ansible.builtin.assert:
+        that: bootstrap_image_marker.stat.exists
+        fail_msg: >-
+          {{ inventory_hostname }} runs a golden image but carries no
+          /etc/image-build-info. Rebuild the image before patching this host.
+        quiet: true
+
+    # The inventory fragment carries no address, so the address comes from the
+    # group's secrets. A missing one would fail inside the connection instead.
+    - name: Fail when a cattle host has no recorded address
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined
+          - ansible_host | length > 0
+        fail_msg: >-
+          {{ inventory_hostname }} is cattle but carries no ansible_host.
+          Create inventory/servers/group_vars/grp_tf_<host>/secrets.sops.yaml
+          with the ct_ipv4 from `task tf:jarvis-output -- -json lxcs`.
+        quiet: true

@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# For containers only. LXC runs no networkd, so the wait unit only delays a
+# clone boot. A host that isn't a container must not take this profile: on a
+# hypervisor the unit can be real. Its absence isn't an error either.
+- name: List the services
+  ansible.builtin.service_facts:
+
+- name: Disable the networkd wait unit
+  ansible.builtin.systemd_service:
+    name: systemd-networkd-wait-online.service
+    enabled: false
+    state: stopped
+  when: "'systemd-networkd-wait-online.service' in ansible_facts.services"

@@ -40,7 +40,7 @@ What the images contain:
 - Every image ends with the `image_finalize` role: no machine-id, no SSH host
   keys, a locked root password, and no apt package lists. Each clone generates
   fresh host keys on first start. The role also writes
-  `/etc/image-build-info`, the image identity the common layer asserts on
+  `/etc/image-build-info`, the image identity the bootstrap layer asserts on
   cattle.
 - The fleet account: a user, its public keys in `authorized_keys`, and its
   sudo options, validated by `visudo`. The `robertdebock.users` role creates

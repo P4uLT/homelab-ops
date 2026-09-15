@@ -1,0 +1,23 @@
+# code: language=ansible
+---
+# The baseline of the hosts we own, applied in the order the play lists the
+# roles. The play targets the family in the inventory tree, so a cattle host
+# and an appliance never match it: their place in the tree is the exclusion,
+# not a guard in the code.
+- name: Baseline of the hosts we own
+  hosts: grp_baseline
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the apt baseline
+      ansible.builtin.import_role:
+        name: apt
+
+- name: Container settings of that baseline
+  hosts: grp_containers
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the container network settings
+      ansible.builtin.import_role:
+        name: container_networkd

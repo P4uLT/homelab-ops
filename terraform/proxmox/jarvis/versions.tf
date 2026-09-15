@@ -6,6 +6,12 @@ terraform {
   required_version = "1.12.6"
 
   required_providers {
+    # local_file writes the Ansible inventory fragment this root generates.
+    local = {
+      source  = "hashicorp/local"
+      version = "2.9.1"
+    }
+
     proxmox = {
       source  = "bpg/proxmox"
       version = "0.99.0"

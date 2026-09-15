@@ -177,7 +177,7 @@ Five touch points:
 2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
    placeholder play that matches no host. The first stack replaces the
    placeholder with its line and touches nothing else in the tree. The
-   phases every build shares live in `common/`: the interpreter prologue,
+   phases every build shares live in `baseline/`: the interpreter prologue,
    the base, and the seal.
 3. The builders inventory, in `ansible/inventory/builders/`: the
    `grp_builders_<name>` leaf in `groups.yml`, then the `builder-<name>` host

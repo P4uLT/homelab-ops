@@ -9,7 +9,9 @@ target.
   what those roots share. The PVE resources use the
   [bpg provider](https://github.com/bpg/terraform-provider-proxmox).
   `proxmox/jarvis/` is live: one `lxc_workloads` entry per LXC workload, in its
-  git-ignored tfvars.
+  git-ignored tfvars. An apply also writes the Ansible inventory fragment
+  that makes each workload a fleet host:
+  `ansible/inventory/servers/iac.tf.<node>.yml`.
   A later PVE server gets its own root, named after it.
 - `proxmox/modules/lxc/` wraps one LXC workload: a golden image clone,
   started, addressed by DHCP unless the caller pins a static address from its

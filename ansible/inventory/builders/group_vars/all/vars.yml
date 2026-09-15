@@ -4,3 +4,10 @@
 # login, and the key as extra variables. These two are static.
 ansible_connection: community.proxmox.proxmox_pct_remote
 ansible_python_interpreter: /usr/bin/python3
+
+# The image is built fresh, so it takes a safe upgrade and the packages the
+# runtime baseline expects.
+apt_upgrade: safe
+apt_packages:
+  - curl
+  - ca-certificates

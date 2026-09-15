@@ -76,8 +76,8 @@ pct exec <ct_id> -- docker run --rm hello-world
 pct exec <ct_id> -- cat /etc/image-build-info
 ```
 
-The marker carries the image name, its version, and its parent, and the common
-layer asserts it on cattle.
+The marker carries the image name, its version, and its parent, and the
+bootstrap layer asserts it on cattle.
 
 ## The container joins the fleet
 
@@ -87,13 +87,22 @@ for Ansible and for you. A new device means a new public key in
 `task sops:edit`. Then rebuild the image chain: the old key stays trusted in
 every archive built before.
 
-Then the container is a fleet host like any other:
+The workloads root writes the group its apply creates, one fragment per node
+at `ansible/inventory/servers/iac.tf.<node>.yml`. The fragment carries the
+group, the host, and the container id, and no address, so it stays cleartext
+and committed. A workload named `tf-test` lands in `grp_tf_tf_test`: the group
+name uses underscores in place of hyphens, because Ansible reports a warning
+on a hyphen. The bootstrap layer asserts the address for a cattle host, so a
+missing step 2 fails loudly.
 
-1. Add the leaf group `grp_tf_<host>` to `groups.yml`, under `grp_servers`.
-2. Add the host to `hosts.yml`, inside that group.
-3. Store the host in the group's `secrets.sops.yaml`. `ansible_host` is the
-   `ct_ipv4` from the output above. `ansible_user` is the fleet account,
-   `admin` unless you renamed it in the image secrets.
+Then the container is a fleet host in two steps:
+
+1. Apply the root and commit the fragment it writes. The plan shows the file
+   before the apply.
+2. Create the group's secrets with `task sops:edit`, at
+   `ansible/inventory/servers/group_vars/grp_tf_<host>/secrets.sops.yaml`.
+   `ansible_host` is the `ct_ipv4` from the output above. `ansible_user` is
+   the fleet account, `admin` unless you renamed it in the image secrets.
 
 **Reaching a container.** The image carries no password, on purpose: a shared
 one would leak into every clone. The workloads ask for none either: their
@@ -141,10 +150,9 @@ Then converge the one host, with owner approval:
 task ansible:site -- -l <host>
 ```
 
-The common layer asserts `/etc/image-build-info` on a cattle host, so it proves
-the image and skips the OS baseline. The rest comes from `common_profiles` in
-the group's `group_vars`. No group defines that variable yet, so the first
-convergence changes nothing.
+The bootstrap layer asserts `/etc/image-build-info` on a cattle host, so it
+proves the image. A clone never joins `grp_baseline`, so no baseline play
+targets it and the first convergence changes nothing.
 
 **Without SSH.** An image built before the keys, or a container you want to
 reach with no key at all, still answers on the node:
