@@ -8,8 +8,6 @@
 #    a clean identity.
 # 2. apt. The lists must go after the last install, or every image hauls them
 #    around.
-# 2. apt. The lists must go after the last install, or every image hauls them
-#    around.
 #
 # The role owns no variable. Packer passes image_name, image_version, and
 # image_parent as extra variables, and the assert below fails loudly when one
