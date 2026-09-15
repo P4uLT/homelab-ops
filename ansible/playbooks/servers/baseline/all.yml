@@ -1,0 +1,18 @@
+# code: language=ansible
+---
+# The base of the fleet, one file per concern, so a topic is found by its
+# name. Each one is a playbook on its own. The account and the image identity
+# are the contract every host we own shares, whether the image bakes it or
+# Ansible applies it. The apt policy belongs to the hosts we build by hand.
+# The container settings belong to the containers alone.
+- name: Import the fleet account
+  ansible.builtin.import_playbook: users.yml
+
+- name: Import the apt baseline
+  ansible.builtin.import_playbook: apt.yml
+
+- name: Import the container network settings
+  ansible.builtin.import_playbook: networkd.yml
+
+- name: Import the workload identity checks
+  ansible.builtin.import_playbook: identity.yml

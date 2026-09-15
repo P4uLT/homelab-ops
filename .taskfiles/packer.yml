@@ -41,11 +41,11 @@ tasks:
         cmd: packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
       # The image playbooks and their inventory hosts are named inside a shell
       # string, so packer validate can't see a typo in either. These are the
-      # cheap offline checks that can. A chain root lives in image/common/, a
-      # service image in image/services/, a stack image in image/stacks/, so
+      # cheap offline checks that can. The root image lives in image/baseline/,
+      # a service image in image/services/, a stack image in image/stacks/, so
       # the play check accepts any home.
       - for: { var: PKR_IMAGES, as: IMAGE }
-        cmd: test -f ../ansible/playbooks/image/common/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/services/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/stacks/{{.IMAGE}}.yml
+        cmd: test -f ../ansible/playbooks/image/baseline/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/services/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/stacks/{{.IMAGE}}.yml
       - for: { var: PKR_IMAGES, as: IMAGE }
         cmd: grep -q "builder-{{.IMAGE}}:" ../ansible/inventory/builders/hosts.yml
 

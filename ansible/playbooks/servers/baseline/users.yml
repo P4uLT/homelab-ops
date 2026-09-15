@@ -1,0 +1,24 @@
+# code: language=ansible
+---
+# The account every host we own carries: a user, its keys, and its sudo
+# options. The image bakes it for a workload, and this play gives it to the
+# hosts we built by hand. Run it alone with task ansible:playbook.
+- name: The account every host we own carries
+  hosts: grp_owned
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Assert the inventory carries the fleet account
+      ansible.builtin.assert:
+        that: fleet_users | default([]) | length > 0
+        fail_msg: >-
+          Fill fleet_users in
+          ansible/inventory/servers/group_vars/all/secrets.sops.yaml: task
+          sops:edit.
+        quiet: true
+
+    - name: Create the fleet account
+      ansible.builtin.import_role:
+        name: robertdebock.users
+      vars:
+        users: "{{ fleet_users }}"

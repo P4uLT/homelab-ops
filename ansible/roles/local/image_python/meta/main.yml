@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  author: P4uLT
+  description: Put an interpreter in the build container, then check the pin.
+  license: MIT
+  min_ansible_version: '2.21'
+  platforms:
+    - name: Debian
+      versions: [trixie]
+
+dependencies: []

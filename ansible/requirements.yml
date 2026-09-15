@@ -7,7 +7,8 @@ roles:
     src: git+https://github.com/lae/ansible-role-proxmox.git
     version: v1.10.1
   # Docker Engine for the golden images and for any host that runs the
-  # service. The house policy around it lives in roles/local/docker_service/.
+  # service. The house policy lives in each inventory's grp_services_docker
+  # group_vars, on the role's native knob.
   - name: geerlingguy.docker
     version: 8.0.0
   # The fleet account: a user, its authorized keys, and its sudo options,
@@ -26,7 +27,7 @@ collections:
   - name: community.general
     version: 13.4.0
   # proxmox_pct_remote: the image build reaches its container through the
-  # PVE node with pct exec. The cattle runtime path reaches a clone over SSH,
+  # PVE node with pct exec. The workload runtime path reaches a clone over SSH,
   # through the fleet account the image carries.
   - name: community.proxmox
     version: 2.0.0

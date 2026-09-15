@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  author: P4uLT
+  description: Seal the image identity, host keys, and apt state.
+  license: MIT
+  min_ansible_version: '2.21'
+  platforms:
+    - name: Debian
+      versions: [trixie]
+
+dependencies: []

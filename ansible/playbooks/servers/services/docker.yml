@@ -11,4 +11,4 @@
   tasks:
     - name: Apply the Docker service
       ansible.builtin.include_role:
-        name: docker_service
+        name: geerlingguy.docker

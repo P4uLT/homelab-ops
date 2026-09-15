@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Put an interpreter in the build container, then check the pin
+    options:
+      image_python_vmid:
+        type: str
+        description: The container id Packer pinned for this build.
+        required: true

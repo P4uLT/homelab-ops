@@ -3,16 +3,16 @@
 # Every build runs the same phases, in this order: the interpreter in, the
 # image's own roles, the seal out. A build limits to one host, so only one
 # content play matches and the others match nothing. The content aggregators
-# follow the fleet's shape: common/ holds the chain root, services/ holds the
-# images that add a service to it, stacks/ holds the images that ship a whole
-# stack. The stacks aggregator carries a placeholder that matches nothing,
-# the same trick as the monitoring layer, so the wiring stays complete until
-# the first stack lands.
+# follow the fleet's shape: baseline/ holds the chain root and the phases
+# every build shares, services/ holds the images that add a service to it,
+# stacks/ holds the images that ship a whole stack. The stacks aggregator
+# carries a placeholder that matches nothing, the same trick as the monitoring
+# layer, so the wiring stays complete until the first stack lands.
 - name: Prepare the build container
-  ansible.builtin.import_playbook: common/prologue.yml
+  ansible.builtin.import_playbook: baseline/prologue.yml
 
-- name: Import the common images
-  ansible.builtin.import_playbook: common/all.yml
+- name: Import the baseline image
+  ansible.builtin.import_playbook: baseline/all.yml
 
 - name: Import the service images
   ansible.builtin.import_playbook: services/all.yml
@@ -21,4 +21,4 @@
   ansible.builtin.import_playbook: stacks/all.yml
 
 - name: Seal the image
-  ansible.builtin.import_playbook: common/seal.yml
+  ansible.builtin.import_playbook: baseline/seal.yml

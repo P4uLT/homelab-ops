@@ -162,8 +162,8 @@ calls, with your own node facts:
 ```sh
 task ansible:image -- --limit builder-base \
   -e ansible_host=<node-ip> -e ansible_user=<node-login> \
-  -e ansible_private_key_file=<key-path> -e proxmox_vmid=900 \
-  -e image_name=base -e image_version=manual -e image_parent=manual
+  -e ansible_private_key_file=<key-path> -e image_python_vmid=900 \
+  -e image_finalize_name=base -e image_finalize_version=manual -e image_finalize_parent=manual
 ```
 
 ## Add an image
@@ -173,11 +173,11 @@ Five touch points:
 1. The image play, in its category under `ansible/playbooks/image/`. A
    service image sits at `services/<name>.yml` and imports the roles of this
    image only. A stack image sits at `stacks/<name>.yml` with its own
-   `stacks/<name>/` directory of plays, like the fleet's `servers/stacks/`.
+   `stacks/<name>/` directory of plays.
 2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
    placeholder play that matches no host. The first stack replaces the
    placeholder with its line and touches nothing else in the tree. The
-   phases every build shares live in `common/`: the interpreter prologue,
+   phases every build shares live in `baseline/`: the interpreter prologue,
    the base, and the seal.
 3. The builders inventory, in `ansible/inventory/builders/`: the
    `grp_builders_<name>` leaf in `groups.yml`, then the `builder-<name>` host

@@ -1,0 +1,17 @@
+---
+argument_specs:
+  main:
+    short_description: Seal the image identity, host keys, and apt state
+    options:
+      image_finalize_name:
+        type: str
+        description: The image name, recorded in the marker.
+        required: true
+      image_finalize_version:
+        type: str
+        description: The artifact version, recorded in the marker.
+        required: true
+      image_finalize_parent:
+        type: str
+        description: The parent volid, recorded in the marker.
+        required: true

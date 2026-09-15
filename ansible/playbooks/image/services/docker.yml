@@ -3,7 +3,7 @@
 # The Docker golden image, on the base artifact: the service twin of
 # servers/services/docker.yml, which applies the same role on the fleet side.
 # Entry: playbooks/image.yml with --limit builder-docker. The interpreter and
-# the seal come from common/, like every image. The policy lives in the
+# the seal come from baseline/, like every image. The policy lives in the
 # builders inventory's grp_services_docker group_vars, so the image installs
 # Docker the way the fleet does.
 - name: Build the docker golden image
@@ -14,4 +14,4 @@
   tasks:
     - name: Apply the Docker service
       ansible.builtin.import_role:
-        name: docker_service
+        name: geerlingguy.docker

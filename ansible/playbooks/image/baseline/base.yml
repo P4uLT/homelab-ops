@@ -1,0 +1,40 @@
+# code: language=ansible
+---
+# The base golden image, on the official Debian template: the chain root.
+# Entry: playbooks/image.yml with --limit builder-base. The interpreter comes
+# from baseline/prologue.yml and the seal from baseline/seal.yml, both applied
+# by all.yml around this play.
+- name: Build the base golden image
+  hosts: builder-base
+  gather_facts: false
+  become: false
+
+  tasks:
+    # The order below is the contract the numbered scripts carried, so a clone
+    # and a host get the same sequence. The image applies both. A host takes
+    # only the profiles its population lists.
+    - name: Apply the apt baseline
+      ansible.builtin.import_role:
+        name: apt
+
+    - name: Apply the container network settings
+      ansible.builtin.import_role:
+        name: container_networkd
+
+    # The image must have a way in. The caller passes the fleet account: a
+    # user, its keys, and its sudo options. The vendor role writes
+    # authorized_keys and validates sudoers with visudo.
+    - name: Assert the caller passed the fleet account
+      ansible.builtin.assert:
+        that: fleet_users | default([]) | length > 0
+        fail_msg: >-
+          The image carries its own way in. Fill fleet_users in
+          ansible/inventory/builders/group_vars/all/secrets.sops.yaml with the
+          fleet account and its keys: task sops:edit.
+        quiet: true
+
+    - name: Create the fleet account
+      ansible.builtin.import_role:
+        name: robertdebock.users
+      vars:
+        users: "{{ fleet_users }}"

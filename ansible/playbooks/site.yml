@@ -2,18 +2,12 @@
 ---
 # The fleet entry point: every layer, in order, for every machine in the
 # inventory. A layer is one scope of configuration, not one kind of machine:
-# the inventory groups and common_profiles decide what runs where.
+# the inventory tree decides what runs where.
 # The layers live in servers/, the fleet's track. The other track, image/, is
 # the build run and never lands in this file.
 # This playbook can contact managed hosts.
-- name: Import the common layer
-  ansible.builtin.import_playbook: servers/common.yml
-
-- name: Import the monitoring layer
-  ansible.builtin.import_playbook: servers/monitoring.yml
+- name: Import the baseline layer
+  ansible.builtin.import_playbook: servers/baseline/all.yml
 
 - name: Import the services layer
-  ansible.builtin.import_playbook: servers/services.yml
-
-- name: Import the stacks layer
-  ansible.builtin.import_playbook: servers/stacks.yml
+  ansible.builtin.import_playbook: servers/services/all.yml

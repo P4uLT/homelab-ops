@@ -1,0 +1,17 @@
+---
+argument_specs:
+  main:
+    short_description: The apt work of the Debian family we own
+    options:
+      apt_upgrade:
+        type: str
+        description: The upgrade mode to run on apply.
+        choices: ['no', safe, full]
+        default: 'no'
+      apt_packages:
+        type: list
+        elements: str
+        description: The packages to install, without their recommendations.
+        default:
+          - curl
+          - ca-certificates

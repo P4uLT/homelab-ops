@@ -1,0 +1,8 @@
+---
+# The apt knobs of every Debian-family host we own. The default upgrades
+# nothing: a population that patches itself declares apt_upgrade: safe in its
+# group_vars. The package list carries the baseline everywhere.
+apt_upgrade: 'no'
+apt_packages:
+  - curl
+  - ca-certificates

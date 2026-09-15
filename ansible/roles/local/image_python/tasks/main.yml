@@ -32,9 +32,9 @@
 # build would provision the wrong thing.
 - name: Assert this is the container Packer pinned
   ansible.builtin.assert:
-    that: ansible_facts.hostname == 'builder-' ~ (proxmox_vmid | default('') | string)
+    that: ansible_facts.hostname == 'builder-' ~ (image_python_vmid | string)
     fail_msg: >-
       Connected to {{ ansible_facts.hostname }}, but Packer pinned
-      builder-{{ proxmox_vmid | default('') }}. Check the ctid of the image in
-      packer/images/ against the proxmox_vmid the provisioner passes.
+      builder-{{ image_python_vmid }}. Check the ctid of the image in
+      packer/images/ against the image_python_vmid the provisioner passes.
     quiet: true

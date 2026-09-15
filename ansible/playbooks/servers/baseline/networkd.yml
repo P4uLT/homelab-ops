@@ -1,0 +1,12 @@
+# code: language=ansible
+---
+# The network settings a container needs. A host that isn't a container stays
+# out of this play, because the unit can be real there.
+- name: The container settings of the baseline
+  hosts: grp_containers
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the container network settings
+      ansible.builtin.import_role:
+        name: container_networkd

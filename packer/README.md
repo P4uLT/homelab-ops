@@ -40,13 +40,14 @@ What the images contain:
 - Every image ends with the `image_finalize` role: no machine-id, no SSH host
   keys, a locked root password, and no apt package lists. Each clone generates
   fresh host keys on first start. The role also writes
-  `/etc/image-build-info`, the image identity the common layer asserts on
-  cattle.
+  `/etc/image-build-info`, the image identity the baseline layer asserts on
+  the workload.
 - The fleet account: a user, its public keys in `authorized_keys`, and its
   sudo options, validated by `visudo`. The `robertdebock.users` role creates
   it from the data in
   `ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, encrypted
-  like every other secret. A public key opens nothing by itself, so it can
+  like every other secret. The servers inventory declares the same account
+  for the hosts built by hand. A public key opens nothing by itself, so it can
   travel in a versioned artifact. The private halves never do.
 
 The build provisions through Ansible: `packer build` starts the container,

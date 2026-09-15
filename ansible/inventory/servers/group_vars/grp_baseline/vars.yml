@@ -1,0 +1,4 @@
+---
+# The baseline family patches itself. The packages come from the role
+# defaults.
+apt_upgrade: safe

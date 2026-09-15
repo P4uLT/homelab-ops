@@ -169,3 +169,5 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/writing.md`: the writing rules, the tooling, and each rule's source.
 - `terraform/BACKEND.md`: Terraform state design and recovery.
 - `.agents/skills/docs-sync`: the loop that resyncs the docs after a change.
+- `.agents/skills/ansible-layout`: where a play, a layer, or a file belongs.
+- `.agents/skills/ansible-roles`: when a local role earns its directory.

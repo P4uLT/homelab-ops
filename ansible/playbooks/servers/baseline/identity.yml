@@ -1,0 +1,32 @@
+# code: language=ansible
+---
+# The identity contract of a workload: it carries the image marker, and its
+# address is recorded. A missing one is a wiring mistake, so it fails here
+# rather than inside a connection. Nothing here needs root, and nothing here
+# needs facts.
+- name: The identity of a workload
+  hosts: grp_tf
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Read the golden image marker
+      ansible.builtin.stat:
+        path: /etc/image-build-info
+      register: baseline_image_marker
+
+    - name: Fail when a workload lost its image identity
+      ansible.builtin.assert:
+        that: baseline_image_marker.stat.exists
+        fail_msg: >-
+          {{ inventory_hostname }} runs a golden image but carries no
+          /etc/image-build-info. Rebuild the image before patching this host.
+        quiet: true
+
+    - name: Fail when a workload has no recorded address
+      ansible.builtin.assert:
+        that: ansible_host | default('') | length > 0
+        fail_msg: >-
+          {{ inventory_hostname }} is a workload but carries no ansible_host.
+          Create inventory/servers/group_vars/grp_tf_<host>/secrets.sops.yaml
+          with the ct_ipv4 from `task tf:jarvis-output -- -json lxcs`.
+        quiet: true

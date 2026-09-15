@@ -3,6 +3,6 @@
 # inventory/builders/group_vars/grp_services_docker/vars.yml: Ansible shares no
 # group_vars between inventories, so each inventory declares its own. Keep the
 # two in step, unless a runtime host genuinely needs something else.
-docker_service_daemon_options:
+docker_daemon_options:
   # journald caps itself; json-file grows without bound on a busy host.
   log-driver: journald
