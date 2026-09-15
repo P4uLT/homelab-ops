@@ -107,7 +107,9 @@ rules govern.
 
 A tool keeps its own name, in the pages and in the taskfiles: `packer fmt`,
 `uv run ansible-lint`. A shell without the mise hook prefixes the call
-instead: `mise exec -- task verify`.
+instead: `mise exec -- task verify`. Vale carries the guard: the
+House.NoMisePrefix rule flags the prefix in tracked files, except the pages
+that teach this rule.
 
 Vale fails a run on an `error` alert only. A rule left at the `suggestion`
 level it ships with reports findings and still exits 0, so `.vale.ini` raises

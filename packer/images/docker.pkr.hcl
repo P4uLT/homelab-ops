@@ -88,7 +88,7 @@ build {
   # --limit pick the image, and the connection comes from the node local file.
   provisioner "shell-local" {
     inline = [
-      "mise exec -- task -d ${path.root}/../.. ansible:image -- --limit builder-docker ${local.ansible_image_conn} -e proxmox_vmid=${var.docker_ctid} -e image_name=docker -e image_version=${local.docker_artifact} -e image_parent=${local.docker_parent_volid}",
+      "task -d ${path.root}/../.. ansible:image -- --limit builder-docker ${local.ansible_image_conn} -e proxmox_vmid=${var.docker_ctid} -e image_name=docker -e image_version=${local.docker_artifact} -e image_parent=${local.docker_parent_volid}",
     ]
   }
 

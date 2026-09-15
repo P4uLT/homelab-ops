@@ -84,10 +84,11 @@ build {
   # the command, the inventory and
   # --limit pick the image, and the rest of the connection comes from the node
   # local file. pct exec means the build container needs no sshd and no
-  # credential.
+  # credential. The bare task name resolves from the environment packer
+  # inherits when task packer:build starts it.
   provisioner "shell-local" {
     inline = [
-      "mise exec -- task -d ${path.root}/../.. ansible:image -- --limit builder-base ${local.ansible_image_conn} -e proxmox_vmid=${var.base_ctid} -e image_name=base -e image_version=${local.base_artifact} -e image_parent=${var.parent_template}",
+      "task -d ${path.root}/../.. ansible:image -- --limit builder-base ${local.ansible_image_conn} -e proxmox_vmid=${var.base_ctid} -e image_name=base -e image_version=${local.base_artifact} -e image_parent=${var.parent_template}",
     ]
   }
 
