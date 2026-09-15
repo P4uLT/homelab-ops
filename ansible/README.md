@@ -17,6 +17,10 @@ scope, two inventories, three host populations with separate authorities.
 | `plugins/` | Local filter, lookup, callback, and module code |
 | `vars/` | Variable files loaded explicitly by name. Empty today |
 
+A layer is a directory behind an `all.yml` router. Each concern gets a file,
+so a topic is found by its name and runs alone with `task ansible:playbook`.
+A check that runs as one command stays one file.
+
 ## Populations
 
 - **Workloads**: LXC born from a Packer golden image via Terraform. Each one
