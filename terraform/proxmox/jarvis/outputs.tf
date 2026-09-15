@@ -1,11 +1,11 @@
-# Mirror of main.tf: one entry per module call, same order, keyed by
-# hostname.
+# One entry per workload in the map, keyed by hostname.
 output "lxcs" {
-  description = "The LXC workloads by name: container ID and IPv4. One entry per module call."
+  description = "The LXC workloads by name: container ID and IPv4. One entry per workload."
   value = {
-    tf-test = {
-      ct_id   = module.tf_test.ct_id
-      ct_ipv4 = module.tf_test.ct_ipv4
+    for name, workload in module.workload :
+    name => {
+      ct_id   = workload.ct_id
+      ct_ipv4 = workload.ct_ipv4
     }
   }
 }

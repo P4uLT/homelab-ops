@@ -71,6 +71,12 @@ resource "proxmox_virtual_environment_container" "this" {
     type             = var.os_type
   }
 
+  # Shell mode invokes a shell without a login, so a container that carries no
+  # password still has a console.
+  console {
+    type = var.console_type
+  }
+
   dynamic "startup" {
     for_each = var.startup != null ? [var.startup] : []
     content {

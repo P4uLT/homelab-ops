@@ -2,8 +2,8 @@
 # sources read the node; the terraform_data resource turns a failed
 # assumption into a hard plan error (a check block would only warn).
 #
-# Adding a workload: mirror its id in managed_vm_ids, or the drift
-# check fails the next plan.
+# Every list here derives from the workloads map, so a new entry needs no
+# second declaration.
 
 data "proxmox_virtual_environment_datastores" "node" {
   node_name = local.node
@@ -17,15 +17,15 @@ data "proxmox_virtual_environment_containers" "tagged" {
 }
 
 locals {
-  # The storages this root actually addresses: the root-disk storage,
-  # plus the store named in each golden-image volid ("NAS:vztmpl/...").
+  # The storages this root actually addresses: the root-disk storage, plus the
+  # store named in each workload's golden-image volid ("NAS:vztmpl/...").
   required_datastores = distinct(concat(
     [local.storage],
-    [for volid in values(local.images) : element(split(":", volid), 0)],
+    [for workload in var.lxc_workloads : element(split(":", workload.template), 0)],
   ))
 
-  # Mirror of the workload ids declared in main.tf.
-  managed_vm_ids = [module.tf_test.ct_id]
+  # The ids this root manages, read from the map.
+  managed_vm_ids = [for workload in module.workload : workload.ct_id]
 }
 
 resource "terraform_data" "assertions" {

@@ -5,7 +5,20 @@
 pve_endpoint  = "https://<address>:8006/"
 pve_api_token = "terraform-prov@pve!tf=<secret>"
 
-# Optional. A workload you reach often takes a static address, which keeps
-# ct_ipv4 true at apply time and the address stable across reboots. Leave it
-# out to stay on DHCP.
-# tf_test_ipv4 = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
+# One entry per workload, keyed by hostname. The template is the volid of the
+# Packer chain the container clones: NAS:vztmpl/<artifact>. An entry without
+# ipv4 stays on DHCP, where the address can move on a reboot, and ct_ipv4 only
+# fills once the container reports a lease.
+#
+# cpu, ram, swap, and disk are optional: leaving them out keeps the module's
+# defaults.
+lxc_workloads = {
+  example = {
+    id       = 1000
+    template = "NAS:vztmpl/debian-13-standard-base-docker_13.6-1_amd64.tar.zst"
+    ipv4 = {
+      address = "10.0.0.5/24"
+      gateway = "10.0.0.1"
+    }
+  }
+}

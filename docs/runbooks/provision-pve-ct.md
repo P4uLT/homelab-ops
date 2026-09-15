@@ -2,10 +2,10 @@
 
 The `terraform/proxmox/jarvis/` root instantiates Packer golden images as LXC
 containers on the PVE node jarvis. The shared `terraform/proxmox/modules/lxc/`
-module wraps one container. The root holds one module call per workload, and
-its `locals.tf` holds the node facts: the node name, the storages, the bridge,
-and the image pins. The provider talks to the PVE API over HTTPS with an API
-token. One root covers one PVE server. The state lives in the shared OVH
+module wraps one container. The root holds one entry per workload in its
+`lxc_workloads` map, which lives in the git-ignored tfvars. Its `locals.tf` holds
+the node facts: the node name, the storages, and the bridge. The provider talks
+to the PVE API over HTTPS with an API token. One root covers one PVE server. The state lives in the shared OVH
 bucket. The design is in [Terraform state design](../../terraform/BACKEND.md).
 
 Prerequisites:
@@ -41,8 +41,8 @@ task tf:jarvis-plan
 task tf:jarvis-apply -- -auto-approve
 ```
 
-The plan shows one container to add. The apply clones the archive pinned in
-`local.images.docker`, the Docker golden image, starts the container, and
+The plan shows one container to add. The apply clones the archive its entry
+names as `template`, the Docker golden image here, starts the container, and
 writes the state to the bucket.
 
 Two checks on this first run:
@@ -95,17 +95,34 @@ Then the container is a fleet host like any other:
    `ct_ipv4` from the output above. `ansible_user` is the fleet account,
    `admin` unless you renamed it in the image secrets.
 
-**The console asks for a password.** The image carries none, on purpose: a
-shared one would leak into every clone. Reach a container with `pct enter
-<ct_id>` on the node instead. To use the console tab, hash a password with
-`openssl passwd -6`, add it to the account in the image secrets, and rebuild.
+**Reaching a container.** The image carries no password, on purpose: a shared
+one would leak into every clone. The workloads ask for none either: their
+console runs in shell mode, where PVE invokes a shell without a login. From the
+node:
+
+```sh
+pct enter <ct_id>
+pct console --cmode shell <ct_id>
+```
+
+The node's `Shell` tab in the PVE interface reaches both. For a log, `pct exec
+<ct_id> -- journalctl -u <unit> -f`. A real login prompt wants a password, and
+that's a per-clone choice: `pct set <ct_id> --password`.
+
+Whether the container's Console tab honours the shell mode is untested here.
 
 **Set the address.** The module defaults to DHCP, so `ansible_host` can move
 on a reboot and the SSH habit with it. A workload you reach often takes a
-static address instead, in the root's git-ignored tfvars:
+static address instead, in its entry in the git-ignored tfvars:
 
 ```hcl
-tf_test_ipv4 = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
+lxc_workloads = {
+  tf-test = {
+    id       = 1000
+    template = "NAS:vztmpl/<artifact>"
+    ipv4     = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
+  }
+}
 ```
 
 A static address has a second effect. The provider reads the interface's
@@ -152,8 +169,7 @@ task tf:jarvis-apply -- -destroy -auto-approve
 
 The destroy removes the workloads and their disks. The golden image stays in
 the template storage. To move a workload to a newer image, rebuild it with a
-bumped build number. Then change its pin in the `images` map of the root's
-`locals.tf`.
+bumped build number, then change its `template` in the git-ignored tfvars.
 
 ## A second PVE server
 

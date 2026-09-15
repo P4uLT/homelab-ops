@@ -1,48 +1,47 @@
-# The PVE workloads of this node. One lxc module call per container,
-# from a Packer golden image, so the chain stays end to end: Packer
-# builds the archive, Terraform clones it, Ansible will configure the
-# clone later. A new container is a new call, plus a line in outputs.tf.
+# The PVE workloads of this node. One entry in the workloads map per
+# container, from a Packer golden image, so the chain stays end to end: Packer
+# builds the archive, Terraform clones it, Ansible configures the clone.
 #
-# Calls read top to bottom: identity, image, then the node facts of
-# locals.tf, then per-container features. Calls sort by id. The image
-# names a Packer chain: local.images.<chain> pins the volid in locals.tf.
+# The map lives in the git-ignored tfvars, keyed by hostname, so this file
+# never names a workload: adding one is an entry there and nothing else. Each
+# entry carries the volid of the Packer chain it clones.
 
 # vmid space: 1000+ are Terraform-managed LXC workloads.
 
-# tf-test: scratch container that exercises the provisioning chain.
-module "tf_test" {
-  source = "../modules/lxc"
+module "workload" {
+  source   = "../modules/lxc"
+  for_each = var.lxc_workloads
 
-  id       = 1000
-  hostname = "tf-test"
+  id       = each.value.id
+  hostname = each.key
+  template = each.value.template
 
-  template = local.images.docker
-
+  # The node facts stay here: every entry shares them.
   node    = local.node
   storage = local.storage
   bridge  = local.bridge
 
-  # Null keeps DHCP. A static address from the git-ignored tfvars gives the
-  # container its address at start, so ct_ipv4 is true at apply time and the
-  # workload keeps the same address across reboots.
-  ipv4 = var.tf_test_ipv4
-
-  # Nesting is the one feature flag an API token may set; keyctl is
-  # root@pam-only in PVE. The golden image carries Docker, and the
-  # local-lvm storage needs no fuse workaround.
-  nesting = true
+  # The rest comes from the entry. A field the entry leaves out keeps the
+  # default in this variable's type, which mirrors the module.
+  description    = each.value.description
+  tags           = each.value.tags
+  protection     = each.value.protection
+  os_type        = each.value.os_type
+  disk           = each.value.disk
+  mountpoints    = each.value.mountpoints
+  cpu            = each.value.cpu
+  ram            = each.value.ram
+  swap           = each.value.swap
+  interface_name = each.value.interface_name
+  vlan_id        = each.value.vlan_id
+  mac_address    = each.value.mac_address
+  ipv4           = each.value.ipv4
+  started        = each.value.started
+  start_on_boot  = each.value.start_on_boot
+  console_type   = each.value.console_type
+  startup        = each.value.startup
+  unprivileged   = each.value.unprivileged
+  nesting        = each.value.nesting
+  keyctl         = each.value.keyctl
+  wait_for_ipv4  = each.value.wait_for_ipv4
 }
-
-# <purpose>: <one line on the workload's role>.
-# module "<name>" {
-#   source = "../modules/lxc"
-#
-#   id       = 1001
-#   hostname = "<name>"
-#
-#   template = local.images.base
-#
-#   node    = local.node
-#   storage = local.storage
-#   bridge  = local.bridge
-# }

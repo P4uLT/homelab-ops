@@ -150,6 +150,17 @@ variable "startup" {
   default = null
 }
 
+variable "console_type" {
+  description = "Console mode. Shell invokes a shell inside the container without a login, so an account without a password still has a console. PVE names this setting cmode."
+  type        = string
+  default     = "shell"
+
+  validation {
+    condition     = contains(["console", "shell", "tty"], var.console_type)
+    error_message = "console_type must be console, shell, or tty."
+  }
+}
+
 variable "unprivileged" {
   description = "Run the container without root privileges on the node."
   type        = bool
