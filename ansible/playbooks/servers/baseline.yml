@@ -1,4 +1,0 @@
-# code: language=ansible
----
-- name: Import baseline playbooks
-  ansible.builtin.import_playbook: baseline/all.yml

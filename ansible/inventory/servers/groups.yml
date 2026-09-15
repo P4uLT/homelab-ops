@@ -7,23 +7,28 @@ all:
   children:
     grp_servers:
       children:
-        grp_servers_proxmox:
-          children:
-            grp_servers_proxmox_jarvis:
-        # The cattle family. The workload root fills it, one grp_tf_<host>
-        # leaf per container, in the fragment it writes at apply time:
-        # inventory/servers/iac.tf.<node>.yml. Empty until then.
+        # The workloads Terraform creates. Their image carries the baseline,
+        # so they stay outside grp_owned. The workload root fills this family,
+        # one grp_tf_<host> leaf per container, in the fragment it writes at
+        # apply time: inventory/servers/iac.tf.<node>.yml. Empty until then.
         grp_tf:
-        # The hosts we own and build by hand: they take the baseline. The
-        # cattle and the appliances stay out of this family, so their place in
-        # the tree is the exclusion.
-        grp_baseline:
+        # The hosts we configure by hand: the Debian hosts and the appliances.
+        grp_owned:
           children:
-            grp_containers:
+            # The Debian baseline: the account, the apt policy, and the
+            # container settings.
+            grp_baseline:
               children:
-                # Containers built by hand in the PVE interface, outside the
-                # Terraform and Packer chain. Empty until one joins.
-                grp_lxc_manual:
+                grp_containers:
+                  children:
+                    # Containers built by hand in the PVE interface, outside
+                    # the Terraform and Packer chain. Empty until one joins.
+                    grp_lxc_manual:
+            # The Proxmox nodes. Their own role owns the packages, so they
+            # stay out of grp_baseline.
+            grp_servers_proxmox:
+              children:
+                grp_servers_proxmox_jarvis:
     # Opt-in service groups. Not topology: a host joins one when it runs that
     # service. An empty group is a skipped play.
     grp_services_docker:

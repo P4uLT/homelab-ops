@@ -11,7 +11,7 @@ scope, two inventories, three host populations with separate authorities.
 | `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
 | `inventory/` | `servers/`: the machines Ansible manages, with `groups.yml` (tree) and `hosts.yml` (membership). A Terraform-created container lands here as a generated group, written by the workload root. `builders/`: the Packer build containers, one host per image. Group names read `grp_<scope>_<specifics>`: `grp_servers_*` for the machine tree, `grp_builders_*` for the build containers, `grp_services_*` for opt-in service memberships |
 | `inventory/*/group_vars/` | Each inventory owns its own. One directory per group that carries variables, named after the group: `vars.yml` for cleartext, `secrets.sops.yaml` for secrets. A directory holds one or both |
-| `playbooks/` | Two tracks, two entries. `site.yml` runs `servers/`, the fleet layers `baseline`, `monitoring`, `services`, `stacks`, and `bootstrap`, the cattle wiring. `image.yml` runs `image/`, the build chain: `baseline/base.yml` is the chain root. `services/<name>.yml` and `stacks/<name>.yml` hold the images that add a service or a whole stack. Two entries on purpose: a build seals its container, and the fleet entry must never seal a live machine. `verify.yml` proves the shell |
+| `playbooks/` | Two tracks, two entries. `site.yml` runs `servers/`, the fleet layers `baseline` and `services`. `image.yml` runs `image/`, the build chain. `baseline/base.yml` is the chain root, `services/<name>.yml` adds a service to an image, and `stacks/<name>.yml` ships a whole stack. Two entries on purpose: a build seals its container, and the fleet entry must never seal a live machine. `verify.yml` proves the shell |
 | `roles/` | `local/` (ours, hand-written), `vendors/` (downloaded, exact pins, ignored) |
 | `collections/` | `local/` (ours), `vendors/` (downloaded, ignored except the marker) |
 | `plugins/` | Local filter, lookup, callback, and module code |
@@ -19,25 +19,24 @@ scope, two inventories, three host populations with separate authorities.
 
 ## Populations
 
-- **Cattle**: LXC born from a Packer golden image via Terraform. Each one
-  joins the fleet as `grp_tf_<host>` under `grp_servers`, outside
-  `grp_baseline`. The image owns the OS baseline, and no secret and no
-  private key is ever baked into it. It does carry the fleet account: a user,
-  its public keys, and its sudo options, so a clone answers SSH from birth.
-  [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md) walks
-  through it. Rotating one, like patching, means rebuilding the image. Don't
-  upgrade a cattle node in place. The `bootstrap` layer asserts
-  `/etc/image-build-info` on cattle and does their application wiring, and it
-  targets the `grp_tf` family the workload root fills.
-- **Pets by nature**: the PVE hosts, the NAS, and any appliance that carries
-  state or hardware and can't be rebuilt from an image.
-- **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE
-  UI, outside the TF+Packer pipeline.
+- **Workloads**: LXC born from a Packer golden image via Terraform. Each one
+  joins the fleet as `grp_tf_<host>` under `grp_servers`, outside `grp_owned`.
+  The image owns the OS baseline, and no secret and no private key is ever
+  baked into it. It does carry the fleet account: a user, its public keys, and
+  its sudo options, so a clone answers SSH from birth. [Provision an LXC
+  workload](../docs/runbooks/provision-pve-ct.md) walks through it. Rotating
+  one, like patching, means rebuilding the image. Don't upgrade a workload in
+  place. The `baseline` layer asserts `/etc/image-build-info` on it, and its
+  address is recorded in the group secrets.
+- **Hosts we built by hand**: the PVE hosts, the NAS, and any appliance that
+  carries state or hardware. The `baseline` layer gives them the fleet account,
+  and the apt policy to the Debian ones.
+- **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE UI,
+  outside the Terraform and Packer pipeline.
 
-Populations don't decide the baseline by themselves. The inventory tree does:
-`grp_baseline` holds the hosts we own and build by hand, and its play applies
-the profiles they need. The cattle and the appliances sit outside that family,
-so no play targets them.
+The inventory tree decides the baseline. `grp_owned` holds the hosts we
+configure by hand, and `grp_baseline` the Debian ones among them. A workload
+sits outside both, because its image carries the baseline already.
 
 ## Services
 

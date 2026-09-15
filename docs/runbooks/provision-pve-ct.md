@@ -77,22 +77,22 @@ pct exec <ct_id> -- cat /etc/image-build-info
 ```
 
 The marker carries the image name, its version, and its parent, and the
-bootstrap layer asserts it on cattle.
+baseline layer asserts it on the workload.
 
 ## The container joins the fleet
 
 The image carries the fleet account, so the container answers SSH from birth,
-for Ansible and for you. A new device means a new public key in
-`ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, added with
-`task sops:edit`. Then rebuild the image chain: the old key stays trusted in
-every archive built before.
+for Ansible and for you. A new device means a new public key in both
+inventories, added with `task sops:edit`. The builders copy feeds the image,
+and the servers copy feeds the hosts built by hand. Then rebuild the image
+chain: the old key stays trusted in every archive built before.
 
 The workloads root writes the group its apply creates, one fragment per node
 at `ansible/inventory/servers/iac.tf.<node>.yml`. The fragment carries the
 group, the host, and the container id, and no address, so it stays cleartext
 and committed. A workload named `tf-test` lands in `grp_tf_tf_test`: the group
 name uses underscores in place of hyphens, because Ansible reports a warning
-on a hyphen. The bootstrap layer asserts the address for a cattle host, so a
+on a hyphen. The baseline layer asserts the address for a workload, so a
 missing step 2 fails loudly.
 
 Then the container is a fleet host in two steps:
@@ -150,9 +150,9 @@ Then converge the one host, with owner approval:
 task ansible:site -- -l <host>
 ```
 
-The bootstrap layer asserts `/etc/image-build-info` on a cattle host, so it
-proves the image. A clone never joins `grp_baseline`, so no baseline play
-targets it and the first convergence changes nothing.
+The baseline layer asserts `/etc/image-build-info` on a workload, so it proves
+the image. A clone joins neither `grp_owned` nor `grp_baseline`, so no baseline
+play targets it and the first convergence changes nothing.
 
 **Without SSH.** An image built before the keys, or a container you want to
 reach with no key at all, still answers on the node:
@@ -162,7 +162,7 @@ pct enter <ct_id>
 pct exec <ct_id> -- journalctl -u <unit>
 ```
 
-See [the Ansible shell](../../ansible/README.md) for the cattle model, and
+See [the Ansible shell](../../ansible/README.md) for the workload model, and
 [Add a Proxmox VE node](onboard-pve.md) for the same inventory mechanics on a
 PVE host.
 

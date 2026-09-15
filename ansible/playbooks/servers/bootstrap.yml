@@ -1,4 +1,0 @@
-# code: language=ansible
----
-- name: Import bootstrap playbooks
-  ansible.builtin.import_playbook: bootstrap/all.yml

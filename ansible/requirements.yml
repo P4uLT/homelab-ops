@@ -27,7 +27,7 @@ collections:
   - name: community.general
     version: 13.4.0
   # proxmox_pct_remote: the image build reaches its container through the
-  # PVE node with pct exec. The cattle runtime path reaches a clone over SSH,
+  # PVE node with pct exec. The workload runtime path reaches a clone over SSH,
   # through the fleet account the image carries.
   - name: community.proxmox
     version: 2.0.0

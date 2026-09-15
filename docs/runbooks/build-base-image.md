@@ -173,7 +173,7 @@ Five touch points:
 1. The image play, in its category under `ansible/playbooks/image/`. A
    service image sits at `services/<name>.yml` and imports the roles of this
    image only. A stack image sits at `stacks/<name>.yml` with its own
-   `stacks/<name>/` directory of plays, like the fleet's `servers/stacks/`.
+   `stacks/<name>/` directory of plays.
 2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
    placeholder play that matches no host. The first stack replaces the
    placeholder with its line and touches nothing else in the tree. The

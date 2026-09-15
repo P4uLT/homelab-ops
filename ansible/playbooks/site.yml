@@ -7,18 +7,7 @@
 # the build run and never lands in this file.
 # This playbook can contact managed hosts.
 - name: Import the baseline layer
-  ansible.builtin.import_playbook: servers/baseline.yml
-
-- name: Import the monitoring layer
-  ansible.builtin.import_playbook: servers/monitoring.yml
+  ansible.builtin.import_playbook: servers/baseline/all.yml
 
 - name: Import the services layer
-  ansible.builtin.import_playbook: servers/services.yml
-
-- name: Import the stacks layer
-  ansible.builtin.import_playbook: servers/stacks.yml
-
-# Last, and cattle only: the application wiring of a container born from a
-# golden image. The layer skips while no workload has landed.
-- name: Import the cattle application wiring
-  ansible.builtin.import_playbook: servers/bootstrap.yml
+  ansible.builtin.import_playbook: servers/services/all.yml

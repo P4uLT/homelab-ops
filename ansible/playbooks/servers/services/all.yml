@@ -1,6 +1,10 @@
 # code: language=ansible
 ---
 # Service topics. Each one is opt-in through its own inventory group, so an
-# empty group means a skipped play.
+# empty group means a skipped play. A play here fits a workload and a host we
+# built by hand alike: the group decides, the population doesn't.
 - name: Import the Docker service
   ansible.builtin.import_playbook: docker.yml
+
+- name: Import the Proxmox convergence
+  ansible.builtin.import_playbook: proxmox/converge.yml

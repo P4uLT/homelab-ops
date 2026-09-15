@@ -1,10 +1,33 @@
 # code: language=ansible
 ---
-# The baseline of the hosts we own, applied in the order the play lists the
-# roles. The play targets the family in the inventory tree, so a cattle host
-# and an appliance never match it: their place in the tree is the exclusion,
-# not a guard in the code.
-- name: Baseline of the hosts we own
+# The base of the fleet, one play per host set. The account and the image
+# identity are the contract every host we own shares, whether the image bakes
+# it or Ansible applies it. The apt policy belongs to the hosts we build by
+# hand, because on a PVE node the vendor role owns the packages. The container
+# settings belong to the containers alone.
+- name: The account every host we own carries
+  hosts: grp_owned
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Assert the inventory carries the fleet account
+      ansible.builtin.assert:
+        that:
+          - fleet_users is defined
+          - fleet_users | length > 0
+        fail_msg: >-
+          Fill fleet_users in
+          ansible/inventory/servers/group_vars/all/secrets.sops.yaml: task
+          sops:edit.
+        quiet: true
+
+    - name: Create the fleet account
+      ansible.builtin.import_role:
+        name: robertdebock.users
+      vars:
+        users: "{{ fleet_users }}"
+
+- name: The baseline of the hosts we build by hand
   hosts: grp_baseline
   become: true
   gather_facts: true
@@ -13,7 +36,7 @@
       ansible.builtin.import_role:
         name: apt
 
-- name: Container settings of that baseline
+- name: The container settings of that baseline
   hosts: grp_containers
   become: true
   gather_facts: true
@@ -21,3 +44,32 @@
     - name: Apply the container network settings
       ansible.builtin.import_role:
         name: container_networkd
+
+- name: The identity of a workload
+  hosts: grp_tf
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Read the golden image marker
+      ansible.builtin.stat:
+        path: /etc/image-build-info
+      register: baseline_image_marker
+
+    - name: Fail when a workload lost its image identity
+      ansible.builtin.assert:
+        that: baseline_image_marker.stat.exists
+        fail_msg: >-
+          {{ inventory_hostname }} runs a golden image but carries no
+          /etc/image-build-info. Rebuild the image before patching this host.
+        quiet: true
+
+    - name: Fail when a workload has no recorded address
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined
+          - ansible_host | length > 0
+        fail_msg: >-
+          {{ inventory_hostname }} is a workload but carries no ansible_host.
+          Create inventory/servers/group_vars/grp_tf_<host>/secrets.sops.yaml
+          with the ct_ipv4 from `task tf:jarvis-output -- -json lxcs`.
+        quiet: true

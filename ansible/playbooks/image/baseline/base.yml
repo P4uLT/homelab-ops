@@ -27,10 +27,10 @@
     - name: Assert the caller passed the fleet account
       ansible.builtin.assert:
         that:
-          - image_users is defined
-          - image_users | length > 0
+          - fleet_users is defined
+          - fleet_users | length > 0
         fail_msg: >-
-          The image carries its own way in. Fill image_users in
+          The image carries its own way in. Fill fleet_users in
           ansible/inventory/builders/group_vars/all/secrets.sops.yaml with the
           fleet account and its keys: task sops:edit.
         quiet: true
@@ -39,4 +39,4 @@
       ansible.builtin.import_role:
         name: robertdebock.users
       vars:
-        users: "{{ image_users }}"
+        users: "{{ fleet_users }}"
