@@ -19,9 +19,13 @@ scope, two inventories, three host populations with separate authorities.
 
 ## Populations
 
-- **Cattle**: LXC born from a Packer golden image via Terraform. The image
-  owns the OS baseline, and no secret, key, or credential is ever baked into
-  it. Patching means rebuilding the image. Don't upgrade a cattle node in
+- **Cattle**: LXC born from a Packer golden image via Terraform. Each one
+  joins the fleet as `grp_tf_<host>` under `grp_servers`, the family the
+  common layer keys on. The image owns the OS baseline, and no secret, key,
+  or credential is ever baked into it. A fresh container gets its keys at
+  first contact.
+  [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md) walks
+  through it. Patching means rebuilding the image. Don't upgrade a cattle node in
   place. The common layer asserts `/etc/image-build-info` for cattle and skips
   the baseline. The `bootstrap` playbook does their application wiring.
 - **Pets by nature**: the PVE hosts, the NAS, and any appliance that carries

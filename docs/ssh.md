@@ -33,6 +33,15 @@ which reads neither `~/.ssh/config` nor a password prompt, so the build takes
 its key from `pve_ssh_key_path` or from a loaded agent. Everything else,
 including every runtime play, goes through this block.
 
+## Terraform-created machines
+
+A golden image carries no key, so a fresh container answers nobody. The node
+gives it the automation key and your device key at first contact. The
+procedure is in
+[Provision an LXC workload](runbooks/provision-pve-ct.md). Its address matters
+too. The workload root defaults to DHCP, so a machine you reach often wants a
+static address from the git-ignored tfvars.
+
 ## Access inventory
 
 Keep an access inventory (node, account, key fingerprint, device) outside

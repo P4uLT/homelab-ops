@@ -34,8 +34,7 @@ certificate.
 
 ## Apply the first container
 
-The two commands below read the node and then change it. Expect one container
-to add.
+The two commands below read the node and then change it.
 
 ```sh
 task tf:jarvis-plan
@@ -65,10 +64,12 @@ Read the workload list, then prove the chain end to end on the node.
 task tf:jarvis-output -- -json lxcs
 ```
 
-The `lxcs` output lists every workload with its `ct_id` and its `ct_ipv4`.
+The `lxcs` output is keyed by workload name, and each entry carries its
+`ct_id` and its `ct_ipv4`.
 
-Then, on the node, the full chain proof. The clone runs Docker from the golden
-image with no manual step:
+Then, on the node, the full chain proof. The container reaches Docker Hub over
+its DHCP address, so the pull needs outbound HTTPS. The clone runs Docker from
+the golden image with no manual step:
 
 ```sh
 pct exec <ct_id> -- docker run --rm hello-world
@@ -78,16 +79,70 @@ pct exec <ct_id> -- cat /etc/image-build-info
 The marker carries the image name, its version, and its parent, and the common
 layer asserts it on cattle.
 
+## First contact, then the inventory
+
+Ansible reaches every other host over SSH with a key. A golden image carries
+no key, on purpose, and the container has no password to fall back on. So the
+node gives the container its first key, through `pct`.
+
+Run these commands on the node. `<public-key-path>` is the public half of the
+automation key:
+
+```sh
+pct exec <ct_id> -- install -d -m 700 /root/.ssh
+pct push <ct_id> <public-key-path> /root/.ssh/authorized_keys
+pct exec <ct_id> -- chmod 600 /root/.ssh/authorized_keys
+```
+
+The container answers SSH for that key now, for Ansible and for you. Add your
+own device key to the same file: one automation key, one personal key per
+device, as [SSH key and host-key practices](../ssh.md) requires. The node
+gets you in without any key at all, which suits a quick look at the logs:
+
+```sh
+pct enter <ct_id>
+pct exec <ct_id> -- journalctl -u <unit>
+```
+
+Then the container is a fleet host like any other:
+
+1. Add the leaf group `grp_tf_<host>` to `groups.yml`, under `grp_servers`.
+2. Add the host to `hosts.yml`, inside that group.
+3. Store the host in the group's `secrets.sops.yaml`. `ansible_host` is the
+   `ct_ipv4` from the output above. `ansible_user` is `root`, the only account
+   the image carries.
+
+**Choose the address.** The module defaults to DHCP, so `ansible_host` can
+move on a reboot and the SSH habit with it. A workload you reach often wants a
+static `ipv4.address` in the root's git-ignored tfvars, never in a tracked
+file.
+
+Then converge the one host, with owner approval:
+
+```sh
+task ansible:site -- -l <host>
+```
+
+The common layer asserts `/etc/image-build-info` on a cattle host, so it proves
+the image and skips the OS baseline. The rest comes from `common_profiles` in
+the group's `group_vars`. No group defines that variable yet, so the first
+convergence changes nothing.
+
+See [the Ansible shell](../../ansible/README.md) for the cattle model, and
+[Add a Proxmox VE node](onboard-pve.md) for the same inventory mechanics on a
+PVE host.
+
 ## Destroy
 
-One command removes the container. The golden image is untouched.
+One command removes every workload in this root's state. The golden image is
+untouched.
 
 ```sh
 task tf:jarvis-apply -- -destroy -auto-approve
 ```
 
-The destroy removes the container and its disk. The golden image stays in the
-template storage. To move a workload to a newer image, rebuild it with a
+The destroy removes the workloads and their disks. The golden image stays in
+the template storage. To move a workload to a newer image, rebuild it with a
 bumped build number. Then change its pin in the `images` map of the root's
 `locals.tf`.
 
