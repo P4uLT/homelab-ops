@@ -1,8 +1,6 @@
-# Toolchain for homelab-ops: extended phase by phase.
-# Roadmap for later phases (uncomment as each lands):
-#   kubectl, talosctl, topf, flux, yq, just
-# topf's mise availability is unverified (architecture study). Check it before adding.
-# Versions are pinned to real releases and bumped deliberately, never a floating tag.
+# Toolchain for homelab-ops. Versions are pinned to real releases and bumped
+# deliberately, never a floating tag. A new tool joins with the change that
+# needs it.
 
 [tools]
 task = "3.53.1"

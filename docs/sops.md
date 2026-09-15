@@ -9,7 +9,7 @@ recipient list, never a key.
 Run these steps once per machine:
 
 1. Install mise.
-2. Run `mise install` in the repository root. This command installs SOPS 3.13.3 and age 1.3.2.
+2. Run `mise install` in the repository root. This command installs the pinned SOPS and age.
 3. Copy your age key file to the repository root. Name the file `.age.key.txt`.
 4. Run `chmod 600 .age.key.txt`.
 5. Don't create a `.env` file for this variable. The committed `mise.toml` sets `SOPS_AGE_KEY_FILE` to the repository key file. The path resolves from any directory, on every machine.
@@ -50,7 +50,7 @@ variable load, so it's loud.
 
 1. Clone the repository.
 2. Run `mise install`.
-3. Put your age key file at the repository root as `.age.key.txt`. Use the main key or the backup key. The permissions are steps 3 and 4 of [Setup on a new machine](#setup-on-a-new-machine).
+3. Put your age key file at the repository root as `.age.key.txt`. Use the main key or the backup key. Set its permissions as in steps 3 and 4 of [Setup on a new machine](#setup-on-a-new-machine).
 4. Run `git status --ignored`. Check that Git ignores `.age.key.txt`.
 5. Run `task verify`.
 

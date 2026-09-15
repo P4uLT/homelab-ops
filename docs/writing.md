@@ -24,8 +24,8 @@ with an implicit "About".
 
 ## Prose
 
-Eleven rules, each one published, all enforced by `task docs:check`.
-`.vale.ini` enables exactly these eleven. Nine of them also run over code
+Twelve rules, each one published, all enforced by `task docs:check`.
+`.vale.ini` enables exactly these twelve. Ten of them also run over code
 comments. `Acronyms` and `Vale.Terms` stay out of those, because in a config
 file the same letters are identifiers, paths, and commands.
 
@@ -42,6 +42,7 @@ file the same letters are identifiers, paths, and commands.
 | Spell out an unfamiliar acronym | On first use, or add the term to the vocabulary |
 | Exact casing for a domain term | `PVE`, not `pve`. The vocabulary is the list |
 | A sentence under 25 words | One idea per sentence. Split at the conjunction |
+| A tool by its own name | `packer fmt`, `uv run ansible-lint`. The mise prefix belongs to an invocation, never a file |
 
 The vocabulary lives in `.vale/styles/config/vocabularies/House/accept.txt`, one
 expression per line. It follows the Host terminology section of
@@ -99,7 +100,7 @@ rules govern.
 
 | Command | Does |
 | --- | --- |
-| `task docs:check` | The prose rules over every tracked file: eleven for Markdown, nine for code comments |
+| `task docs:check` | The prose rules over every tracked file: twelve for Markdown, ten for code comments |
 | `task verify` | Everything, `docs:check` included |
 | `vale --config=.vale.ini <path>` | The same rules on one path while you write |
 | `task docs:links` | Every internal link, anchors included, without network |

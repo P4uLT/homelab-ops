@@ -5,7 +5,7 @@ here.
 
 ## Reference
 
-- [Writing rules](writing.md): how we write docs, the eleven published rules,
+- [Writing rules](writing.md): how we write docs, the twelve published rules,
   the tooling, and where each rule comes from.
 - [SOPS and age procedures](sops.md): encrypt, decrypt, back up the key,
   recover a fresh clone.

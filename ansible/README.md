@@ -56,7 +56,7 @@ task ansible:verify
 
 That runs `uv sync`, the galaxy install, the syntax passes, `ansible-lint`,
 the SOPS canary, and the verification playbook. The syntax passes cover the
-servers playbooks and the image entry point with its own inventory. The
+fleet track, the converge play, and the image entry with its own inventory. The
 verification playbook runs against `inventory/servers` on localhost, with no
 credentials and no managed-host contact. The canary needs the age key, so a
 keyless clone stops there. The repository-wide `task verify` adds the docs,

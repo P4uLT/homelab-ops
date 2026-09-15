@@ -1,7 +1,6 @@
 ---
-# The prefix belongs to an invocation, not to a tracked file. This rule is
-# the guard for the command-form rule in docs/writing.md. The style files
-# carry the literal in their tokens, so .vale.ini keeps the styles folder out.
+# The prefix belongs to an invocation, not to a tracked file. This rule is the
+# guard for the command-form rule in docs/writing.md.
 extends: existence
 message: "Route no tool through the mise prefix in a file. See docs/writing.md."
 level: error

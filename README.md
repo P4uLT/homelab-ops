@@ -41,7 +41,7 @@ task verify            # the whole local gate
 
 ## How it works
 
-Four layers, one image lineage:
+Four parts, one image lineage:
 
 - **Packer:** builds golden LXC images on each PVE node and stores the archive
   in the template cache. Images chain, and each one pins its parent.
@@ -52,8 +52,8 @@ Four layers, one image lineage:
   runtime configuration of each host, from one role set. Secrets stay in SOPS
   files encrypted with age, and a canary variable loads on every inventory
   run, so a run without the key fails loudly.
-- **Kubernetes:** holds the Talos and Flux lab for the bare-metal nodes. A
-  later phase, with a placeholder in the tree.
+- **Kubernetes:** holds the Talos and Flux lab for the bare-metal nodes. Not
+  populated yet: the tree holds a placeholder.
 
 ## What's inside
 
