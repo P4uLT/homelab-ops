@@ -2,7 +2,7 @@
 
 Replace the installed `proxmox-lxc` plugin with a local build. Use this when a
 change awaits review or merge, or whenever a local binary must run before a
-release. The existing Task commands use that replacement.
+release. Local validation and approved build tasks use that replacement.
 Reinstall the pinned release from upstream to return to the official plugin.
 
 This procedure changes the default plugin registry, not the Taskfile or the
@@ -12,7 +12,8 @@ committed version pin. It doesn't contact a Proxmox node.
 
 - Use one zsh session with the project toolchain active.
 - Start at the `homelab-ops` root. The plugin checkout is its sibling directory.
-- Stop Packer builds before replacing the binary.
+- Obtain owner approval for the development override and dependency downloads.
+- Stop Packer processes before replacing the binary.
 - Don't commit plugin binaries, credentials, or logs.
 
 The local binary reports the version pinned by this project so Packer selects
@@ -29,7 +30,7 @@ unset PACKER_PLUGIN_PATH
 PROJECT="$(pwd -P)"
 PLUGIN_REPO="$(cd ../packer-plugin-proxmox-lxc && pwd -P)"
 PLUGIN_SOURCE=github.com/leoarry/proxmox-lxc
-PLUGIN_VERSION="$(python3 -c 'from pathlib import Path; import re; values = re.findall(r"(?m)^\s*version\s*=\s*\"([^\"]+)\"", Path("packer/images/common.pkr.hcl").read_text()); assert len(values) == 1 and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", values[0]), "Expected one exact release version pin"; print(values[0])')"
+PLUGIN_VERSION="$(python -c 'from pathlib import Path; import re; values = re.findall(r"(?m)^\s*version\s*=\s*\"([^\"]+)\"", Path("packer/templates/proxmox-lxc/plugins.pkr.hcl").read_text()); assert len(values) == 1 and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", values[0]), "Expected one exact release version pin"; print(values[0])')"
 LOCAL_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/packer-proxmox-local.XXXXXX")"
 chmod 700 "$LOCAL_ROOT"
 printf 'Plugin version: %s\n' "$PLUGIN_VERSION"
@@ -58,24 +59,27 @@ task packer:validate
 Stop if a command fails. Successful validation proves the local plugin loads
 with the existing configuration. It doesn't prove a complete image build.
 
-## 3. Use the normal image tasks
+## 3. Validate locally
 
-No special registry prefix or new Task parameter is required:
+Use the local validation task:
 
 ```zsh
 task packer:validate
 ```
 
-For a real build, obtain owner approval and follow
-[Build the base image](build-base-image.md). Confirm the configured container
-belongs to the build or is unused. Confirm Ansible can decrypt its required
-SOPS files before creating a container.
+Don't use this override for a release build.
+A matching version label and checksum sidecar don't establish approved binary
+identity, parent verification, ownership, trust, or atomic publication.
+Record the actual binary digest privately.
+Follow the separate safety gate in
+[Build and qualify the golden images](build-base-image.md).
 
 ## 4. Reinstall the official release
 
 Stop Packer builds first.
 
-The plugin version comes from `packer/images/common.pkr.hcl`. `mise` pins the
+The plugin version comes from `packer/templates/proxmox-lxc/plugins.pkr.hcl`.
+`mise` pins the
 `packer` binary, not the plugin. A plain `task packer:init` installs missing
 plugins only, so it leaves the local build in place. `PACKER_PLUGIN_PATH` adds
 plugin directories, so it doesn't reinstall or select a release.
@@ -105,5 +109,6 @@ Confirm the registry now holds the release:
 packer plugins installed | grep '/github.com/leoarry/proxmox-lxc/packer-plugin-proxmox-lxc_v'
 ```
 
-After upstream publishes the merged changes in a release, update the project
-pin separately. That version change isn't part of this override procedure.
+Reinstallation restores the pinned binary but doesn't add the missing safety
+controls. Update and qualify the dependency separately when a suitable release
+is available. That change isn't part of this override procedure.

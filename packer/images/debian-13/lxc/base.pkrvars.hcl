@@ -1,0 +1,11 @@
+image_id       = "debian-13-base"
+image_kind     = "lxc"
+os_id          = "debian"
+os_major       = "13"
+arch           = "amd64"
+parent_archive = "debian-13-standard_13.6-1_amd64.tar.zst"
+ansible_limit  = "builder-base"
+build_ctid     = "900"
+ct_memory      = 2048
+ct_cores       = 2
+ct_rootfs_size = "8"

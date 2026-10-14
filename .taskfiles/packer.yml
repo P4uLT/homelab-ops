@@ -2,17 +2,13 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 version: "3"
 
-# Golden LXC images. fmt, fmt-check, and validate stay offline. build
-# contacts the PVE node over SSH and needs owner approval.
-#
-# PKR_IMAGES is ordered: it's the chain, each image building on the
-# artifact of the one before it.
+# Golden LXC images. Formatting and validation stay offline. Build tasks
+# contact the selected PVE node and need owner approval.
 
 vars:
-  # PVE nodes holding the artifacts.
-  PKR_HOSTS: [jarvis]
-  # One name per file under packer/images/.
-  PKR_IMAGES: [base, docker]
+  PKR_BACKENDS: [proxmox-lxc]
+  PKR_RECIPES:
+    sh: find packer/images -mindepth 3 -maxdepth 3 -type f -path '*/lxc/*.pkrvars.hcl' -printf '%P\n' | sed 's/\.pkrvars\.hcl$//' | LC_ALL=C sort
 
 tasks:
   fmt:
@@ -23,89 +19,139 @@ tasks:
     desc: Check Packer formatting without writing.
     cmd: packer fmt -check -recursive packer/
 
-  # Installs the plugins declared in packer/images. Network on the first run
-  # only, because packer init skips an installed version. Extra args reach
-  # packer init, so `task packer:init -- -force` downloads the pinned release
-  # again, which is how a local override is undone.
+  # The first run downloads the pinned plugin and needs network.
+  # `task packer:init -- -force` deliberately reinstalls it.
   init:
-    desc: Install the missing Packer plugins declared in packer/images.
+    desc: Install missing plugins for implemented Packer backends.
     dir: packer
-    cmd: packer init {{.CLI_ARGS}} images
+    cmds:
+      - for: { var: PKR_BACKENDS, as: BACKEND }
+        cmd: packer init {{.CLI_ARGS}} templates/{{.BACKEND}}
+
+  check-recipe:
+    internal: true
+    dir: packer
+    requires:
+      vars: [RECIPE]
+    preconditions:
+      - sh: '{{if regexMatch "^[a-z0-9][a-z0-9-]*/lxc/[a-z0-9][a-z0-9-]*$" .RECIPE}}true{{else}}false{{end}}'
+        msg: RECIPE must use the <os>/lxc/<product> format with safe lowercase names.
+      - sh: test -f {{printf "images/%s.pkrvars.hcl" .RECIPE | shellQuote}}
+        msg: Recipe images/{{.RECIPE}}.pkrvars.hcl doesn't exist.
+      - sh: test -d templates/proxmox-lxc
+        msg: Backend templates/proxmox-lxc doesn't exist.
+
+  check-host:
+    internal: true
+    dir: packer
+    requires:
+      vars: [HOST]
+    preconditions:
+      - sh: '{{if regexMatch "^[a-z0-9][a-z0-9-]*$" .HOST}}true{{else}}false{{end}}'
+        msg: HOST must be a safe lowercase name.
+      - sh: test -f {{printf "hosts/%s.pkrvars.hcl" .HOST | shellQuote}}
+        msg: Public node file hosts/{{.HOST}}.pkrvars.hcl doesn't exist.
+      - sh: test -f {{printf "hosts/%s.local.pkrvars.hcl" .HOST | shellQuote}}
+        msg: Private node file hosts/{{.HOST}}.local.pkrvars.hcl doesn't exist.
 
   validate:
-    desc: Validate every image offline. Runs init first.
-    dir: packer
+    desc: Discover and validate every supported LXC recipe offline. Runs init first.
+    preconditions:
+      - sh: test -n {{.PKR_RECIPES | shellQuote}}
+        msg: No Packer LXC recipes were found.
     cmds:
       - task: init
-      # Validation never connects. The plugin refuses an unset address and an
-      # unset credential, so it passes the reserved .invalid address and a
-      # dummy password, and needs no node local file: a fresh clone still
-      # validates.
-      - for: { var: PKR_HOSTS, as: HOST }
-        cmd: packer validate -var 'pve_ssh_host=validate.invalid' -var 'pve_ssh_user=validate' -var 'pve_ssh_password=validate' -var-file=hosts/{{.HOST}}.pkrvars.hcl images/
-      # The image playbooks and their inventory hosts are named inside a shell
-      # string, so packer validate can't see a typo in either. These are the
-      # cheap offline checks that can. Root recipes live in image/, services
-      # in image/services/, and stacks in image/stacks/.
-      - for: { var: PKR_IMAGES, as: IMAGE }
-        cmd: test -f ../ansible/playbooks/image/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/services/{{.IMAGE}}.yml || test -f ../ansible/playbooks/image/stacks/{{.IMAGE}}.yml
-      - for: { var: PKR_IMAGES, as: IMAGE }
-        cmd: grep -q "builder-{{.IMAGE}}:" ../ansible/inventory/builders/hosts.yml
+      - for: { var: PKR_RECIPES, as: RECIPE }
+        task: validate-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+
+  validate-recipe:
+    internal: true
+    dir: packer
+    requires:
+      vars: [RECIPE]
+    cmds:
+      - task: check-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+      - cmd: >-
+          packer validate
+          -var 'pve_ssh_host=validate.invalid'
+          -var 'pve_ssh_user=validate'
+          -var 'pve_ssh_password=validate'
+          -var 'build_id=20261012T220000Z-11111111-1111-4111-8111-111111111111'
+          -var 'source_revision=556d114223c949e0bbd55f48c6e106d1bcd7c3b4'
+          -var {{printf "manifest_path=%s/packer/manifests/validate/%s/packer.json" .ROOT_DIR (replace "/" "-" .RECIPE) | shellQuote}}
+          -var-file=images/{{.RECIPE}}.pkrvars.hcl
+          -var-file=hosts/jarvis.pkrvars.hcl
+          templates/proxmox-lxc
+
+  build-recipe:
+    internal: true
+    dir: packer
+    requires:
+      vars: [RECIPE, HOST]
+    vars:
+      BUILD_TIMESTAMP:
+        sh: date -u +%Y%m%dT%H%M%SZ
+      BUILD_ID: '{{.BUILD_TIMESTAMP}}-{{uuid}}'
+      SOURCE_REVISION:
+        sh: git rev-parse HEAD
+    cmds:
+      - task: check-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+      - cmd: mkdir -p manifests/{{.BUILD_ID}}
+      - cmd: >-
+          packer build
+          -only=proxmox-lxc.image
+          -var-file=hosts/{{.HOST}}.pkrvars.hcl
+          -var-file=hosts/{{.HOST}}.local.pkrvars.hcl
+          -var-file=images/{{.RECIPE}}.pkrvars.hcl
+          -var build_id={{.BUILD_ID | shellQuote}}
+          -var source_revision={{.SOURCE_REVISION | shellQuote}}
+          -var {{printf "manifest_path=%s/packer/manifests/%s/packer.json" .ROOT_DIR .BUILD_ID | shellQuote}}
+          {{.CLI_ARGS}}
+          templates/proxmox-lxc
 
   build:
-    desc: Build every golden image on its PVE nodes. Owner approval required. Extra args go to packer build after --.
-    dir: packer
-    cmds:
-      - task: init
-      # The build runs Ansible from the project environment, so the first run
-      # on a fresh machine needs paramiko, the pinned collection, and the
-      # pinned Docker role.
-      - task: :ansible:deps
-      - task: :ansible:galaxy
-      # The manifest post-processor writes its file but never creates the
-      # directory, and the directory is git-ignored, so it's missing on a
-      # fresh clone.
-      - cmd: mkdir -p manifests
-      # Each node brings its own git-ignored local var file for the address and
-      # the login, so a missing one stops the build instead of aiming at
-      # another node. The matrix walks the images in order, base before
-      # docker, then the nodes, and one failure stops the chain. Packer names a
-      # build `<builder>.<source>`, so the selector is the image name once.
-      - for:
-          matrix:
-            IMAGE: { ref: .PKR_IMAGES }
-            HOST: { ref: .PKR_HOSTS }
-        cmd: packer build -only=proxmox-lxc.{{.ITEM.IMAGE}} -var-file=hosts/{{.ITEM.HOST}}.pkrvars.hcl -var-file=hosts/{{.ITEM.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
-
-  build-one:
-    desc: Build one golden image on one node. IMAGE=base|docker HOST=<node from PKR_HOSTS>. Owner approval required.
-    dir: packer
-    # Both are required, so a missing one fails here instead of aiming the
-    # build at the wrong image or node.
+    desc: Build one image recipe on one PVE node. Owner approval required.
     requires:
-      vars: [IMAGE, HOST]
+      vars: [RECIPE, HOST]
     cmds:
+      - task: check-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+      - task: check-host
+        vars:
+          HOST: '{{.HOST}}'
+      - task: init
       - task: :ansible:deps
       - task: :ansible:galaxy
-      - cmd: mkdir -p manifests
-      # One image at a time is what Packer's -only is for. The matrix in
-      # build can't be narrowed from the command line: Task passes a string
-      # where the for loop wants the list from this file.
-      - cmd: packer build -only=proxmox-lxc.{{.IMAGE}} -var-file=hosts/{{.HOST}}.pkrvars.hcl -var-file=hosts/{{.HOST}}.local.pkrvars.hcl {{.CLI_ARGS}} images/
+      - task: build-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+          HOST: '{{.HOST}}'
+          CLI_ARGS: '{{.CLI_ARGS}}'
 
-  # One task per image, on purpose: the shell completes task names, not
-  # variable values, so "which image" has to be part of the name to be
-  # completable. They keep the chain order and walk every node of PKR_HOSTS.
-  build-base:
-    desc: Build the base image on every node of PKR_HOSTS. Owner approval required.
+  build-all:
+    desc: Build every discovered LXC recipe on one PVE node. Owner approval required.
+    requires:
+      vars: [HOST]
+    preconditions:
+      - sh: test -n {{.PKR_RECIPES | shellQuote}}
+        msg: No Packer LXC recipes were found.
     cmds:
-      - for: { var: PKR_HOSTS, as: HOST }
-        task: build-one
-        vars: { IMAGE: base, HOST: '{{.HOST}}' }
-
-  build-docker:
-    desc: Build the docker image on every node of PKR_HOSTS. Runs after build-base. Owner approval required.
-    cmds:
-      - for: { var: PKR_HOSTS, as: HOST }
-        task: build-one
-        vars: { IMAGE: docker, HOST: '{{.HOST}}' }
+      - task: check-host
+        vars:
+          HOST: '{{.HOST}}'
+      - task: init
+      - task: :ansible:deps
+      - task: :ansible:galaxy
+      - for: { var: PKR_RECIPES, as: RECIPE }
+        task: build-recipe
+        vars:
+          RECIPE: '{{.RECIPE}}'
+          HOST: '{{.HOST}}'
+          CLI_ARGS: '{{.CLI_ARGS}}'

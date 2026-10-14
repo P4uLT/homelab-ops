@@ -1,208 +1,183 @@
-# Build the golden images
+# Build and qualify the golden images
 
-A golden image is a Packer build on a PVE node. The build creates a container
-template, Ansible provisions it, then Packer packs it with vzdump as a
-versioned archive. Terraform instantiates those archives. Never patch a clone
-in place.
+The build tasks are operational, but the pinned `proxmox-lxc` plugin hasn't
+passed the proposed release-safety qualification. Get owner approval before
+node contact. Treat the limits below as accepted build risks.
 
-The images form a chain: the base builds on the official Debian template, the
-Docker image on the base.
+Use the [Packer reference](../../packer/README.md) for the layout,
+image contents, and local checks.
 
-The plugin connects to the node over plain SSH and runs `pct`. It doesn't use
-the PVE API.
+## 1. Review the plugin limits
 
-## Node files
+The current plugin doesn't enforce all these controls:
 
-Two files per node, both under `packer/hosts/`:
+- Verify the actual parent digest before container creation.
+  Protect the verified bytes against substitution during consumption.
+- Refuse existing unowned containers, including concurrent claims.
+  Restrict cleanup to resources created by the invocation.
+- Select only the dump produced by this invocation.
+- Reject unknown or changed SSH host keys on both connection paths.
+- Publish a complete archive atomically on the actual NAS storage.
+  Reject destination collisions without changing existing bytes.
 
-- `<node>.pkrvars.hcl`, committed. The non-secret facts: `parent_template`
-  (the official template volid, `<storage>:vztmpl/<file>`),
-  `artifact_storage` and `artifact_dir` (where builds write artifacts and
-  clones address them), `ct_storage`, `ct_bridge`.
-- `<node>.local.pkrvars.hcl`, git-ignored. The connection: `pve_ssh_host`,
-  `pve_ssh_user`, and either `pve_ssh_key_path` (absolute) or
-  `pve_ssh_password`. A protected key adds `pve_ssh_key_passphrase`, or loads
-  into an agent with `pve_ssh_agent_auth = true`. Prefer the key: the plugin
-  connects without checking the host key, see
-  [SSH key and host-key practices](../ssh.md).
+A normal build may proceed after owner approval, but don't describe these
+controls as implemented. Record the selected binary's path, digest, and
+version with qualification evidence. A local binary carrying the upstream
+version label isn't upstream-release evidence.
 
-The build passes both, so a missing local file stops the build instead of
-aiming at another node.
+The current Ansible image connection enables host-key auto-add for paramiko.
+Preverify its key as described in [Pin a host key](pin-host-keys.md).
+Plugin hardening and its Go tests remain separate work.
 
-## Before the first build
+## 2. Approve the live scope
 
-Four steps, once per node. The first two read facts off the node, so they need
-access to it.
+Get owner approval for each build and qualification scope.
+Record the PVE node, scratch identifiers, storage, test network,
+failure injection, and cleanup limits.
+Exclude production workloads and retained archives.
 
-1. Put the Debian 13 template on the storage the node reads, then read back
-   its exact file name:
+The compatibility build identifiers are `900` for base and `901` for
+Docker. They don't authorize container reuse.
+On failure, stop and prove resource ownership before approved cleanup.
+Don't resume an unowned container.
+
+Before node contact, check the local play targets:
+
+```sh
+task ansible:playbook -- -i inventory/builders playbooks/image.yml --list-hosts --limit builder-base
+task ansible:playbook -- -i inventory/builders playbooks/image.yml --list-hosts --limit builder-docker
+```
+
+Expect only `builder-base` or `builder-docker`, respectively.
+The inventory needs the local age key. Don't log decrypted variables.
+Use a pseudo-terminal if Ansible requires one.
+
+## 3. Select inputs
+
+1. Use the public `packer/hosts/jarvis.pkrvars.hcl` for storage and bridge facts.
+2. Create `packer/hosts/jarvis.local.pkrvars.hcl`, mode 600.
+   Keep its connection values private.
+3. Supply `pve_ssh_host`, `pve_ssh_user`, and an absolute `pve_ssh_key_path`.
+   A protected key or loaded agent must work on both qualified connection paths.
+   A password-only plugin connection doesn't establish Ansible access.
+4. Select the exact Debian 13 vendor parent basename for base.
+   Obtain its digest from trusted vendor evidence and verify the stored bytes.
+   A checksum computed from an untrusted download alone doesn't establish trust.
+5. For Docker, select an already qualified base archive and its retained digest.
+   Keep the full parent basename, including its build ID.
+
+Keep parent and output archives on the node's configured artifact storage.
+Don't infer a child product ID from its parent filename.
+
+## 4. Check the local configuration
+
+Run `task verify`. Review `git status --short` before a build.
+Confirm that the selected recipe contains the intended exact parent basename.
+The repository doesn't enforce a clean source tree for builds.
+
+Don't add automatic `.auto.pkrvars.hcl` or `.auto.pkrvars.json` files to the
+loaded Packer directories. Clear unintended `PKR_VAR_*` overrides.
+Extra arguments after `--` reach `packer build`, so review them before use.
+
+## 5. Run an approved build
+
+Build one selected recipe:
+
+```sh
+task packer:build RECIPE=debian-13/lxc/base HOST=jarvis
+```
+
+During development, build every discovered LXC recipe on one node:
+
+```sh
+task packer:build-all HOST=jarvis
+```
+
+`build-all` sorts recipes by selector and stops on the first failure.
+Each recipe gets a new immutable build ID and private native manifest.
+Extra arguments after `--` reach each `packer build` invocation.
+
+The parent comes from each selected recipe file.
+The batch command doesn't change a later recipe's committed parent.
+Update `docker.pkrvars.hcl` deliberately before Docker consumes a newer base.
+After an approved build, retain `packer/manifests/<build-id>/packer.json`.
+
+## 6. Qualify the candidate archive
+
+Don't adopt the candidate until every check passes.
+
+1. Verify that the published archive is complete and readable.
+   Compute its digest from the published bytes, not a temporary dump.
+   Save it beside `packer.json`:
 
    ```sh
-   pveam update
-   pveam download <storage> <template from pveam available>
-   pveam list <storage> | grep debian-13
+   sha256sum -- "$ARCHIVE_PATH" > "$EVIDENCE/archive.sha256"
    ```
 
-   Copy it into `parent_template` as a full volid. Proxmox ships several
-   builds of the same release (`13.6-1`, `13.6-2`) and a build stops on a name
-   the node doesn't have.
-
-2. Read the storage and bridge names off the node:
+   Set both paths from the approved private storage scope.
+2. Inspect the sealed archive before booting clones.
+   Check that `/etc/machine-id` is empty and `/etc/ssh/ssh_host_*` is absent.
+   Check that `/var/lib/apt/lists/` has no package lists.
+   Check for temporary connection files and private keys.
+   First-boot state isn't a substitute for archive inspection.
+3. Create and start two approved throwaway clones from the exact archive.
+   Use separate approved identifiers and network settings.
+   Record both identifiers against the archive digest.
+4. In each clone, compare `/etc/image-build-info` with the manifest.
+   Require the exact image ID, build ID, and parent volume identifier.
+5. Verify Debian 13 and `amd64` with `/etc/os-release` and
+   `dpkg --print-architecture`.
+   Check the workload interface's expected address, routes, and name resolution.
+6. Verify fleet-account login using a preverified clone host key.
+   Check the expected sudo policy and `passwd -S root`.
+   Require the root password to remain locked.
+7. Compare both clones' machine IDs and SSH host-key fingerprints.
+   Require distinct, nonempty identities.
+8. For Docker, run `docker version`, `docker buildx version`, and
+   `docker compose version`.
+   Require `docker info --format '{{.LoggingDriver}}'` to report `journald`.
+9. Run an owner-approved, preloaded Docker test image with bounded resources:
 
    ```sh
-   pvesm status
-   ip -br link show type bridge
+   docker run --rm --pull=never --network none --memory 64m --cpus 0.25 "$TEST_IMAGE"
    ```
 
-   They go into that same committed file. PVE mounts an NFS storage under
-   `/mnt/pve/<id>`, with its templates in `template/cache`.
+   Record its expected result and exit code.
+10. Stop and remove only the approved clones whose ownership is proven.
+    Leave failed candidates unqualified.
 
-3. Create `<node>.local.pkrvars.hcl`, mode 600, with the connection. The
-   build authenticates with `pve_ssh_key_path`. A protected key also needs
-   `pve_ssh_key_passphrase`, or an agent holding the unlocked key with
-   `pve_ssh_agent_auth = true`. The Ansible step runs through
-   paramiko, which needs a key or an agent. A password-only file stops the
-   build at the playbook.
+## 7. Retain evidence and select releases
 
-4. Run `task packer:init` once. Later runs stay offline.
+Record every check in private `qualification.md`, beside the checksum and
+native manifest. Include:
 
-## Run the build
+- Archive name, build ID, output digest, and parent reference/digest.
+- Source revision and the actual tool/plugin binary identity.
+- Clone identifiers, check results, and qualified or failed outcome.
+- The approved durable evidence location.
 
-`task packer:build` contacts the node. Get owner approval first. It builds
-every image of `PKR_IMAGES`, in order, on every node of `PKR_HOSTS`. Each
-build creates a container from the parent template and runs the image playbook
-from this workstation. It then writes a vzdump archive in the template storage
-and destroys the container.
+Copy that evidence to an owner-approved private durable location with the
+retained archives. An ignored workstation directory isn't a recovery copy.
+Review manifests and logs for private connection data before sharing them.
 
-The archive name carries the chain that produced it and the position in that
-chain:
+Retain N and N−1 for each image kind, product, and architecture.
+N−1 is the previous selected qualified release.
+Failed builds and failed qualifications don't change the pair.
+A first qualified release has no qualified predecessor yet.
+Repeat approved builds and qualification with fresh build IDs to establish
+both versions. Retain referenced older archives and required parents too.
+This procedure doesn't prune archives.
 
-```text
-NAS:vztmpl/debian-13-standard-base_13.6-1_amd64.tar.zst
-```
+Terraform selects the exact immutable `template` string.
+Changing it can replace an LXC workload.
+Don't change or apply production pins during image qualification.
 
-Bump `base_build` or `docker_build` in `packer/images/<name>.pkr.hcl` to build
-a new one. Packer overwrites a file of the same name, so a rebuild without a
-bump replaces the archive already in the storage.
-
-An image pins its parent by file name, `<name>_parent`, and the storage comes
-from the node's `artifact_storage`. To rebuild one image, on every node or on
-one:
-
-```sh
-task packer:build-docker
-task packer:build-one IMAGE=docker HOST=jarvis
-```
-
-Each build writes `packer/manifests/<image>.json` (git-ignored): the artifact,
-its version, and its parent.
-
-## When a build stops at `pct create`
-
-The plugin captures that command's error output and never prints it, so Packer
-only reports `command exited with status 255`. Check the three preconditions
-it relies on, then run the command by hand for the real error:
-
-```sh
-pvesm status
-pveam list <storage>
-ip -br link show <bridge>
-```
-
-The plugin destroys its container on any failure. Only a killed Packer process
-leaves one behind, and each image pins its build container id (`<name>_ctid`),
-so the next build reuses it. Destroy it first when its content is suspect:
-
-```sh
-pct list
-pct destroy <ctid>
-```
-
-## Verify a fresh image
-
-An archive is a container filesystem, so the contract is worth reading once on
-a throwaway clone. Create one from the archive, boot it, then check what
-`image_finalize` promised, and that the fleet account answers:
-
-```sh
-pct create 99900 NAS:vztmpl/<archive> --hostname image-check --unprivileged 1 \
-  --features nesting=1,keyctl=1 --rootfs local-lvm:8 --memory 512 --cores 1 \
-  --net0 name=eth0,bridge=vmbr0,ip=dhcp
-pct start 99900
-pct exec 99900 -- cat /etc/image-build-info
-pct exec 99900 -- passwd -S root
-pct exec 99900 -- ls -A /var/lib/apt/lists | wc -l
-pct stop 99900
-pct destroy 99900
-```
-
-Expected: the marker holds the image name, version, and parent. `passwd -S
-root` reports `root L`, the locked account. The apt list is empty. The clone
-generates its own host keys at that first boot, which is why `/etc/ssh` looks
-populated here and empty in the archive. Its account is the fleet's way in, so
-it answers SSH with the key baked into the archive:
-
-```sh
-pct exec 99900 -- hostname -I
-ssh -o StrictHostKeyChecking=accept-new admin@<the address>
-```
-
-`admin` is the name in the image secrets, unless you changed it there. Stop the container before the
-destroy: `pct destroy` refuses a running one.
-
-## When a build stops at the Ansible step
-
-The playbook is idempotent and the container id is pinned, so a failure is a
-fix-and-retry, not a rebuild:
-
-```sh
-task packer:build-one IMAGE=base HOST=jarvis -- -on-error=ask
-```
-
-Answer `retry` and Packer re-runs the provisioner on the container that's
-already there. To run the playbook by hand instead, call the same task Packer
-calls, with your own node facts:
-
-```sh
-task ansible:image -- --limit builder-base \
-  -e ansible_host=<node-ip> -e ansible_user=<node-login> \
-  -e ansible_private_key_file=<key-path> -e proxmox_vmid=900 \
-  -e image_finalize_name=base -e image_finalize_version=manual -e image_finalize_parent=manual
-```
-
-## Add an image
-
-Five touch points:
-
-1. The image play, in its category under `ansible/playbooks/image/`. A
-   service image sits at `services/<name>.yml` and imports the roles of this
-   image only. A stack image sits at `stacks/<name>.yml` with its own
-   `stacks/<name>/` directory of plays.
-2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
-   placeholder play that matches no host. The first stack replaces the
-   placeholder with its line and touches nothing else in the tree. The
-   shared phases live at the image root in `prepare.yml` and `seal.yml`. The
-   base recipe lives in `base.yml`.
-3. The builders inventory, in `ansible/inventory/builders/`: the
-   `grp_image_builders_<name>` leaf in `groups.yml`, then the
-   `builder-<name>` host under it in `hosts.yml`. Packer keeps the
-   `builder-base` and `builder-docker` host limits. The image group selects
-   the recipe. A service group supplies policy. Docker inherits its base
-   artifact through Packer, not through Ansible group membership.
-4. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
-   `<name>_parent`, and `<name>_ctid` variables: Packer variable and local
-   names are global to the directory, so they carry the image name. Give it a
-   source and a build block named `<name>`, so `-only=proxmox-lxc.<name>`
-   matches.
-5. `<name>` in `PKR_IMAGES` in `.taskfiles/packer.yml`.
-
-`task packer:validate` checks the last two exist before a build touches the
-node.
+Image selection doesn't restore application data.
+Application backups, data-volume lifecycle, schema compatibility, and
+restoration need a separate recovery procedure.
 
 ## Next steps
 
-- [Provision an LXC workload with Terraform](provision-pve-ct.md): instantiate
-  the archive with a container.
-- [Add a Proxmox VE node](onboard-pve.md): the node facts and the connection
-  file this build needs.
-- [Packaging notes](../../packer/README.md): the Packer shell and its tasks.
+- [Provision an LXC workload](provision-pve-ct.md): explicit Terraform selection.
+- [Add a Proxmox VE node](onboard-pve.md): node onboarding.
+- [Override the installed plugin](override-packer-plugin.md): development validation only.
