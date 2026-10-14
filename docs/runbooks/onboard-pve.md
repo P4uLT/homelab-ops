@@ -3,9 +3,9 @@
 Keep addresses and credentials in SOPS-encrypted group variables. See
 [SOPS and age procedures](../sops.md) for the encryption itself.
 
-Three sections below contact the node: **Create the users**, **Storages**, and
-**Golden images**. Get owner approval before you start them. Check mode can
-change the node too.
+Four sections below contact the node: **Create the users**, **Close password
+login**, **Storages**, and **Golden images**. Get owner approval before you
+start them. Check mode can change the node too.
 
 ## Inventory and secrets
 
@@ -54,6 +54,25 @@ Four steps run the role and prove the credential it needs.
 
 4. Run the node's access root, then test the token it minted:
    `task ansible:playbook -- playbooks/oper/credential_check.yml`.
+
+## Close password login
+
+This play disables password login and keeps root access by key. Check the
+console first. Get owner approval before you run the play.
+
+1. Check what still uses root. The image build reaches the node as `root` with
+   a password through `packer/hosts/<node>.local.pkrvars.hcl`.
+2. Set `pve_ssh_key_path` in that file.
+3. Load the key into your SSH agent.
+4. Open a second session as the fleet account.
+5. Run this play:
+
+   ```sh
+   task ansible:playbook -- playbooks/bootstrap/sshd.yml -l <node>
+   ```
+
+A PVE cluster still needs root access by key. The play sets
+`PermitRootLogin prohibit-password` and disables password authentication.
 
 ## Storages
 

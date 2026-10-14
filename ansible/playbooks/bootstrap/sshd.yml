@@ -1,0 +1,79 @@
+# code: language=ansible
+---
+# A standalone password-hardening capability, never reached by site.yml or
+# image.yml: routine fleet runs must not close a login. A broken key or a bad
+# sshd_config can strand the machine on its console, so verify the console
+# before starting this play.
+#
+# The image build constrains this. It reaches the node as root with a
+# password through packer/hosts/<node>.local.pkrvars.hcl. The password half
+# needs that path to hold a key first.
+#
+# `prohibit-password`, not `no`. A PVE cluster and live migration reach
+# between nodes as root by key, so closing root entirely would break both.
+# The password is what goes away, not the key.
+- name: Close the login a raw machine shipped with
+  hosts: grp_owned
+  gather_facts: false
+  tasks:
+    # Runs as the fleet account, so the probe proves the escalation path this
+    # play is about to depend on.
+    - name: Read the identity the fleet account reaches
+      ansible.builtin.command:
+        cmd: sudo -n id -un
+      register: sshd_root_probe
+      changed_when: false
+
+    - name: Assert the fleet account reaches root
+      ansible.builtin.assert:
+        that: sshd_root_probe.stdout | trim == 'root'
+        fail_msg: >-
+          The fleet account can't reach root, so closing password login would
+          strand this machine. Stop here and use the console.
+        quiet: true
+
+    - name: Refuse password authentication, and root without a key
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/10-homelab.conf
+        mode: "0644"
+        content: |
+          # Managed by homelab-ops. Manual edits are overwritten.
+          PermitRootLogin prohibit-password
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+      become: true
+
+    # The reload comes after this assert, so a mismatch stops the play before
+    # sshd re-reads anything. That's what makes this step safe.
+    - name: Read the settings sshd resolves
+      ansible.builtin.command:
+        cmd: sshd -T
+      become: true
+      register: sshd_effective
+      changed_when: false
+
+    - name: Assert the settings took effect
+      ansible.builtin.assert:
+        that:
+          # without-password is the older name for prohibit-password, and
+          # sshd prints whichever its version prefers.
+          - >-
+            'permitrootlogin prohibit-password' in sshd_effective.stdout
+            or 'permitrootlogin without-password' in sshd_effective.stdout
+          - "'passwordauthentication no' in sshd_effective.stdout"
+          - "'kbdinteractiveauthentication no' in sshd_effective.stdout"
+        fail_msg: >-
+          sshd resolves other settings than this play wrote, so another
+          drop-in outranks 10-homelab.conf. Nothing was reloaded. Fix the
+          precedence from the console.
+        quiet: true
+
+    # The reload is a task, not a handler. The drop-in can already be in place
+    # from a failed run. A notify stays silent then, and the running sshd
+    # keeps its old config. A SIGHUP re-reads the file and drops no connection.
+    - name: Reload sshd
+      ansible.builtin.systemd_service:
+        name: ssh
+        state: reloaded
+      become: true
+      changed_when: false
