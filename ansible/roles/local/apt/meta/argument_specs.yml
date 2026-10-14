@@ -1,8 +1,12 @@
 ---
 argument_specs:
   main:
-    short_description: The apt work of the Debian family we own
+    short_description: Manage packages and upgrades on Debian-family hosts
     options:
+      apt_cache_valid_time:
+        type: int
+        description: Cache lifetime in seconds. Zero forces a refresh.
+        default: 3600
       apt_upgrade:
         type: str
         description: The upgrade mode to run on apply.
@@ -12,6 +16,4 @@ argument_specs:
         type: list
         elements: str
         description: The packages to install, without their recommendations.
-        default:
-          - curl
-          - ca-certificates
+        default: []

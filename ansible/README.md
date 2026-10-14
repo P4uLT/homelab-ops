@@ -27,6 +27,15 @@ The image lifecycle roles own [interpreter bootstrap](roles/local/image_bootstra
 and [sealing](roles/local/image_finalize/README.md). Their build-only
 postconditions stay out of the shared baseline.
 
+The [apt role](roles/local/apt/README.md) accepts package, upgrade, and cache
+inputs. It refreshes the package index, installs requested packages, and
+upgrades only when asked. Its defaults install no packages and perform no upgrade.
+Image preparation calls set `apt_cache_valid_time: 0` because an empty cache
+can still carry a recent timestamp. Server calls retain the default cache lifetime.
+
+Population policy belongs in each inventory's `group_vars`. The fleet baseline
+and the base-image group list `curl` and `ca-certificates`.
+
 ## Populations
 
 - **Workloads**: LXC born from a Packer golden image via Terraform. Each one
@@ -57,7 +66,8 @@ runtime runs `servers/services/docker.yml`. The golden image build runs
 `image/services/docker.yml`. The role carries the mechanism. Each inventory
 declares the policy in its own `group_vars/<group>/vars.yml`, because Ansible
 shares no group_vars between inventories. `grp_services_docker` is the first
-one, empty until a host joins it.
+one, empty until a host joins it. The Docker image call refreshes the apt index
+from its sealed parent before the vendor installs its Debian dependencies.
 
 Talos nodes are out of scope for Ansible: no SSH, no playbooks, ever.
 

@@ -16,6 +16,8 @@
     - name: Apply the apt baseline
       ansible.builtin.import_role:
         name: apt
+      vars:
+        apt_cache_valid_time: 0
 
     - name: Apply the container network settings
       ansible.builtin.import_role:

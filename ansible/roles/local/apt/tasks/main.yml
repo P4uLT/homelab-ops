@@ -1,24 +1,23 @@
-# code: language=ansible
 ---
-# The apt work of every Debian-family host we own, on the builtin module
-# alone. No vendor role: the maintained one stopped in 2021, its key path uses
-# a module that ansible-core removed, and it knows no deb822. Repositories and
-# keys belong to the roles that own them, Docker and Proxmox included. The
-# knobs are role defaults: no upgrade unless a population declares one, and
-# the baseline packages everywhere. The names follow the ecosystem, so a
-# living vendor role can replace this one without touching the callers.
+# Population and prerequisite calls share mechanism, not upgrade policy.
+- name: Validate the cache lifetime
+  ansible.builtin.assert:
+    that: apt_cache_valid_time | int >= 0
+    fail_msg: Set apt_cache_valid_time to zero or a positive number.
+    quiet: true
+
 - name: Refresh the package index
   ansible.builtin.apt:
     update_cache: true
-    cache_valid_time: 3600
+    cache_valid_time: "{{ apt_cache_valid_time }}"
 
-- name: Upgrade the system
+- name: Apply the requested upgrade policy
   ansible.builtin.apt:
     upgrade: "{{ apt_upgrade }}"
     dpkg_options: force-confold
   when: apt_upgrade != 'no'
 
-- name: Install the packages the policy lists
+- name: Install the requested packages
   ansible.builtin.apt:
     name: "{{ apt_packages }}"
     state: present

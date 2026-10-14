@@ -1,0 +1,5 @@
+---
+# Population packages. The fleet_account role owns the sudo prerequisite.
+apt_packages:
+  - curl
+  - ca-certificates
