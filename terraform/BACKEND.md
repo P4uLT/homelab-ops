@@ -149,7 +149,8 @@ secrets live in the root, as a git-ignored `*.local.auto.tfvars`.
 | S3 access and secret keys | Printed once by the bootstrap apply | `.env.tf` (`AWS_*`) and the recovery kit |
 | Bucket name | Chosen once | `.env.tf` (`TF_VAR_bucket_name`) |
 | Bucket region | Chosen once | The root's `ovh.local.auto.tfvars`, git-ignored |
-| PVE API token, per node | Minted once on the node | The root's `<node>.local.auto.tfvars`, git-ignored |
+| PVE access-management API token, per node | Issued outside OpenTofu | `bootstrap/pve/<node>/<node>.local.auto.tfvars`, git-ignored |
+| PVE workload API token, per node | Minted by the access root | `proxmox/<node>/<node>.local.auto.tfvars`, git-ignored |
 
 The S3 keys land in the bootstrap state too. This is why `backend.tf`
 enforces the state encryption. The `.env.tf` copies feed the main

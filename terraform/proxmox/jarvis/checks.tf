@@ -5,11 +5,11 @@
 # Every list here derives from the workloads map, so a new entry needs no
 # second declaration.
 
-data "proxmox_virtual_environment_datastores" "node" {
+data "proxmox_datastores" "node" {
   node_name = local.node
 }
 
-data "proxmox_virtual_environment_version" "node" {}
+data "proxmox_version" "node" {}
 
 data "proxmox_virtual_environment_containers" "tagged" {
   node_name = local.node
@@ -34,7 +34,7 @@ resource "terraform_data" "assertions" {
       condition = alltrue([
         for id in local.required_datastores :
         anytrue([
-          for ds in data.proxmox_virtual_environment_datastores.node.datastores :
+          for ds in data.proxmox_datastores.node.datastores :
           ds.id == id && ds.active
         ])
       ])
@@ -42,8 +42,8 @@ resource "terraform_data" "assertions" {
     }
 
     precondition {
-      condition     = tonumber(element(split(".", data.proxmox_virtual_environment_version.node.release), 0)) >= 8
-      error_message = "The node runs PVE ${data.proxmox_virtual_environment_version.node.release}; this root is validated on PVE 8 or newer."
+      condition     = tonumber(element(split(".", data.proxmox_version.node.release), 0)) >= 8
+      error_message = "The node runs PVE ${data.proxmox_version.node.release}; this root is validated on PVE 8 or newer."
     }
 
     precondition {

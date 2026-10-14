@@ -19,14 +19,14 @@ variable "pve_endpoint" {
   }
 }
 
-variable "pve_username" {
-  description = "Account the root authenticates as. The default is the built-in PVE admin account, the only one that can mint tokens out of the box."
-  type        = string
-  default     = "root@pam"
-}
-
-variable "pve_password" {
-  description = "Password of the minting account, a one-time credential. Source: jarvis.local.auto.tfvars, git-ignored."
+variable "pve_api_token" {
+  description = "Access-management API token, issued outside this root. Not the workload token. Source: jarvis.local.auto.tfvars, git-ignored."
   type        = string
   sensitive   = true
+  ephemeral   = true
+
+  validation {
+    condition     = length(trimspace(var.pve_api_token)) > 0
+    error_message = "pve_api_token must hold the access-management API token."
+  }
 }

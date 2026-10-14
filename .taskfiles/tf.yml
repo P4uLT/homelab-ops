@@ -132,7 +132,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis plan {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis plan -input=false {{.CLI_ARGS}}
 
   pve-jarvis-apply:
     desc: Apply the jarvis PVE access root. Changes the PVE node. Owner approval required.
@@ -143,7 +143,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis apply {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis apply -input=false {{.CLI_ARGS}}
 
   pve-jarvis-output:
     desc: Read one jarvis access output. Pass the args after -- (for example, -raw token_value).
