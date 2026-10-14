@@ -67,15 +67,23 @@ variable "disk" {
 }
 
 variable "mountpoints" {
-  description = "Extra mount points. volume is a host path, device, or directory; path is where the container mounts it."
+  description = "Extra mount points. volume is a storage ID, volume ID, or host path. size requires a unit, such as 10G."
   type = list(object({
     volume    = string
     path      = string
-    size      = optional(number)
+    size      = optional(string)
     backup    = optional(bool, false)
     read_only = optional(bool, false)
   }))
   default = null
+
+  validation {
+    condition = alltrue([
+      for mountpoint in(var.mountpoints != null ? var.mountpoints : []) :
+      mountpoint.size == null ? true : can(regex("^[0-9]+([.][0-9]+)?[KMGT]$", mountpoint.size))
+    ])
+    error_message = "mountpoints size must include K, M, G, or T, such as 10G."
+  }
 }
 
 variable "cpu" {
@@ -125,7 +133,8 @@ variable "ipv4" {
     address = optional(string, "dhcp")
     gateway = optional(string)
   })
-  default = { address = "dhcp" }
+  default  = { address = "dhcp" }
+  nullable = false
 }
 
 variable "started" {

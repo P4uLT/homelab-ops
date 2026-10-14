@@ -25,10 +25,11 @@ ansible/config/known_hosts
 ansible/config/tmp/*
 !ansible/config/tmp/.gitkeep
 
-# OpenTofu local state and provider caches. The lock file stays tracked.
+# OpenTofu local state and provider caches. Root lock files stay tracked.
 *.tfstate
 *.tfstate.*
 .terraform/
+terraform/proxmox/modules/**/.terraform.lock.hcl
 # Plans and variable files can carry secrets.
 *.tfplan
 *.tfvars

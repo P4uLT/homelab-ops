@@ -2,23 +2,175 @@
 # loads it in this root. The token comes from the access root, run
 # once: see docs/runbooks/bootstrap-pve-access.md.
 
-pve_endpoint  = "https://<address>:8006/"
+pve_endpoint  = "https://<node-address>:8006/"
 pve_api_token = "terraform-prov@pve!tf=<secret>"
 
-# One entry per workload, keyed by hostname. The template is the volid of the
-# Packer chain the container clones: NAS:vztmpl/<artifact>. An entry without
-# ipv4 stays on DHCP, where the address can move on a reboot, and ct_ipv4 only
-# fills once the container reports a lease.
-#
-# cpu, ram, swap, and disk are optional: leaving them out keeps the module's
-# defaults.
+# Required only when Terraform imports a VM disk through SSH.
+# pve_ssh_username = "<node-ssh-login>"
+
+# The state passphrase comes from .env.tf as TF_VAR_state_passphrase.
+# Don't put it in this file.
+
+# LXC workloads are keyed by hostname.
+# The template is the full Packer volid.
+# Keep one lxc_workloads block enabled at a time.
 lxc_workloads = {
   example = {
     id       = 1000
-    template = "NAS:vztmpl/debian-13-standard-base-docker_13.6-1_amd64.tar.zst"
-    ipv4 = {
-      address = "10.0.0.5/24"
-      gateway = "10.0.0.1"
-    }
+    template = "NAS:vztmpl/<artifact>"
   }
 }
+
+# Common LXC resource settings.
+# lxc_workloads = {
+#   docker = {
+#     id          = 1001
+#     template    = "NAS:vztmpl/<artifact>"
+#     description = "Docker services"
+#     tags        = ["terraform", "docker"]
+#     cpu         = 2
+#     ram         = 4096
+#     swap        = 1024
+#     disk        = 32
+#     started     = true
+#     start_on_boot = true
+#   }
+# }
+
+# DHCP is the default. Set ipv4 only when this workload needs a fixed address.
+# Keep real addresses in this git-ignored file.
+# lxc_workloads = {
+#   fixed = {
+#     id       = 1002
+#     template = "NAS:vztmpl/<artifact>"
+#     ipv4 = {
+#       address = "<address>/<prefix>"
+#       gateway = "<gateway-address>"
+#     }
+#     mac_address = "<mac-address>"
+#   }
+# }
+
+# VLAN, extra storage, and a read-only mount point.
+# lxc_workloads = {
+#   storage = {
+#     id       = 1003
+#     template = "NAS:vztmpl/<artifact>"
+#     vlan_id  = 123
+#     mountpoints = [
+#       {
+#         volume    = "local-lvm"
+#         path      = "/srv/data"
+#         size      = "32G"
+#         backup    = true
+#         read_only = false
+#       },
+#       {
+#         volume    = "NAS:subvol-1003-docker"
+#         path      = "/srv/backup"
+#         read_only = true
+#       },
+#     ]
+#   }
+# }
+
+# Boot order and deletion protection.
+# lxc_workloads = {
+#   protected = {
+#     id         = 1004
+#     template   = "NAS:vztmpl/<artifact>"
+#     protection = true
+#     startup = {
+#       order    = 20
+#       up_delay = 30
+#     }
+#   }
+# }
+
+# Containers that run Docker need nesting. keyctl stays false for token auth.
+# lxc_workloads = {
+#   nested = {
+#     id       = 1005
+#     template = "NAS:vztmpl/<artifact>"
+#     nesting  = true
+#     keyctl   = false
+#   }
+# }
+
+# Optional Home Assistant OS VM. Uncomment one image mode.
+# Keep one vm_workloads block enabled at a time.
+# The SSH login is declared above. Load its key in ssh-agent.
+#
+# Managed download: declare a pin while Terraform should retain the image.
+# Proxmox downloads it if absent. Terraform adopts the file if already present.
+# SHA256 verifies the compressed archive during download.
+# vm_image_downloads = {
+#   haos = {
+#     url       = "https://github.com/home-assistant/operating-system/releases/download/18.3/haos_ova-18.3.qcow2.xz"
+#     sha256    = "fae6a728768cc10aff60d4820bfcd40d64cd77fab82c8bd92af13b3d9d414090"
+#     file_name = "haos_ova-18.3.qcow2.img"
+#     storage   = "<ISO-enabled-storage>"
+#   }
+# }
+#
+# Existing file managed elsewhere: lookup only, with no download resource.
+# Use this instead of vm_image_downloads for the same label, never alongside it.
+# vm_image_files = {
+#   haos = {
+#     file_name = "haos_ova-18.3.qcow2.img"
+#     storage   = "<ISO-enabled-storage>"
+#   }
+# }
+# A missing external file fails the plan. A filename match doesn't verify its
+# contents, so confirm provenance and integrity before using it.
+#
+# To transfer an already managed image to external ownership, first remove its
+# resource from state without destroying the file. Don't just move its map entry.
+#
+# A declared download owns its lifecycle, not the workloads that reference it:
+# removing a vm_workloads entry leaves the image in place. To delete a pinned
+# image, remove its pin here. Terraform then deletes the file in Proxmox.
+#
+# Basic VM settings use provider-safe defaults.
+# vm_workloads = {
+#   home-assistant = {
+#     id    = 1001
+#     image = "haos"
+#   }
+# }
+
+# Common VM overrides.
+# vm_workloads = {
+#   home-assistant = {
+#     id            = 1001
+#     image         = "haos"
+#     description   = "Home Assistant OS"
+#     tags          = ["terraform", "haos"]
+#     cpu           = 4
+#     ram           = 8192
+#     disk          = 128
+#     vlan_id       = 123
+#     mac_address   = "<mac-address>"
+#     started       = true
+#     start_on_boot = true
+#     startup = {
+#       order    = 30
+#       up_delay = 30
+#     }
+#     additional_disks = [
+#       {
+#         interface    = "scsi1"
+#         datastore_id = "local-lvm"
+#         size         = 128
+#         backup       = true
+#         discard      = "on"
+#         iothread     = true
+#       },
+#       # Or attach an existing image instead of creating a blank disk.
+#       # {
+#       #   interface = "scsi2"
+#       #   file_id   = "local:iso/data.qcow2.img"
+#       # },
+#     ]
+#   }
+# }

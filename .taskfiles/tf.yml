@@ -31,6 +31,7 @@ vars:
   # OpenTofu roots, by path under terraform/. Keep the list explicit: the
   # categories hold roots and modules, so no tool may guess a root.
   TF_ROOTS: [bootstrap/ovh, bootstrap/pve/jarvis, proxmox/jarvis]
+  TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
   # time. bootstrap owns the bucket, so it needs none. The shared OVH S3
@@ -55,6 +56,15 @@ tasks:
     desc: Lint every OpenTofu root with tflint.
     dir: terraform
     cmd: tflint --recursive
+
+  test:
+    desc: Test the LXC and VM modules with mocked providers. No host contact.
+    dir: terraform
+    cmds:
+      - for: { var: TF_TEST_MODULES, as: MODULE }
+        cmd: tofu -chdir="{{.MODULE}}" init -backend=false -input=false
+      - for: { var: TF_TEST_MODULES, as: MODULE }
+        cmd: tofu -chdir="{{.MODULE}}" test {{.CLI_ARGS}}
 
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
@@ -132,7 +142,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis plan {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis plan -input=false {{.CLI_ARGS}}
 
   pve-jarvis-apply:
     desc: Apply the jarvis PVE access root. Changes the PVE node. Owner approval required.
@@ -143,7 +153,7 @@ tasks:
       - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
         msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
     cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis apply {{.CLI_ARGS}}
+      - tofu -chdir=terraform/bootstrap/pve/jarvis apply -input=false {{.CLI_ARGS}}
 
   pve-jarvis-output:
     desc: Read one jarvis access output. Pass the args after -- (for example, -raw token_value).

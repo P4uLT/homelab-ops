@@ -20,6 +20,17 @@ variable "pve_api_token" {
   sensitive   = true
 }
 
+variable "pve_ssh_username" {
+  description = "Node SSH login for VM disk import through ssh-agent. Null disables SSH configuration."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.pve_ssh_username == null ? true : length(trimspace(var.pve_ssh_username)) > 0
+    error_message = "pve_ssh_username must be null or a nonempty SSH login."
+  }
+}
+
 variable "lxc_workloads" {
   description = "One LXC workload per entry, keyed by hostname. The type mirrors modules/lxc, node, storage, and bridge excepted: they're node facts. The defaults are the module's own, so an entry names only what it changes. Source: jarvis.local.auto.tfvars, git-ignored."
   type = map(object({
@@ -33,7 +44,7 @@ variable "lxc_workloads" {
     mountpoints = optional(list(object({
       volume    = string
       path      = string
-      size      = optional(number)
+      size      = optional(string)
       backup    = optional(bool, false)
       read_only = optional(bool, false)
     })))
@@ -63,4 +74,87 @@ variable "lxc_workloads" {
     keyctl        = optional(bool, false)
     wait_for_ipv4 = optional(bool, true)
   }))
+}
+
+variable "vm_image_downloads" {
+  description = "Versioned VM images downloaded and managed by Terraform, keyed by image label."
+  type = map(object({
+    url       = string
+    sha256    = string
+    file_name = string
+    storage   = string
+  }))
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for image in values(var.vm_image_downloads) :
+      can(regex("^https://[^[:space:]]+[.]qcow2[.]xz$", image.url)) &&
+      can(regex("^[0-9a-fA-F]{64}$", image.sha256)) &&
+      can(regex("^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2[.]img$", image.file_name))
+    ])
+    error_message = "Downloads require an HTTPS QCOW2.XZ URL, a 64-character SHA256, and a versioned QCOW2.IMG filename."
+  }
+}
+
+variable "vm_image_files" {
+  description = "Existing VM images managed outside Terraform, keyed by image label."
+  type = map(object({
+    file_name = string
+    storage   = string
+  }))
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for image in values(var.vm_image_files) :
+      can(regex("^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2[.]img$", image.file_name))
+    ])
+    error_message = "Existing VM image files require a versioned QCOW2.IMG filename."
+  }
+}
+
+variable "vm_workloads" {
+  description = "Imported-image VMs, keyed by VM name. Source: jarvis.local.auto.tfvars, git-ignored."
+  type = map(object({
+    id            = number
+    image         = string
+    cpu           = optional(number, 2)
+    ram           = optional(number, 4096)
+    disk          = optional(number, 64)
+    description   = optional(string, "Managed by Terraform (homelab-ops)")
+    tags          = optional(list(string), ["terraform"])
+    vlan_id       = optional(number)
+    mac_address   = optional(string)
+    started       = optional(bool, true)
+    start_on_boot = optional(bool, true)
+    startup = optional(object({
+      order      = number
+      up_delay   = optional(number)
+      down_delay = optional(number)
+    }))
+    additional_disks = optional(list(object({
+      interface    = string
+      datastore_id = optional(string)
+      size         = optional(number)
+      file_id      = optional(string)
+      import_from  = optional(string)
+      backup       = optional(bool, true)
+      discard      = optional(string, "ignore")
+      iothread     = optional(bool, false)
+      queues       = optional(number)
+    })), [])
+  }))
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for workload in values(var.vm_workloads) :
+      workload.id == floor(workload.id) && workload.id >= 1000 && workload.id <= 999999999
+    ])
+    error_message = "VM IDs must be integers from 1000 to 999999999."
+  }
 }

@@ -14,7 +14,7 @@ terraform {
 
     proxmox = {
       source  = "bpg/proxmox"
-      version = "0.99.0"
+      version = "0.116.0"
     }
   }
 }
@@ -27,4 +27,12 @@ provider "proxmox" {
 
   # PVE ships a self-signed certificate.
   insecure = true
+
+  dynamic "ssh" {
+    for_each = var.pve_ssh_username == null ? [] : [var.pve_ssh_username]
+    content {
+      username = ssh.value
+      agent    = true
+    }
+  }
 }

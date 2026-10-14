@@ -93,10 +93,9 @@ bucket. A user for another purpose belongs to another root.
 Every root declares its backend key in its own `backend.tf`. The key
 mirrors the root path under `terraform/` plus `terraform.tfstate`: the
 `proxmox/jarvis` root stores at `proxmox/jarvis/terraform.tfstate`.
-This is the Terragrunt template (`${path_relative_to_include()}`), and
-Terragrunt is the planned automation layer, so its adoption needs no
-state migration. The accepted cost: a root moved with `git mv` moves
-its state with it.
+Terragrunt can generate this layout with `${path_relative_to_include()}`.
+Adopting that layout avoids migration only if each effective backend location stays unchanged.
+Changing the bucket, key, or workspace can select a different state.
 
 The OVH S3 dialect facts (region, endpoint, validation skips, lockfile)
 live once, in `terraform/backend.s3.ovh.hcl`. The tf tasks pass the
@@ -112,6 +111,24 @@ or `dns/`. A category holds one root per target, plus its own
 frozen roots that mint credentials: the state backend (`ovh/`) and
 each PVE node's Terraform access chain (`pve/<node>/`). Root discovery is the explicit `TF_ROOTS` list in the
 tf tasks, so validation never treats a module as a root.
+
+## State locations and code moves
+
+`git mv` moves code, not remote state.
+For a code-only move, keep the existing backend key.
+Update relative module paths, partial backend paths, and the task root list.
+The key can differ from the directory until a separate migration is approved.
+
+Before changing a backend location, pause writers and preserve the source state.
+Preserve any destination state too. Keep the decryption passphrase and encryption configuration available.
+Retain the old backend metadata for an owner-approved `tofu init -migrate-state` operation.
+Supply the correct partial backend configuration for the destination.
+Verify the copied state and review a plan before applying infrastructure changes.
+Don't let two roots manage the same resources.
+
+`-reconfigure` selects a backend without copying state. It isn't a migration shortcut.
+`-force-copy` accepts migration prompts automatically. Don't use it to bypass destination-state review.
+Resource `moved` blocks change addresses inside a state, not its bucket or object key.
 
 ## Region choice, and no replica
 
@@ -149,7 +166,8 @@ secrets live in the root, as a git-ignored `*.local.auto.tfvars`.
 | S3 access and secret keys | Printed once by the bootstrap apply | `.env.tf` (`AWS_*`) and the recovery kit |
 | Bucket name | Chosen once | `.env.tf` (`TF_VAR_bucket_name`) |
 | Bucket region | Chosen once | The root's `ovh.local.auto.tfvars`, git-ignored |
-| PVE API token, per node | Minted once on the node | The root's `<node>.local.auto.tfvars`, git-ignored |
+| PVE access-management API token, per node | Issued outside OpenTofu | `bootstrap/pve/<node>/<node>.local.auto.tfvars`, git-ignored |
+| PVE workload API token, per node | Minted by the access root | `proxmox/<node>/<node>.local.auto.tfvars`, git-ignored |
 
 The S3 keys land in the bootstrap state too. This is why `backend.tf`
 enforces the state encryption. The `.env.tf` copies feed the main
@@ -176,21 +194,29 @@ in `docs/runbooks/provision-pve-ct.md`.
 
 ## Recovery
 
-**State file recovery.** Pick the previous object version in the bucket
-(or from the off-site copy) and restore it. Versioning keeps 90 days of
-history.
+**State file recovery.** Pause plans and applies for the affected root.
+Preserve the state before restoring a bucket version or an encrypted backup.
+Restore only with owner approval and the matching decryption settings.
+Review the resource addresses, including migrations that followed the snapshot.
+Inspect a plan and stop on unexpected creation, replacement, or deletion.
+Restoring state doesn't roll back infrastructure or application data.
+Noncurrent bucket versions expire after 90 days.
 
-**Bucket loss.** Re-run the bootstrap root against a new bucket name,
-then re-apply every root with a fresh state, or import the old
-resources. The roots are declarative, so a re-apply converges.
+**Bucket loss.** Recover the bootstrap state before reviewing a replacement bucket and its access policy.
+Restore each root's encrypted state to its intended backend location before resuming plans.
+Without a usable state copy, import existing resources through a reviewed recovery plan.
+Don't apply an empty state to existing infrastructure. It can create duplicate resources or fail on existing objects.
+Off-site copies are planned below, so bucket-loss recovery isn't qualified here.
 
-**Bootstrap root loss.** Restore the encrypted state file from the
-recovery kit, or start a fresh bootstrap root and import the bucket,
-user, credential, and policy into it.
+**Bootstrap root loss.** Restore its encrypted local state from the recovery kit.
+If that copy is unavailable, import the existing access resources rather than recreating the chain.
+Imports don't recover secrets returned only at credential creation.
+Use the saved credentials or review a separate rotation.
 
-The recovery kit lives outside the repository. It holds: the age keys,
-the state passphrase, the S3 keys, the OVH recovery codes, and the
-restore test records.
+The recovery kit lives outside the repository.
+Recovery needs the encrypted bootstrap state, available root-state copies, age keys, state passphrase,
+S3 keys, OVH recovery codes, and restore test records.
+Keep the decryption settings with each encrypted state copy.
 
 ## Off-site copies (planned)
 
