@@ -1,4 +1,4 @@
-# Read these through the recipe. The apply masks them:
+# Read the credentials with the task. Terraform masks their values:
 #   task tf:bootstrap-output -- -raw s3_secret_key
 
 output "s3_access_key" {

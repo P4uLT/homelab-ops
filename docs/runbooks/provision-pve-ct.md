@@ -47,18 +47,21 @@ writes the state to the bucket.
 
 Two checks on this first run:
 
-- The apply takes the state lock. The backend sets `use_lockfile`, which needs
-  S3 conditional writes. OVH S3 supports them. A hang on `Acquiring state
-  lock` means the test failed. Set `use_lockfile` to `false`, record the
-  reason in [Terraform state design](../../terraform/BACKEND.md), and run
-  again.
+- The apply takes the state lock with `use_lockfile`. OVH S3 supports conditional writes.
+  If lock acquisition stalls, check for an active writer or a stale lock.
+  Don't disable locking to bypass the failure. Get owner approval before clearing a confirmed stale lock.
 - The container boots with fresh SSH host keys, no machine-id, and no apt
   package lists. That's the `image_finalize` role's contract for the golden
   image.
 
 ## Check the container
 
-Read the workload list, then prove the chain end to end on the node.
+Read the workload list in a private terminal, then prove the chain end to end on the node.
+`lxcs` contains addresses and is sensitive. Ordinary plan and apply output masks it.
+Default output without a name masks it too, after an apply records the sensitivity metadata.
+This doesn't mask network attributes in resource diffs.
+Explicit named output and `-json` or `-raw` can print sensitive values in plaintext.
+Don't send them to shared logs or tracked files.
 
 ```sh
 task tf:jarvis-output -- -json lxcs

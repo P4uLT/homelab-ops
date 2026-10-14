@@ -39,9 +39,10 @@ One root covers one provider, one blast radius, and one apply cadence.
 Don't split roots by resource type. `bootstrap/ovh/` stays frozen and owns
 only the state backend. Every root declares its own state key in its
 `backend.tf`, mirroring its path under `terraform/`: the `proxmox/jarvis`
-root stores at `proxmox/jarvis/terraform.tfstate`. That's the layout Terragrunt
-generates, so adopting Terragrunt needs no migration, and a root moved with
-`git mv` moves its state with it. See `BACKEND.md` for the full rules.
+root stores at `proxmox/jarvis/terraform.tfstate`.
+Moving a root directory doesn't move its remote state.
+Keep the existing backend key during a code move, or review a separate state migration.
+See [State locations and code moves](BACKEND.md#state-locations-and-code-moves) for the rules.
 
 ## Local tests
 

@@ -1,5 +1,6 @@
-# The mint. The value is readable at creation only. Copy it to the
-# jarvis root tfvars, the same flow as the S3 keys of bootstrap/ovh.
+# This root mints the workload token. PVE returns its secret only at creation.
+# Terraform state retains it for this output. Copy both values to the Jarvis
+# root tfvars.
 output "token_id" {
   description = "Full token identifier, for example terraform-prov@pve!tf."
   value       = proxmox_user_token.tf.id
