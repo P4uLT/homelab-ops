@@ -48,10 +48,12 @@ locals {
 }
 
 source "proxmox-lxc" "docker" {
-  ssh_host     = var.pve_ssh_host
-  ssh_user     = var.pve_ssh_user
-  ssh_password = var.pve_ssh_password
-  ssh_key_path = var.pve_ssh_key_path
+  ssh_host           = var.pve_ssh_host
+  ssh_user           = var.pve_ssh_user
+  ssh_password       = var.pve_ssh_password
+  ssh_key_path       = var.pve_ssh_key_path
+  ssh_key_passphrase = var.pve_ssh_key_passphrase
+  ssh_agent_auth     = var.pve_ssh_agent_auth
 
   # A random root password, because the plugin would otherwise leave its
   # known default on a container that runs sshd on the bridge while it's
