@@ -3,8 +3,8 @@
 Keep addresses and credentials in SOPS-encrypted group variables. See
 [SOPS and age procedures](../sops.md) for the encryption itself.
 
-Four sections below contact the node: **Create the users**, **Close password
-login**, **Storages**, and **Golden images**. Get owner approval before you
+Four sections below contact the node: **Create the users**, **Onboard the
+machine**, **Storages**, and **Golden images**. Get owner approval before you
 start them. Check mode can change the node too.
 
 ## Inventory and secrets
@@ -25,8 +25,10 @@ Three steps put the node on paper before anything touches it.
 These two steps give you login and prove the host is the one you expect.
 
 1. Add the node to `~/.ssh/config`. Use `StrictHostKeyChecking accept-new` and
-   the root SSH key. The block pattern is in
-   [SSH key and host-key practices](../ssh.md).
+   the automation key. The block pattern is in
+   [SSH key and host-key practices](../ssh.md). The key must be reachable by
+   SSH: loaded in the agent, or named by an `IdentityFile` for the node's
+   address.
 2. Pin the node host key. See [Pin a host key](pin-host-keys.md):
    `task ansible:hostkey -- <node-ip>`, compare on the node console, then
    `task ansible:hostkey-pin -- <node-ip>`.
@@ -55,24 +57,40 @@ Four steps run the role and prove the credential it needs.
 4. Run the node's access root, then test the token it minted:
    `task ansible:playbook -- playbooks/oper/credential_check.yml`.
 
-## Close password login
+## Onboard the machine
 
-This play disables password login and keeps root access by key. Check the
-console first. Get owner approval before you run the play.
+The node's own users aren't the fleet account. Onboarding gives the machine the
+account the whole fleet reaches it with, using the identity the node still
+ships. It proves that account, then closes password login.
 
-1. Check what still uses root. The image build reaches the node as `root` with
-   a password through `packer/hosts/<node>.local.pkrvars.hcl`.
-2. Set `pve_ssh_key_path` in that file.
-3. Load the key into your SSH agent.
-4. Open a second session as the fleet account.
-5. Run this play:
+This contacts the node and closes a login. Get owner approval first.
+
+1. Check the console. A node needs the PVE console or a management card,
+   reachable and tested: the run ends by closing password login.
+2. For a PVE node, give the image build a key. It reaches the node as `root`
+   with a password, so closing password login breaks it. Set `pve_ssh_key_path`
+   in `packer/hosts/<node>.local.pkrvars.hcl` and load that key.
+3. Onboard it, passing the identity the node answers to today:
 
    ```sh
-   task ansible:playbook -- playbooks/bootstrap/sshd.yml -l <node>
+   task ansible:onboard HOST=<node> IDENTITY=root
    ```
 
-A PVE cluster still needs root access by key. The play sets
-`PermitRootLogin prohibit-password` and disables password authentication.
+   The run creates the account, proves it answers and escalates, then closes
+   password login. Each phase gates the next, so a broken key stops the run
+   before anything is closed.
+4. Confirm the fleet's own contract holds:
+
+   ```sh
+   task ansible:playbook -- playbooks/servers/baseline/users.yml -l <node>
+   ```
+
+   Expect `changed=0`, which says the account was already complete.
+
+The identity passed at onboarding is stored nowhere. `ansible_user` in
+`ansible/inventory/servers/group_vars/all/vars.yml` names the fleet account
+before the run, during it, and after it. Root keeps working by key, and a
+cluster needs that: the play's header says why.
 
 ## Storages
 

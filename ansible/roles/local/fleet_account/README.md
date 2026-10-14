@@ -9,7 +9,7 @@ This composition owns a shared prerequisite and ordering, not another account in
 
 Proxmox hypervisors can lack `sudo`, `sudoers`, and `visudo`.
 The vendor needs them before configuring sudo rules.
-Runtime and image callers share this sequence.
+Adoption, runtime, and image callers share this sequence.
 
 ## Interface and ownership
 

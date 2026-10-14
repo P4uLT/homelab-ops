@@ -13,7 +13,7 @@ roles:
     version: 8.0.0
   # The fleet account: a user, its authorized keys, and its sudo options,
   # validated with visudo. fleet_account prepares sudo and calls this role
-  # across image builds and the fleet. Each inventory owns its data.
+  # across adoption, image builds, and the fleet. Each inventory owns its data.
   - name: robertdebock.users
     version: 6.1.8
 

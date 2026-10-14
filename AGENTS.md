@@ -14,6 +14,7 @@ Terraform on Proxmox VE, Ansible runtime configuration, and a Talos/Flux lab.
 task verify                                   # full local proof. No host contact.
 task ansible:inventory -- --host jarvis       # resolved vars, decrypted in memory
 task ansible:site                            # applies server config, may contact hosts
+task ansible:onboard HOST=<node> IDENTITY=<raw>  # onboard a raw machine. Contacts it.
 task sops:encrypt -- <path>                   # also: decrypt, edit, encrypt-all, check-all
 task ansible:galaxy                           # vendor install if missing
 task ansible:galaxy-reinstall                 # purge and reinstall. Needs network.

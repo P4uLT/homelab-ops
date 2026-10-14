@@ -1,9 +1,9 @@
 # code: language=ansible
 ---
-# A standalone password-hardening capability, never reached by site.yml or
-# image.yml: routine fleet runs must not close a login. A broken key or a bad
-# sshd_config can strand the machine on its console, so verify the console
-# before starting this play.
+# Close the login a raw machine shipped with. Last phase of the onboarding
+# router, and never reachable from site.yml or image.yml: a fleet run must not
+# close a login. A broken key or a bad sshd_config strands the machine on its
+# console, so verify the console before starting the run.
 #
 # The image build constrains this. It reaches the node as root with a
 # password through packer/hosts/<node>.local.pkrvars.hcl. The password half

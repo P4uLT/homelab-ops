@@ -22,8 +22,9 @@
       ansible.builtin.assert:
         that: ansible_user != 'root'
         fail_msg: >-
-          A stored root identity contradicts the fleet account policy. Set
-          ansible_user to a non-root fleet account declared in fleet_users.
+          A stored root identity contradicts the adoption path. Adopt the
+          machine with playbooks/bootstrap.yml, then set ansible_user to the
+          fleet account: see docs/runbooks/onboard-pve.md.
         quiet: true
 
     - name: Assert the fleet identity names a fleet account
