@@ -31,6 +31,7 @@ vars:
   # OpenTofu roots, by path under terraform/. Keep the list explicit: the
   # categories hold roots and modules, so no tool may guess a root.
   TF_ROOTS: [bootstrap/ovh, bootstrap/pve/jarvis, proxmox/jarvis]
+  TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
   # time. bootstrap owns the bucket, so it needs none. The shared OVH S3
@@ -57,11 +58,13 @@ tasks:
     cmd: tflint --recursive
 
   test:
-    desc: Test the LXC module with mocked providers. No host contact.
-    dir: terraform/proxmox/modules/lxc
+    desc: Test the LXC and VM modules with mocked providers. No host contact.
+    dir: terraform
     cmds:
-      - tofu init -backend=false -input=false
-      - tofu test {{.CLI_ARGS}}
+      - for: { var: TF_TEST_MODULES, as: MODULE }
+        cmd: tofu -chdir="{{.MODULE}}" init -backend=false -input=false
+      - for: { var: TF_TEST_MODULES, as: MODULE }
+        cmd: tofu -chdir="{{.MODULE}}" test {{.CLI_ARGS}}
 
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
