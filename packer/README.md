@@ -73,3 +73,6 @@ Build: `task packer:build` for everything, `task packer:build-base` or
 `task packer:build-docker` for one image, and
 `task packer:build-one IMAGE=<name> HOST=<node>` for one node. Procedure:
 `docs/runbooks/build-base-image.md`.
+
+To use a local plugin binary without changing the Taskfile or version pin, see
+[Override the installed plugin](../docs/runbooks/override-packer-plugin.md).
