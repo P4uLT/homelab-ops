@@ -1,0 +1,12 @@
+---
+- name: Validate service requests
+  ansible.builtin.assert:
+    that:
+      - item.name | string is match('^[^/\s]+\.service\Z')
+      - item.state | default(none) != none or item.enabled | default(none) != none
+    fail_msg: Each request needs a complete service name and a state or enablement action.
+    quiet: true
+  loop: "{{ systemd_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  tags: always

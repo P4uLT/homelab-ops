@@ -27,6 +27,15 @@ The image lifecycle roles own [interpreter bootstrap](roles/local/image_bootstra
 and [sealing](roles/local/image_finalize/README.md). Their build-only
 postconditions stay out of the shared baseline.
 
+The [systemd role](roles/local/systemd/README.md) manages existing services through the native module.
+Its typed `systemd_services` list accepts boot enablement, runtime state, and explicit absence policy.
+An empty list changes no services. Omitted actions leave their settings unchanged.
+The two inventories declare static `container_service_units` lists in `grp_containers` and `grp_builders_base`.
+Each caller binds that population to `systemd_services`.
+The container profile stops and disables `systemd-networkd-wait-online.service` when present, without masking it.
+The role doesn't create unit files or add dependencies. Privilege escalation stays with the caller.
+Docker and Proxmox keep their vendor interfaces and their repository setup.
+
 The [apt role](roles/local/apt/README.md) adopts WeAreInteractive's Advanced Package Tool (APT) role.
 Its [provenance record](roles/local/apt/UPSTREAM.md) pins the source revision and documents local changes.
 Existing callers retain package, upgrade, and cache inputs.

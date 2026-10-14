@@ -1,0 +1,7 @@
+---
+# Keep the container's optional wait unit out of the boot sequence.
+container_service_units:
+  - name: systemd-networkd-wait-online.service
+    state: stopped
+    enabled: false
+    ignore_missing: true

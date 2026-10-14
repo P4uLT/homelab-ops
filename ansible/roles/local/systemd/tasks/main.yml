@@ -1,0 +1,20 @@
+---
+- name: Validate the service policy
+  ansible.builtin.import_tasks: validate.yml
+
+- name: Gather existing services
+  ansible.builtin.service_facts:
+  when: systemd_services | length > 0
+
+- name: Apply requested service settings
+  ansible.builtin.systemd_service:
+    name: "{{ item.name }}"
+    enabled: "{{ item.enabled | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ systemd_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: >-
+    not (item.ignore_missing | default(false) | bool)
+    or (item.name in ansible_facts.services
+        and ansible_facts.services[item.name].status | default('') != 'not-found')

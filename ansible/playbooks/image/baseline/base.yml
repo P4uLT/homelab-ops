@@ -19,9 +19,11 @@
       vars:
         apt_cache_valid_time: 0
 
-    - name: Apply the container network settings
+    - name: Apply the container service policy
       ansible.builtin.import_role:
-        name: container_networkd
+        name: systemd
+      vars:
+        systemd_services: "{{ container_service_units }}"
 
     # The image must have a way in. The caller passes the fleet account: a
     # user, its keys, and its sudo options. The vendor role writes
