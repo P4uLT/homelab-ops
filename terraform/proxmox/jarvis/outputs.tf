@@ -10,3 +10,15 @@ output "lxcs" {
     }
   }
 }
+
+output "vms" {
+  description = "The VM workloads by name: VM ID and guest-reported IPv4 addresses."
+  sensitive   = true
+  value = {
+    for name, workload in module.vm :
+    name => {
+      vm_id          = workload.vm_id
+      ipv4_addresses = workload.ipv4_addresses
+    }
+  }
+}

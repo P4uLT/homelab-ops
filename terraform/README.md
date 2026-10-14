@@ -8,24 +8,24 @@ target.
 - `proxmox/` holds one root per PVE server, plus `proxmox/modules/` for
   what those roots share. The PVE resources use the
   [bpg provider](https://github.com/bpg/terraform-provider-proxmox).
-  `proxmox/jarvis/` is live: one `lxc_workloads` entry per LXC workload and
-  independent VM image pins in `vm_image_downloads`, in its git-ignored
-  tfvars. PVE downloads missing images through its API. OpenTofu imports
-  matching filenames into state and deletes the image when you remove its pin.
-  See the [Jarvis tfvars example](proxmox/jarvis/jarvis.local.auto.tfvars.example).
-  An apply also writes the Ansible inventory fragment
-  that makes each LXC workload a fleet host:
+  `proxmox/jarvis/` owns LXC workloads and optional imported-image VMs through
+  separate maps in its git-ignored tfvars. An apply writes an Ansible inventory
+  fragment for each LXC workload:
   `ansible/inventory/servers/iac.tf.<node>.yml`. Each LXC workload joins
   `grp_servers_immutable` through a `grp_servers_immutable_<host>` leaf. The leaf
-  repeats its parent's name and
-  replaces hyphens with underscores. The fragment includes the host and its
-  container ID, but no address.
+  repeats its parent's name and replaces hyphens with underscores. The fragment
+  includes the LXC hostname and container ID, but no address.
   A later PVE server gets its own root, named after it.
 - `proxmox/modules/lxc/` wraps one LXC workload: a golden image clone,
   started, addressed by DHCP unless the caller pins a static address from its
-  git-ignored tfvars. Node facts live in the calling root, in
-  its `locals.tf`.
-- `proxmox/modules/vm/` defines one VM that boots from an imported QCOW2 image.
+  git-ignored tfvars. Node facts live in the calling root, in its `locals.tf`.
+- `proxmox/modules/vm/` wraps one VM booted from an imported QCOW2 image.
+  The Jarvis root owns server-side downloads and keeps VM workloads out of Linux Ansible.
+  A declared download pin owns its source image. Removing a workload leaves the
+  image. Removing the pin deletes it. Existing managed images enter state
+  through conditional imports. `vm_image_files` reads existing files without
+  taking ownership. Downloads use the API. VM disk imports use SSH with an
+  agent key.
 - `truenas/` imports datasets, NFS shares, and snapshots. Everything that
   democratic-csi creates stays out of Terraform management.
   Planned. The directory doesn't exist yet.

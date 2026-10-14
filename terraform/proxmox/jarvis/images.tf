@@ -1,4 +1,4 @@
-# Discover existing files for managed downloads.
+# Discover existing files for managed downloads and external image references.
 data "proxmox_files" "vm_images" {
   for_each = toset([for image in values(local.referenced_vm_images) : image.storage])
 

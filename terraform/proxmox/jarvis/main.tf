@@ -1,12 +1,10 @@
-# The PVE workloads of this node. One entry in the workloads map per
-# container, from a Packer golden image, so the chain stays end to end: Packer
-# builds the archive, Terraform clones it, Ansible configures the clone.
+# LXC workloads on this node. Each entry clones a Packer golden image, then
+# Ansible configures the running container.
 #
-# The map lives in the git-ignored tfvars, keyed by hostname, so this file
-# never names a workload: adding one is an entry there and nothing else. Each
-# entry carries the volid of the Packer chain it clones.
+# The LXC map lives in the git-ignored tfvars, keyed by hostname. Each entry
+# carries the volid of the Packer chain it clones.
 
-# vmid space: 1000+ are Terraform-managed LXC workloads.
+# VM ID space: 1000+ is reserved for Terraform-managed workloads.
 
 module "workload" {
   source   = "../modules/lxc"

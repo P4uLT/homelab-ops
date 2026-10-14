@@ -2,8 +2,8 @@
 # sources read the node; the terraform_data resource turns a failed
 # assumption into a hard plan error (a check block would only warn).
 #
-# Required datastores come from the root disk, LXC templates, and managed VM
-# images. No second storage map is needed.
+# Required datastores come from the root disk, LXC templates, and managed or
+# referenced VM images. No second storage map is needed.
 
 data "proxmox_datastores" "node" {
   node_name = local.node
@@ -12,8 +12,8 @@ data "proxmox_datastores" "node" {
 data "proxmox_version" "node" {}
 
 locals {
-  # The storages this root actually addresses: the root-disk storage, plus the
-  # store named in each workload's golden-image volid ("NAS:vztmpl/...").
+  # The stores this root addresses: the root disk, each LXC template, and each
+  # referenced VM image.
   required_datastores = distinct(concat(
     [local.storage],
     [for workload in var.lxc_workloads : element(split(":", workload.template), 0)],
@@ -41,6 +41,32 @@ resource "terraform_data" "assertions" {
 
     precondition {
       condition = alltrue([
+        for workload in values(var.vm_workloads) :
+        contains(keys(var.vm_image_downloads), workload.image) !=
+        contains(keys(var.vm_image_files), workload.image)
+      ])
+      error_message = "Every VM workload must reference exactly one managed download or external image label."
+    }
+
+    precondition {
+      condition     = length(setintersection(toset(keys(var.vm_image_downloads)), toset(keys(var.vm_image_files)))) == 0
+      error_message = "An image label can't be both Terraform-managed and externally managed."
+    }
+
+    precondition {
+      condition     = length(distinct(local.managed_workload_ids)) == length(local.managed_workload_ids)
+      error_message = "LXC and VM workload IDs must be unique across this node."
+    }
+
+    precondition {
+      condition = alltrue([
+        for name in keys(var.vm_workloads) : !contains(keys(var.lxc_workloads), name)
+      ])
+      error_message = "LXC and VM workload names must be unique across this node."
+    }
+
+    precondition {
+      condition = alltrue([
         for image in values(local.referenced_vm_images) :
         anytrue([
           for ds in data.proxmox_datastores.node.datastores :
@@ -51,9 +77,21 @@ resource "terraform_data" "assertions" {
     }
 
     precondition {
+      condition     = length(var.vm_workloads) == 0 || var.pve_ssh_username != null
+      error_message = "VM disk import requires pve_ssh_username and a loaded ssh-agent key."
+    }
+
+    precondition {
       condition     = length(distinct([for image in values(local.referenced_vm_images) : "${image.storage}/${image.file_name}"])) == length(local.referenced_vm_images)
       error_message = "Image labels must use distinct datastore filenames."
     }
 
+    precondition {
+      condition = alltrue([
+        for label, image in local.external_vm_images :
+        contains(keys(local.existing_vm_image_file_ids), label)
+      ])
+      error_message = "An external VM image file is missing from its datastore."
+    }
   }
 }

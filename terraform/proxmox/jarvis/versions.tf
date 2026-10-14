@@ -27,4 +27,12 @@ provider "proxmox" {
 
   # PVE ships a self-signed certificate.
   insecure = true
+
+  dynamic "ssh" {
+    for_each = var.pve_ssh_username == null ? [] : [var.pve_ssh_username]
+    content {
+      username = ssh.value
+      agent    = true
+    }
+  }
 }
