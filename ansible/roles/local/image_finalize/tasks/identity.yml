@@ -1,0 +1,57 @@
+---
+# A clone needs new keys before ssh starts, without sharing a root password.
+- name: Install the host-key generator unit
+  ansible.builtin.copy:
+    src: ssh-host-keys.service
+    dest: /etc/systemd/system/ssh-host-keys.service
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Enable host-key generation for the next boot
+  ansible.builtin.systemd_service:
+    name: ssh-host-keys.service
+    enabled: true
+    daemon_reload: true
+
+- name: Lock the root password
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+
+- name: Find the shared host keys
+  ansible.builtin.find:
+    paths: /etc/ssh
+    patterns: "ssh_host_*"
+  register: image_finalize_host_keys
+
+- name: Remove the shared host keys
+  ansible.builtin.file:
+    path: "{{ image_finalize_host_key.path }}"
+    state: absent
+  loop: "{{ image_finalize_host_keys.files }}"
+  loop_control:
+    loop_var: image_finalize_host_key
+    label: "{{ image_finalize_host_key.path }}"
+
+- name: Verify the root password lock without changing it
+  ansible.builtin.user:
+    name: root
+    password_lock: true
+  check_mode: true
+  register: image_finalize_root_check
+
+- name: Require the root password lock
+  ansible.builtin.assert:
+    that: not image_finalize_root_check.changed
+    fail_msg: root still accepts a password.
+    quiet: true
+
+- name: Empty the shared machine identity
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/machine-id
+    owner: root
+    group: root
+    mode: "0444"
+    force: true

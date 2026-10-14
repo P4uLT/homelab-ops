@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: P4uLT
-  description: Put an interpreter in the build container, then check the pin.
+  description: Bootstrap Python and verify the build container.
   license: MIT
   min_ansible_version: '2.21'
   platforms:

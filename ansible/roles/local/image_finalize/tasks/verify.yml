@@ -1,0 +1,19 @@
+---
+- name: Inspect the machine identity
+  ansible.builtin.stat:
+    path: /etc/machine-id
+  register: image_finalize_machine_id
+
+- name: Find any remaining host keys
+  ansible.builtin.find:
+    paths: /etc/ssh
+    patterns: "ssh_host_*"
+  register: image_finalize_remaining_keys
+
+- name: Require an image without shared identity
+  ansible.builtin.assert:
+    that:
+      - image_finalize_machine_id.stat.exists
+      - image_finalize_machine_id.stat.size == 0
+      - image_finalize_remaining_keys.matched == 0
+    quiet: true

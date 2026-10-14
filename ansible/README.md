@@ -21,6 +21,12 @@ A layer is a directory behind an `all.yml` router. Each concern gets a file,
 so a topic is found by its name and runs alone with `task ansible:playbook`.
 A check that runs as one command stays one file.
 
+## Roles
+
+The image lifecycle roles own [interpreter bootstrap](roles/local/image_bootstrap/README.md)
+and [sealing](roles/local/image_finalize/README.md). Their build-only
+postconditions stay out of the shared baseline.
+
 ## Populations
 
 - **Workloads**: LXC born from a Packer golden image via Terraform. Each one
