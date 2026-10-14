@@ -33,8 +33,9 @@ A check that runs as one command stays one file.
   place. The `baseline` layer asserts `/etc/image-build-info` on it, and its
   address is recorded in the group secrets.
 - **Hosts we built by hand**: the PVE hosts, the NAS, and any appliance that
-  carries state or hardware. The `baseline` layer gives them the fleet account,
-  and the apt policy to the Debian ones.
+  carries state or hardware. The `baseline` layer gives them the fleet account
+  and the `sudo` package that the account needs to become root. The apt policy
+  goes to the Debian ones.
 - **Manual LXC** (`grp_lxc_manual`): containers created by hand in the PVE UI,
   outside the Terraform and Packer pipeline.
 
