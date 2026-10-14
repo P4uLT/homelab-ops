@@ -7,10 +7,10 @@ all:
   children:
     grp_servers:
       children:
-        grp_tf:
+        grp_servers_immutable:
           children:
 %{ for name in sort(keys(workloads)) ~}
-            grp_tf_${replace(name, "-", "_")}:
+            grp_servers_immutable_${replace(name, "-", "_")}:
               hosts:
                 ${name}:
                   proxmox_vmid: ${workloads[name].id}

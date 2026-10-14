@@ -1,0 +1,13 @@
+# code: language=ansible
+---
+# Apply apt policy to mutable Debian LXC systems. Proxmox stays out because
+# its own role owns packages. The group declares its package list and upgrade
+# mode in group_vars.
+- name: The package policy of mutable Debian LXC systems
+  hosts: grp_servers_lxc_debian
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the apt baseline
+      ansible.builtin.import_role:
+        name: apt

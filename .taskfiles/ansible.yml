@@ -94,14 +94,18 @@ tasks:
       - task: run
 
   converge-check:
-    desc: Preview jarvis changes in check mode. Check mode can change the node.
+    desc: Preview the selected Proxmox nodes in check mode. Check mode can change hosts.
+    requires:
+      vars: [HOST]
     cmds:
-      - uv run ansible-playbook playbooks/servers/services/proxmox/converge.yml -l jarvis --check {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/servers/services/proxmox/converge.yml -l {{.HOST}} --check {{.CLI_ARGS}}
 
   converge:
-    desc: Converge jarvis. Pass extra variables after --.
+    desc: Converge the selected Proxmox nodes. Pass extra variables after --.
+    requires:
+      vars: [HOST]
     cmds:
-      - uv run ansible-playbook playbooks/servers/services/proxmox/converge.yml -l jarvis {{.CLI_ARGS}}
+      - uv run ansible-playbook playbooks/servers/services/proxmox/converge.yml -l {{.HOST}} {{.CLI_ARGS}}
 
   image:
     desc: Provision a build container. Packer calls this. Pass the limit and the facts after --.

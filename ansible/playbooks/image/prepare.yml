@@ -2,7 +2,7 @@
 ---
 # Facts wait until bootstrap makes modules available inside the build container.
 - name: Prepare the build container
-  hosts: grp_builders
+  hosts: grp_image_builders
   gather_facts: false
   become: false
 

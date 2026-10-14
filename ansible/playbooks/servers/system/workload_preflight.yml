@@ -1,0 +1,39 @@
+# code: language=ansible
+---
+# Check the explicit address before connecting to a workload.
+# The marker check confirms presence, not image version or provenance.
+- name: Check the workload prerequisites
+  hosts: grp_servers_immutable
+  become: false
+  gather_facts: false
+  tasks:
+    - name: Require an explicit workload address
+      vars:
+        workload_group: grp_servers_immutable_{{ inventory_hostname | replace('-', '_') }}
+      ansible.builtin.assert:
+        that:
+          - hostvars[inventory_hostname].get('ansible_host', '') is string
+          - hostvars[inventory_hostname].get('ansible_host', '') | trim | length > 0
+        fail_msg: >-
+          {{ inventory_hostname }} has no explicit, nonblank ansible_host string.
+          Record the address in
+          inventory/servers/group_vars/{{ workload_group }}/secrets.sops.yaml
+          with the ct_ipv4 from `task tf:jarvis-output -- -json lxcs`.
+        quiet: true
+
+    - name: Check the image build marker
+      ansible.builtin.stat:
+        path: /etc/image-build-info
+        get_checksum: false
+        get_mime: false
+      register: workload_preflight_marker
+
+    - name: Require a regular image build marker file
+      ansible.builtin.assert:
+        that:
+          - workload_preflight_marker.stat.exists
+          - workload_preflight_marker.stat.isreg | default(false)
+        fail_msg: >-
+          {{ inventory_hostname }} has no regular /etc/image-build-info file.
+          Check the clone's source image before configuration.
+        quiet: true

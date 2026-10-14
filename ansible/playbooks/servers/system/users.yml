@@ -5,7 +5,7 @@
 # hosts we built by hand. The package that lets the account become root comes
 # first. Run it alone with task ansible:playbook.
 - name: The account every host we own carries
-  hosts: grp_owned
+  hosts: grp_servers_mutable
   become: true
   gather_facts: true
   tasks:

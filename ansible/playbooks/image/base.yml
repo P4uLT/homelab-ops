@@ -1,11 +1,10 @@
 # code: language=ansible
 ---
 # The base golden image, on the official Debian template: the chain root.
-# Entry: playbooks/image.yml with --limit builder-base. The interpreter comes
-# from baseline/prologue.yml and the seal from baseline/seal.yml, both applied
-# by all.yml around this play.
+# Entry: playbooks/image.yml with --limit builder-base. The shared phases are
+# prepare.yml and seal.yml, applied by all.yml around this play.
 - name: Build the base golden image
-  hosts: builder-base
+  hosts: grp_image_builders_base
   gather_facts: false
   become: false
 

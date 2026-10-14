@@ -76,8 +76,8 @@ pct exec <ct_id> -- docker run --rm hello-world
 pct exec <ct_id> -- cat /etc/image-build-info
 ```
 
-The marker carries the image name, its version, and its parent, and the
-baseline layer asserts it on the workload.
+The marker records the image name, its version, and its parent.
+The baseline layer checks that the marker is a regular file, not its contents.
 
 ## The container joins the fleet
 
@@ -90,19 +90,23 @@ chain: the old key stays trusted in every archive built before.
 The workloads root writes the group its apply creates, one fragment per node
 at `ansible/inventory/servers/iac.tf.<node>.yml`. The fragment carries the
 group, the host, and the container id, and no address, so it stays cleartext
-and committed. A workload named `tf-test` lands in `grp_tf_tf_test`: the group
-name uses underscores in place of hyphens, because Ansible reports a warning
-on a hyphen. The baseline layer asserts the address for a workload, so a
-missing step 2 fails loudly.
+and committed. A workload named `tf-test` lands in
+`grp_servers_immutable_tf_test` under `grp_servers_immutable`. The leaf repeats
+its parent's name and replaces hyphens with underscores. `ansible/playbooks/servers/system/workload_preflight.yml` requires an
+explicit, nonblank address before connecting. It then checks for a regular
+image marker file before system configuration.
 
 Then the container is a fleet host in two steps:
 
 1. Apply the root and commit the fragment it writes. The plan shows the file
    before the apply.
 2. Create the group's secrets with `task sops:edit`, at
-   `ansible/inventory/servers/group_vars/grp_tf_<host>/secrets.sops.yaml`.
-   `ansible_host` is the `ct_ipv4` from the output above. `ansible_user` is
-   the fleet account, `admin` unless you renamed it in the image secrets.
+   `ansible/inventory/servers/group_vars/grp_servers_immutable_<host>/secrets.sops.yaml`.
+   Set `ansible_host` to the `ct_ipv4` from the output above. That leaf holds
+   the address alone. `ansible_user` comes from
+   `ansible/inventory/servers/group_vars/all/vars.yml`.
+   A rename means editing that file and the account in both inventories'
+   secrets.
 
 **Reaching a container.** The image carries no password, on purpose: a shared
 one would leak into every clone. The workloads ask for none either: their
@@ -150,9 +154,11 @@ Then converge the one host, with owner approval:
 task ansible:site -- -l <host>
 ```
 
-The baseline layer asserts `/etc/image-build-info` on a workload, so it proves
-the image. A clone joins neither `grp_owned` nor `grp_baseline`, so no baseline
-play targets it and the first convergence changes nothing.
+The `workload_preflight` play requires a regular `/etc/image-build-info` file on each workload.
+It doesn't verify image version or provenance.
+A clone joins `grp_servers_immutable`, outside `grp_servers_mutable` and its
+Debian LXC branch. Mutable system plays don't target it. Service groups remain
+independent of the maintenance populations.
 
 **Without SSH.** An image built before the keys, or a container you want to
 reach with no key at all, still answers on the node:

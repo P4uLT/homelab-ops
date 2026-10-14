@@ -13,7 +13,7 @@
 # between nodes as root by key, so closing root entirely would break both.
 # The password is what goes away, not the key.
 - name: Close the login a raw machine shipped with
-  hosts: grp_owned
+  hosts: grp_servers_mutable
   gather_facts: false
   tasks:
     # Runs as the fleet account, so the probe proves the escalation path this

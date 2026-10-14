@@ -7,7 +7,7 @@
 # the build run and never lands in this file.
 # This playbook can contact managed hosts.
 - name: Import the baseline layer
-  ansible.builtin.import_playbook: servers/baseline/all.yml
+  ansible.builtin.import_playbook: servers/system/all.yml
 
 - name: Import the services layer
   ansible.builtin.import_playbook: servers/services/all.yml

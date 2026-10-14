@@ -181,13 +181,14 @@ Five touch points:
 2. Its line in the category's `all.yml`. `stacks/all.yml` already holds a
    placeholder play that matches no host. The first stack replaces the
    placeholder with its line and touches nothing else in the tree. The
-   phases every build shares live in `baseline/`: the interpreter prologue,
-   the base, and the seal.
+   shared phases live at the image root in `prepare.yml` and `seal.yml`. The
+   base recipe lives in `base.yml`.
 3. The builders inventory, in `ansible/inventory/builders/`: the
-   `grp_builders_<name>` leaf in `groups.yml`, then the `builder-<name>` host
-   under it in `hosts.yml`. The selection is the host limit, so a missing
-   host skips the play. An image that installs a service also joins that
-   service's group, which is where its policy lives, in `group_vars/`.
+   `grp_image_builders_<name>` leaf in `groups.yml`, then the
+   `builder-<name>` host under it in `hosts.yml`. Packer keeps the
+   `builder-base` and `builder-docker` host limits. The image group selects
+   the recipe. A service group supplies policy. Docker inherits its base
+   artifact through Packer, not through Ansible group membership.
 4. `packer/images/<name>.pkr.hcl`, with its own `<name>_build`,
    `<name>_parent`, and `<name>_ctid` variables: Packer variable and local
    names are global to the directory, so they carry the image name. Give it a

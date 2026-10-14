@@ -3,7 +3,7 @@
 # The service policy a container needs. A host that isn't a container stays
 # out of this play, because the wait unit can be real there.
 - name: The container settings of the baseline
-  hosts: grp_containers
+  hosts: grp_servers_lxc
   become: true
   gather_facts: true
   tasks:

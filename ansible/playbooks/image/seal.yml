@@ -4,7 +4,7 @@
 # builder; the host limit picks the one being built. The image facts come from
 # Packer as extra variables and pass through untouched.
 - name: Seal the image
-  hosts: grp_builders
+  hosts: grp_image_builders
   gather_facts: false
   become: false
 

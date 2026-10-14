@@ -66,8 +66,11 @@ The build provisions through Ansible: `packer build` starts the container,
 then a `shell-local` provisioner runs `task ansible:image` from this
 workstation against it, through the PVE node. The build container needs no
 sshd and carries no credential. One role set serves both the images and the
-runtime baseline. The provisioning itself lives in `ansible/playbooks/image/`:
-shared phases wrap one content play per image.
+runtime baseline. The provisioning lives in `ansible/playbooks/image/`. `prepare.yml` and
+`seal.yml` wrap the root `base.yml` recipe and the recipes under `services/`
+and `stacks/`. The `grp_image_builders_*` groups classify the builders. Packer keeps the
+`builder-base` and `builder-docker` host limits. The Docker artifact inherits its base through Packer's parent pin, not
+Ansible group inheritance.
 
 Build: `task packer:build` for everything, `task packer:build-base` or
 `task packer:build-docker` for one image, and
