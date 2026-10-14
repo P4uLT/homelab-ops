@@ -25,8 +25,14 @@ Host <alias>
     StrictHostKeyChecking accept-new
 ```
 
-No `User` line. Ansible takes the user from the encrypted group variables.
-For manual logins, pass the user explicitly: `ssh admin@<alias>`.
+No `User` line. Ansible takes the user from `group_vars/all/vars.yml`, one
+value for the whole inventory, and a machine that needs another account
+overrides it in its own group_vars. For manual logins, pass the user
+explicitly: `ssh admin@<alias>`.
+
+A machine that still answers only as the identity it shipped with is reached
+by that identity for one run, at adoption time. The identity is passed to
+`task ansible:onboard HOST=<node> IDENTITY=<raw>` and stored nowhere.
 
 The image build's Ansible run ignores this file. It connects through paramiko,
 which reads neither `~/.ssh/config` nor a password prompt, so the build takes

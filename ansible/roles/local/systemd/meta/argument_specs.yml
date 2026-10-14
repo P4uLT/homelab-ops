@@ -1,0 +1,30 @@
+---
+argument_specs:
+  main:
+    short_description: Manage existing system services
+    options:
+      systemd_services:
+        description: Service requests. An empty list changes nothing.
+        type: list
+        elements: dict
+        default: []
+        options:
+          name:
+            description: Complete service name ending in .service.
+            type: str
+            required: true
+          enabled:
+            description: Enable or disable startup at boot. Omit to leave this setting unchanged.
+            type: bool
+          state:
+            description: Native runtime state. Omit to leave this setting unchanged.
+            type: str
+            choices:
+              - started
+              - stopped
+              - restarted
+              - reloaded
+          ignore_missing:
+            description: Skip an absent service only when explicitly optional.
+            type: bool
+            default: false

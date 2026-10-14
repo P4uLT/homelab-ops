@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: Bootstrap Python and verify the build container
+    options:
+      image_bootstrap_vmid:
+        type: str
+        description: The expected build container identifier supplied by Packer.
+        required: true

@@ -1,0 +1,6 @@
+---
+# The baseline family owns its package list and patches itself.
+apt_upgrade: safe
+apt_packages:
+  - curl
+  - ca-certificates

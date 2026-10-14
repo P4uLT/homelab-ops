@@ -17,8 +17,8 @@ cover the state, which holds the token value.
 
 ## Run the access root
 
-The run performs six steps, in order, and it writes to the node. Get owner
-approval before step 3.
+The run performs six steps, in order. Get owner approval before any step that
+contacts the node. Step 3 writes to the node.
 
 1. Create `terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars` from its
    `.example`, mode 600, with the endpoint and the minting account password.
@@ -33,8 +33,8 @@ approval before step 3.
    `terraform/proxmox/jarvis/jarvis.local.auto.tfvars` as
    `pve_api_token = "terraform-prov@pve!tf=<secret>"`. This is the same flow as
    the S3 keys of the OVH bootstrap.
-5. Prove the credential: `task tf:jarvis-plan`, or the operator
-   play `credential_check.yml`.
+5. Prove the Terraform token by planning the workload root:
+   `task tf:jarvis-plan`.
 6. Retire the password, one time on the node, as root:
    `pveum user modify terraform-prov@pve --password` and enter a long random
    value nobody records. The user is token-only from then on. That closes the

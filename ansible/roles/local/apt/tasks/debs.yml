@@ -1,0 +1,7 @@
+---
+- name: Installing .deb packages
+  ansible.builtin.apt:
+    deb: "{{ item }}"
+    install_recommends: "{{ apt_install_recommends }}"
+    autoremove: "{{ apt_autoremove }}"
+  with_items: "{{ apt_deb_packages }}"

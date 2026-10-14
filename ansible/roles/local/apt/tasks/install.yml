@@ -1,0 +1,9 @@
+---
+- name: Refresh the package index
+  ansible.builtin.include_tasks: update.yml
+- name: Apply the requested upgrade policy
+  ansible.builtin.include_tasks: upgrade.yml
+- name: Ensure APT dependencies
+  ansible.builtin.include_tasks: dependencies.yml
+- name: Configure requested unattended upgrades
+  ansible.builtin.include_tasks: unattended_upgrades.yml

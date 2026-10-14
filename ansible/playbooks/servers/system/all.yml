@@ -1,0 +1,17 @@
+# code: language=ansible
+---
+# Each concern runs as a separate playbook. Workload preflight runs first.
+# Mutable systems receive the fleet account and their population's policy.
+# The APT policy belongs to Debian LXC systems.
+# The container settings belong to the containers alone.
+- name: Import the workload preflight
+  ansible.builtin.import_playbook: workload_preflight.yml
+
+- name: Import the fleet account
+  ansible.builtin.import_playbook: users.yml
+
+- name: Import the Debian LXC package policy
+  ansible.builtin.import_playbook: apt.yml
+
+- name: Import the container network settings
+  ansible.builtin.import_playbook: networkd.yml

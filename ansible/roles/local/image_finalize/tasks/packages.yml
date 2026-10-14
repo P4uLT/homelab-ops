@@ -1,0 +1,20 @@
+---
+# Purge lists after the final install, while retaining the expected directory.
+- name: Clean unused packages and downloaded archives
+  ansible.builtin.apt:
+    autoremove: true
+    autoclean: true
+    clean: true
+
+- name: Remove the package lists
+  ansible.builtin.file:
+    path: /var/lib/apt/lists
+    state: absent
+
+- name: Recreate the empty package-list directory
+  ansible.builtin.file:
+    path: /var/lib/apt/lists
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"

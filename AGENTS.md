@@ -54,6 +54,14 @@ ansible/
 └── collections/vendors/    # same
 ```
 
+- Classify server groups by maintenance policy, then system type and operating system when needed.
+- Keep mutable and immutable server membership disjoint. Give each group name one identity within its inventory.
+- Keep image builders in their separate inventory. Packer carries artifact inheritance, not Ansible group inheritance.
+- A group rename includes its `group_vars`, generated inventory template, and play targets.
+- Shared Proxmox plays read credentials from each node's own variable. Don't use Jarvis credentials for another node.
+- Convergence tasks require an explicit `HOST`. Use `--list-hosts` before host contact.
+- See [ansible/README.md](ansible/README.md) for the full inventory contract.
+
 ## Hard rules
 
 - Public repo. No cleartext IPs, credentials, or personal usernames.
@@ -110,9 +118,9 @@ bare metal. Use `host` only when the system type is unknown.
   directories. Files at `ansible/group_vars/` never load.
 - In a non-TTY harness, ansible refuses to run. Wrap the command in a
   pseudo-terminal: `script -qec '<command>' /dev/null`.
-- Extra-vars with JSON die in `task ansible:converge --`: the quotes are
-  stripped across the two shell layers and the value degrades to a string.
-  Use the file form instead: `-e @/tmp/vars.yml`.
+- Extra-vars with JSON die in `task ansible:converge HOST=<node> --`: the
+  quotes are stripped across the two shell layers and the value degrades to a
+  string. Use the file form instead: `-e @/tmp/vars.yml`.
 - `task verify` works offline after the first `galaxy` install, the
   first OpenTofu provider download (`task tf:init`), and the first Packer
   plugin download (`task packer:init`). Its OpenTofu leg also needs the

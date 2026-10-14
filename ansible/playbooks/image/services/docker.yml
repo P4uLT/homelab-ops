@@ -3,15 +3,25 @@
 # The Docker golden image, on the base artifact: the service twin of
 # servers/services/docker.yml, which applies the same role on the fleet side.
 # Entry: playbooks/image.yml with --limit builder-docker. The interpreter and
-# the seal come from baseline/, like every image. The policy lives in the
+# the shared prepare and seal phases come from the image entry point, like every image. The policy lives in the
 # builders inventory's grp_services_docker group_vars, so the image installs
 # Docker the way the fleet does.
 - name: Build the docker golden image
-  hosts: builder-docker
+  hosts: grp_image_builders_docker
   gather_facts: false
   become: false
 
   tasks:
+    # The sealed parent has no apt lists. The vendor installs its Debian
+    # dependencies before adding the Docker repository and refreshing apt.
+    - name: Prepare the package index from the sealed parent
+      ansible.builtin.import_role:
+        name: apt
+      vars:
+        apt_packages: []
+        apt_upgrade: 'no'
+        apt_cache_valid_time: 0
+
     - name: Apply the Docker service
       ansible.builtin.import_role:
         name: geerlingguy.docker

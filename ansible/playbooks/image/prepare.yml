@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# Facts wait until bootstrap makes modules available inside the build container.
+- name: Prepare the build container
+  hosts: grp_image_builders
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Bootstrap and verify the build container
+      ansible.builtin.import_role:
+        name: image_bootstrap
+      vars:
+        image_bootstrap_vmid: "{{ proxmox_vmid | string }}"

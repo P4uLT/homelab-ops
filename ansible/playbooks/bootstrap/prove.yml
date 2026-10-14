@@ -5,7 +5,7 @@
 # play only passes if the stored identity answers. That's what makes adoption
 # proved rather than assumed.
 - name: Prove the fleet account reaches the machine
-  hosts: grp_owned
+  hosts: grp_servers_mutable
   gather_facts: true
   tasks:
     - name: Read the identity the inventory reaches

@@ -5,7 +5,7 @@
 # required variable and is stored nowhere: a missing value stops the run
 # before any contact.
 - name: Adopt a raw machine into the fleet
-  hosts: grp_owned
+  hosts: grp_servers_mutable
   become: true
   gather_facts: true
   vars:

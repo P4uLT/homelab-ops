@@ -11,7 +11,11 @@ target.
   `proxmox/jarvis/` is live: one `lxc_workloads` entry per LXC workload, in its
   git-ignored tfvars. An apply also writes the Ansible inventory fragment
   that makes each workload a fleet host:
-  `ansible/inventory/servers/iac.tf.<node>.yml`.
+  `ansible/inventory/servers/iac.tf.<node>.yml`. Each workload joins
+  `grp_servers_immutable` through a `grp_servers_immutable_<host>` leaf. The leaf
+  repeats its parent's name and
+  replaces hyphens with underscores. The fragment includes the host and its
+  container ID, but no address.
   A later PVE server gets its own root, named after it.
 - `proxmox/modules/lxc/` wraps one LXC workload: a golden image clone,
   started, addressed by DHCP unless the caller pins a static address from its

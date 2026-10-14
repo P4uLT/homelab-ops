@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# The service policy a container needs. A host that isn't a container stays
+# out of this play, because the wait unit can be real there.
+- name: The container settings of the baseline
+  hosts: grp_servers_lxc
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply the container service policy
+      ansible.builtin.import_role:
+        name: systemd
+      vars:
+        systemd_services: "{{ container_service_units }}"
