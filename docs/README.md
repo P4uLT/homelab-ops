@@ -1,5 +1,8 @@
 # Documentation
 
+For a temporary local Packer binary override and restoration, use
+[Override the installed Packer plugin](runbooks/override-packer-plugin.md).
+
 Everything in this directory describes the repository as it works now. Start
 here.
 

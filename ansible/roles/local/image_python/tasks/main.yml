@@ -36,5 +36,5 @@
     fail_msg: >-
       Connected to {{ ansible_facts.hostname }}, but Packer pinned
       builder-{{ image_python_vmid }}. Check the ctid of the image in
-      packer/images/ against the image_python_vmid the provisioner passes.
+      packer/images/ against the proxmox_vmid the provisioner passes.
     quiet: true

@@ -23,10 +23,14 @@ tasks:
     desc: Check Packer formatting without writing.
     cmd: packer fmt -check -recursive packer/
 
+  # Installs the plugins declared in packer/images. Network on the first run
+  # only, because packer init skips an installed version. Extra args reach
+  # packer init, so `task packer:init -- -force` downloads the pinned release
+  # again, which is how a local override is undone.
   init:
-    desc: Install the Packer plugins declared in packer/images. Network on the first run only.
+    desc: Install the missing Packer plugins declared in packer/images.
     dir: packer
-    cmd: packer init images
+    cmd: packer init {{.CLI_ARGS}} images
 
   validate:
     desc: Validate every image offline. Runs init first.

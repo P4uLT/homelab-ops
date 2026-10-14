@@ -42,7 +42,23 @@ variable "pve_ssh_password" {
 variable "pve_ssh_key_path" {
   type        = string
   default     = ""
-  description = "Absolute path to a passphrase-less private key. The plugin reads the file directly, so it expands neither ~ nor a prompt."
+  description = "Absolute path to a private key. The plugin reads the file directly, so it expands neither ~ nor a prompt."
+}
+
+# A protected key still needs its path: the plugin refuses a passphrase alone.
+variable "pve_ssh_key_passphrase" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Passphrase of the private key. Requires pve_ssh_key_path; the plugin reads the key without a prompt."
+}
+
+# Lets an agent hold the unlocked key, so no passphrase reaches Packer and no
+# key file needs to sit on disk.
+variable "pve_ssh_agent_auth" {
+  type        = bool
+  default     = false
+  description = "Use a running ssh-agent for the node connection. Set it when the key is passphrase-protected and already loaded."
 }
 
 variable "arch" {

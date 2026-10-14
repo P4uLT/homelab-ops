@@ -20,9 +20,11 @@ Two files per node, both under `packer/hosts/`:
   `artifact_storage` and `artifact_dir` (where builds write artifacts and
   clones address them), `ct_storage`, `ct_bridge`.
 - `<node>.local.pkrvars.hcl`, git-ignored. The connection: `pve_ssh_host`,
-  `pve_ssh_user`, and either `pve_ssh_key_path` (absolute, passphrase-less) or
-  `pve_ssh_password`. Prefer the key: the plugin connects without checking the
-  host key, see [SSH key and host-key practices](../ssh.md).
+  `pve_ssh_user`, and either `pve_ssh_key_path` (absolute) or
+  `pve_ssh_password`. A protected key adds `pve_ssh_key_passphrase`, or loads
+  into an agent with `pve_ssh_agent_auth = true`. Prefer the key: the plugin
+  connects without checking the host key, see
+  [SSH key and host-key practices](../ssh.md).
 
 The build passes both, so a missing local file stops the build instead of
 aiming at another node.
@@ -56,7 +58,9 @@ access to it.
    `/mnt/pve/<id>`, with its templates in `template/cache`.
 
 3. Create `<node>.local.pkrvars.hcl`, mode 600, with the connection. The
-   build authenticates with `pve_ssh_key_path`. The Ansible step runs through
+   build authenticates with `pve_ssh_key_path`. A protected key also needs
+   `pve_ssh_key_passphrase`, or an agent holding the unlocked key with
+   `pve_ssh_agent_auth = true`. The Ansible step runs through
    paramiko, which needs a key or an agent. A password-only file stops the
    build at the playbook.
 
@@ -162,7 +166,7 @@ calls, with your own node facts:
 ```sh
 task ansible:image -- --limit builder-base \
   -e ansible_host=<node-ip> -e ansible_user=<node-login> \
-  -e ansible_private_key_file=<key-path> -e image_python_vmid=900 \
+  -e ansible_private_key_file=<key-path> -e proxmox_vmid=900 \
   -e image_finalize_name=base -e image_finalize_version=manual -e image_finalize_parent=manual
 ```
 

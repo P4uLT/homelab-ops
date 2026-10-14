@@ -13,3 +13,5 @@
     - name: Put an interpreter in the container
       ansible.builtin.import_role:
         name: image_python
+      vars:
+        image_python_vmid: "{{ proxmox_vmid | string }}"

@@ -9,6 +9,18 @@ Golden LXC images for Proxmox VE, built by Packer on a PVE node.
 | `hosts/<node>.pkrvars.hcl` | the node facts: template volid, artifact storage and dir, rootfs storage, bridge |
 | `hosts/<node>.local.pkrvars.hcl` | git-ignored: the node address, login, and key. A key, not a password: the Ansible step runs through paramiko, which takes neither a password prompt nor `~/.ssh/config` |
 
+The node local file carries the connection. Two optional inputs cover a key
+with a passphrase:
+
+- `pve_ssh_key_passphrase`: the passphrase of `pve_ssh_key_path`. Set it when
+the key is protected, so the plugin can read it without a prompt. A passphrase
+without a key path fails the build.
+- `pve_ssh_agent_auth = true`: use a running SSH agent instead. Set it when the
+key is already loaded, or when no key file should sit on disk.
+
+Leave both unset and the password or the bare `pve_ssh_key_path` works as
+before.
+
 An image builds on the artifact of another, so the set is a chain:
 `debian-13-standard-base` on the official Debian template,
 `debian-13-standard-base-docker` on it. Each image reads the chain off its
@@ -61,3 +73,6 @@ Build: `task packer:build` for everything, `task packer:build-base` or
 `task packer:build-docker` for one image, and
 `task packer:build-one IMAGE=<name> HOST=<node>` for one node. Procedure:
 `docs/runbooks/build-base-image.md`.
+
+To use a local plugin binary without changing the Taskfile or version pin, see
+[Override the installed plugin](../docs/runbooks/override-packer-plugin.md).
