@@ -20,3 +20,16 @@ lxc_workloads = {
     # mountpoints = [{ volume = "local-lvm", path = "/srv/data", size = "10G", backup = true }]
   }
 }
+
+# VM image pins manage their own lifecycle, independent of workloads.
+# PVE downloads missing images. OpenTofu imports matching existing files.
+# Removing a pin makes OpenTofu delete its PVE file.
+# Replace IMAGE_STORAGE with a PVE datastore that allows ISO content.
+# vm_image_downloads = {
+#   haos = {
+#     url       = "https://github.com/home-assistant/operating-system/releases/download/18.3/haos_ova-18.3.qcow2.xz"
+#     sha256    = "fae6a728768cc10aff60d4820bfcd40d64cd77fab82c8bd92af13b3d9d414090"
+#     file_name = "haos_ova-18.3.qcow2.img"
+#     storage   = "IMAGE_STORAGE"
+#   }
+# }

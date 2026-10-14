@@ -64,3 +64,25 @@ variable "lxc_workloads" {
     wait_for_ipv4 = optional(bool, true)
   }))
 }
+
+variable "vm_image_downloads" {
+  description = "Versioned VM images downloaded and managed by Terraform, keyed by image label."
+  type = map(object({
+    url       = string
+    sha256    = string
+    file_name = string
+    storage   = string
+  }))
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for image in values(var.vm_image_downloads) :
+      can(regex("^https://[^[:space:]]+[.]qcow2[.]xz$", image.url)) &&
+      can(regex("^[0-9a-fA-F]{64}$", image.sha256)) &&
+      can(regex("^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2[.]img$", image.file_name))
+    ])
+    error_message = "Downloads require an HTTPS QCOW2.XZ URL, a 64-character SHA256, and a versioned QCOW2.IMG filename."
+  }
+}

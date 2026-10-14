@@ -11,9 +11,11 @@ provider "proxmox" {
 resource "proxmox_virtual_environment_role" "terraform_provisioning" {
   role_id = "Terraform_Provisioning"
 
-  # Workload privileges for LXC templates, VMs, and SDN bridges.
+  # Workload privileges for LXC templates, VM images, and SDN bridges.
   privileges = [
+    "Datastore.Allocate",
     "Datastore.AllocateSpace",
+    "Datastore.AllocateTemplate",
     "Datastore.Audit",
     "Pool.Allocate",
     "SDN.Use",
