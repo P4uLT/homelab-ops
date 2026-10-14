@@ -1,0 +1,11 @@
+---
+- name: Configure requested signing keys
+  ansible.builtin.include_tasks: keys.yml
+- name: Configure requested repositories
+  ansible.builtin.include_tasks: repositories.yml
+- name: Configure requested package preferences
+  ansible.builtin.include_tasks: preferences.yml
+- name: Manage requested packages
+  ansible.builtin.include_tasks: packages.yml
+- name: Install requested Debian package files
+  ansible.builtin.include_tasks: debs.yml

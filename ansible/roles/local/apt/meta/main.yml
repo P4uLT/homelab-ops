@@ -1,9 +1,10 @@
 ---
 galaxy_info:
   author: P4uLT
-  description: The apt work of the Debian family we own, on the builtin module.
+  company: WeAreInteractive
+  description: Locally adopted WeAreInteractive APT role with explicit configuration policy.
   license: MIT
-  min_ansible_version: '2.21'
+  min_ansible_version: "2.21"
   platforms:
     - name: Debian
       versions: [trixie]

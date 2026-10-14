@@ -1,5 +1,151 @@
 ---
-# Empty inputs leave package selection and upgrades to the caller.
-apt_upgrade: 'no'
-apt_packages: []
+# apt_unattended_upgrades_blacklist:
+#   - vim
+#   - libc6
+# apt_mails:
+#   - root
+#   - foo@dev.null
+# apt_keys:
+#   - id: 473041FA
+#     file: /tmp/apt.gpg
+#     data: "{{ lookup('file', 'apt.asc') }}"
+#     keyring: /etc/apt/trusted.gpg.d/debian.gpg
+#     keyserver: keyserver.ubuntu.com
+#     url: https://ftp-master.debian.org/keys/archive-key-6.0.asc
+#     validate_certs: yes
+#     state: present
+# apt_repositories:
+#   - codename: trusty
+#     filename: google-chrome
+#     mode: 0644
+#     repo: 'ppa:nginx/stable'
+#     state: present
+#     update_cache: yes
+
+# The pinned apt module uses python3-apt, without requiring aptitude or pycurl.
+apt_dependencies:
+  - python3-apt
+# sets the amount of time the cache is valid
 apt_cache_valid_time: 3600
+# upgrade system: safe | full | dist
+apt_upgrade: "no"
+# packages to ensure
+apt_packages: []
+# purge configuration when removing packages
+apt_remove_purge: false
+# default package state
+apt_package_state: "present"
+# remove packages that are no longer needed for dependencies
+apt_autoremove: false
+# remove .deb files for packages no longer on your system
+apt_autoclean: false
+# .deb packages to install.
+apt_deb_packages: []
+# Leave global APT configuration and service-start policy untouched unless requested.
+apt_manage_config: false
+
+# https://people.debian.org/~hmh/invokerc.d-policyrc.d-specification.txt
+apt_policy:
+# whether or not suggested packages should be installed.
+apt_install_suggests: false
+# Keep recommendations off unless requested.
+apt_install_recommends: false
+# allow 'apt-get autoremove' to remove suggested packages
+apt_remove_suggests: false
+# allow 'apt-get autoremove' to remove recommended packages
+apt_remove_recommends: false
+# Enable the update/upgrade script
+apt_periodic: false
+# Do “apt-get update” automatically every n-days (0=disable)
+apt_update_package_lists: 1
+# Do “apt-get upgrade –download-only” every n-days (0=disable)
+apt_download_upgradeable_packages: 0
+# Do “apt-get autoclean” every n-days (0=disable)
+apt_auto_clean_interval: 0
+
+# enable unattended-upgrades
+apt_unattended_upgrades: false
+# list of origins patterns to control which packages are upgraded
+# replaces allowed-origins, kept for compatibility
+apt_unattended_upgrades_origins: []
+# List of allowed-origins, default value kept for compatibility
+# set to null to use origins-pattern
+apt_unattended_upgrades_allowed:
+  - ${distro_id}:${distro_codename}-security
+# list of packages to not update (regexp are supported)
+apt_unattended_upgrades_blacklist: []
+# Split the upgrade into the smallest possible chunks so that
+# they can be interrupted with SIGUSR1. This makes the upgrade
+# a bit slower but it has the benefit that shutdown while a upgrade
+# is running is possible (with a small delay)
+apt_unattended_upgrades_minimal_steps: false
+# Send email to this address for problems or packages upgrades
+# If empty or unset then no email is sent, make sure that you
+# have a working mail setup on your system. A package that provides
+# A mail sender is required when addresses are provided.
+apt_mails: []
+# Set this value to "true" to get emails only on errors. Default
+# is to always send a mail if Unattended-Upgrade::Mail is set
+apt_unattended_upgrades_notify_error_only: true
+# Do automatic removal of new unused dependencies after the upgrade
+# (equivalent to apt-get autoremove)
+apt_unattended_upgrades_autoremove: false
+# Automatically reboot *WITHOUT CONFIRMATION*
+# if the file /var/run/reboot-required is found after the upgrade
+apt_unattended_upgrades_automatic_reboot: false
+# Allow automatic reboots while users are logged in.
+apt_unattended_upgrades_automatic_reboot_with_users: false
+# If automatic reboot is enabled and needed, reboot at the specific
+# time instead of immediately
+# Values: now | 02:00 | ...
+apt_unattended_upgrades_automatic_reboot_time: now
+# Enable logging to syslog.
+apt_unattended_upgrades_syslog_enable: false
+# Specify syslog facility.
+apt_unattended_upgrades_syslog_facility: daemon
+
+# Override download timer ? Default no
+apt_unattended_upgrades_download_timer_override:
+# In case of override :
+# apt_unattended_upgrades_download_timer_override:
+#   on_calendar_replace: true replaces the default schedule. False adds to it.
+#   on_calendar: new schedule, see man systemd.time.7, example : 'Mon..Fri *-*-* 6:00'
+#   randomized_delay_sec: random delay in sec
+#   persistent: (true|false)
+# See systemd.time.5 for random delay and persistent
+
+# Override upgrade timer the same way
+apt_unattended_upgrades_upgrade_timer_override:
+# apt_unattended_upgrades_upgrade_timer_override:
+#   on_calendar_replace:
+#   on_calendar:
+#   randomized_delay_sec:
+#   persistent:
+
+# Supported remount targets are rootfs and tmpfs.
+#   tmpfs:  remount tmp before running if mounted noexec
+#   rootfs: remount root filesystem r/w before running if mounted r/o
+apt_remount_filesystems: []
+# repositories to register
+apt_repositories: []
+# gpg keys for external repositories
+apt_keys: []
+# HTTP proxy server (optional)
+# apt_http_proxy_address:
+# HTTP pipeline depth (optional)
+# apt_http_pipeline_depth: 5
+
+# Leave the Aptitude solver unchanged unless priorities are provided.
+# Mirror https://lists.debian.org/543FF3BD.1020609@zen.co.uk
+# apt_aptitude_solution_cost:
+#   - priority
+#   - removals
+#   - canceled-actions
+apt_aptitude_solution_cost: []
+# List of preferences options.
+# apt_preferences:
+#   - file: perl
+#     package: perl
+#     pin: "version 5.20*"
+#     priority: 1001
+apt_preferences: []

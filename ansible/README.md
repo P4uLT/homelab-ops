@@ -12,7 +12,7 @@ scope, two inventories, three host populations with separate authorities.
 | `inventory/` | `servers/`: the machines Ansible manages, with `groups.yml` (tree) and `hosts.yml` (membership). A Terraform-created container lands here as a generated group, written by the workload root. `builders/`: the Packer build containers, one host per image. Group names read `grp_<scope>_<specifics>`: `grp_servers_*` for the machine tree, `grp_builders_*` for the build containers, `grp_services_*` for opt-in service memberships |
 | `inventory/*/group_vars/` | Each inventory owns its own. One directory per group that carries variables, named after the group: `vars.yml` for cleartext, `secrets.sops.yaml` for secrets. A directory holds one or both |
 | `playbooks/` | Three entries, each unreachable from the others. `site.yml` runs `servers/`, the fleet layers `baseline` and `services`. `image.yml` runs `image/`, the build chain. `bootstrap.yml` runs `bootstrap/`, the one-time onboarding of a raw machine: the account, the proof it works, and password login closed. `baseline/base.yml` is the chain root, `services/<name>.yml` adds a service to an image, and `stacks/<name>.yml` ships a whole stack. The entries stay separate on purpose. A build seals its container, and the adopting play sets `ansible_user`, which would otherwise override every host's steady identity. `verify.yml` proves the shell |
-| `roles/` | `local/` (ours, hand-written), `vendors/` (downloaded, exact pins, ignored) |
+| `roles/` | `local/` (original or adopted source, tracked), `vendors/` (downloaded, exact pins, ignored) |
 | `collections/` | `local/` (ours), `vendors/` (downloaded, ignored except the marker) |
 | `plugins/` | Local filter, lookup, callback, and module code |
 | `vars/` | Variable files loaded explicitly by name. Empty today |
@@ -27,11 +27,13 @@ The image lifecycle roles own [interpreter bootstrap](roles/local/image_bootstra
 and [sealing](roles/local/image_finalize/README.md). Their build-only
 postconditions stay out of the shared baseline.
 
-The [apt role](roles/local/apt/README.md) accepts package, upgrade, and cache
-inputs. It refreshes the package index, installs requested packages, and
-upgrades only when asked. Its defaults install no packages and perform no upgrade.
-Image preparation calls set `apt_cache_valid_time: 0` because an empty cache
-can still carry a recent timestamp. Server calls retain the default cache lifetime.
+The [apt role](roles/local/apt/README.md) adopts WeAreInteractive's Advanced Package Tool (APT) role.
+Its [provenance record](roles/local/apt/UPSTREAM.md) pins the source revision and documents local changes.
+Existing callers retain package, upgrade, and cache inputs.
+Defaults select no population packages or upgrades and ensure the `python3-apt` dependency.
+Global configuration, service-start restrictions, cleanup, and unattended upgrades require explicit inputs.
+Image preparation keeps `apt_cache_valid_time: 0` because an empty cache can carry a recent timestamp.
+Server calls retain the default cache lifetime.
 
 Population policy belongs in each inventory's `group_vars`. The fleet baseline
 and the base-image group list `curl` and `ca-certificates`.

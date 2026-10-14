@@ -1,25 +1,33 @@
 ---
-# Population and prerequisite calls share mechanism, not upgrade policy.
-- name: Validate the cache lifetime
+- name: Validate the cache lifetime and service-start policy
   ansible.builtin.assert:
-    that: apt_cache_valid_time | int >= 0
-    fail_msg: Set apt_cache_valid_time to zero or a positive number.
+    that:
+      - apt_cache_valid_time | int >= 0
+      - apt_policy is none or (apt_policy is integer and apt_policy >= 0 and apt_policy <= 255)
+    fail_msg: Use a nonnegative cache lifetime and a null or integer service-start policy between 0 and 255.
     quiet: true
+  tags: always
 
-- name: Refresh the package index
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: "{{ apt_cache_valid_time }}"
+- name: Configure requested APT settings
+  ansible.builtin.import_tasks: config.yml
+  tags:
+    - system
+    - apt
+    - config
+    - apt-config
 
-- name: Apply the requested upgrade policy
-  ansible.builtin.apt:
-    upgrade: "{{ apt_upgrade }}"
-    dpkg_options: force-confold
-  when: apt_upgrade != 'no'
+- name: Prepare packages and explicit upgrades
+  ansible.builtin.import_tasks: install.yml
+  tags:
+    - system
+    - apt
+    - install
+    - apt-install
 
-- name: Install the requested packages
-  ansible.builtin.apt:
-    name: "{{ apt_packages }}"
-    state: present
-    install_recommends: false
-  when: apt_packages | length > 0
+- name: Manage requested repositories and packages
+  ansible.builtin.import_tasks: manage.yml
+  tags:
+    - system
+    - apt
+    - manage
+    - apt-manage

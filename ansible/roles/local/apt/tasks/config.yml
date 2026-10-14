@@ -1,0 +1,71 @@
+---
+- name: Configuring APT
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: apt_manage_config | bool
+  with_items:
+    - "etc/apt/apt.conf.d/10general"
+    - "etc/apt/apt.conf.d/10periodic"
+
+- name: Configuring APT
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: apt_unattended_upgrades | bool
+  with_items:
+    - "etc/apt/apt.conf.d/50unattended-upgrades"
+
+- name: Configuring APT Download timer
+  ansible.builtin.include_tasks: unattended_upgrades_download_timer.yml
+  when: apt_unattended_upgrades_download_timer_override != none
+
+- name: Configuring APT Upgrade timer
+  ansible.builtin.include_tasks: unattended_upgrades_upgrade_timer.yml
+  when: apt_unattended_upgrades_upgrade_timer_override != none
+
+- name: Configuring remount filesystems
+  ansible.builtin.template:
+    src: "etc/apt/apt.conf.d/10remount_{{ item }}.j2"
+    dest: "/etc/apt/apt.conf.d/10remount_{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: apt_remount_filesystems | length > 0
+  with_items:
+    - "{{ apt_remount_filesystems }}"
+
+- name: Configuring APT proxy behavior
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: apt_http_proxy_address is defined or apt_https_proxy_address is defined
+  with_items:
+    - "etc/apt/apt.conf.d/00proxy"
+
+- name: Alter Aptitude solution costs
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  when: apt_aptitude_solution_cost | length > 0
+  with_items:
+    - "etc/apt/apt.conf.d/20alter-aptitude-solution-cost"
+
+- name: Configure the requested service-start policy
+  ansible.builtin.copy:
+    content: "#!/bin/sh\nexit {{ apt_policy }}\n"
+    dest: /usr/sbin/policy-rc.d
+    mode: "0755"
+  when: apt_policy != none

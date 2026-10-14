@@ -1,0 +1,8 @@
+---
+- name: Upgrading system
+  ansible.builtin.apt:
+    upgrade: "{{ apt_upgrade }}"
+    dpkg_options: force-confold
+    update_cache: true
+    autoremove: "{{ apt_autoremove }}"
+  when: (apt_upgrade == "safe") or (apt_upgrade == "full") or (apt_upgrade == "dist")

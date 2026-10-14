@@ -1,0 +1,7 @@
+---
+- name: Installing dependency packages
+  ansible.builtin.apt:
+    name: "{{ apt_dependencies }}"
+    state: present
+    install_recommends: false
+  when: apt_dependencies | length > 0
