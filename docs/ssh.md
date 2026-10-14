@@ -41,6 +41,20 @@ connects to the address in the encrypted group variables, so the block above
 doesn't match it. Its key comes from the loaded agent or from the SSH
 defaults. The block serves manual logins.
 
+## Image-build trust
+
+Build tasks are operational, but the pinned LXC plugin ignores host keys.
+The image Ansible connection uses `~/.ssh/known_hosts` through paramiko.
+Ordinary Ansible SSH uses `ansible/config/known_hosts`.
+The current paramiko setting permits first-contact enrollment.
+
+Preverify the node key in each required trust store before an approved build.
+A future plugin must verify its own connection independently.
+Its qualification must prove that unknown and changed keys fail without
+automatic enrollment. Qualify protected-key or agent access across both paths,
+not only a manual SSH login.
+See [Pin a host key](runbooks/pin-host-keys.md).
+
 ## Terraform-created machines
 
 The golden image carries the fleet account, with its public keys, so a fresh
@@ -67,7 +81,7 @@ not change existing passwords.
 ## Related
 
 - [Pin a host key](runbooks/pin-host-keys.md): the pinning procedure, and the
-  two exceptions to it.
+  image-build trust gate.
 - [Add a Proxmox VE node](runbooks/onboard-pve.md): SSH access as one step of
   a node onboarding.
 - [SOPS and age procedures](sops.md): the secrets that carry the login.

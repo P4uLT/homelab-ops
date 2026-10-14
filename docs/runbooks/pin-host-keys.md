@@ -8,6 +8,8 @@ The pin is per node, and it survives reboots.
 
 ## Steps
 
+Get owner approval before the fingerprint scan contacts a node.
+
 1. Read the fingerprint from your machine:
    `task ansible:hostkey -- <node-ip>`.
 2. Read the fingerprint on the node console.
@@ -17,19 +19,24 @@ The pin is per node, and it survives reboots.
 The pinned keys live in `ansible/config/known_hosts` (git-ignored). Ansible
 verifies against this file on every run.
 
-## The exceptions
+## Image-build risk
 
-The Packer image build doesn't verify the host key. The Proxmox LXC plugin
-connects with host-key verification disabled. Treat that link as a trusted
-network. The pin above covers Ansible and manual logins only. See
-[Build the golden images](build-base-image.md) for the build itself.
+The pinned Proxmox LXC plugin disables host-key verification.
+Build tasks remain operational, so owner approval must account for this known
+risk. A network assumed to be trusted isn't a substitute for verification.
 
-The image build's Ansible run is the other one. It reaches the build container
-through the PVE node with a paramiko connection, which reads
-`~/.ssh/known_hosts` and takes no configurable path. The node's key is learned
-on first contact and verified after that, in that file rather than in
-`ansible/config/known_hosts`. Compare the fingerprint with the procedure above
-the first time, so trust-on-first-use happens once and knowingly.
+The image Ansible connection uses paramiko through the PVE node.
+Its pinned collection reads `~/.ssh/known_hosts`, not the project trust file.
+The current `[paramiko_connection] host_key_auto_add = true` setting permits
+first-contact enrollment.
+
+Install the independently verified node key in both required trust stores
+before an approved live build. Verify each stored fingerprint against
+the node console. Don't enroll an unverified replacement key.
+The plugin's own trust input depends on the separately approved dependency.
+Test unknown and changed keys on both connections, with no automatic enrollment
+or insecure fallback.
+See [Build and qualify the golden images](build-base-image.md).
 
 ## Next steps
 

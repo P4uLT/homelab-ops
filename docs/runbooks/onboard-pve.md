@@ -106,13 +106,18 @@ The node serves container disks from the NAS, so the export has to exist first.
 
 ## Golden images
 
-Build the images on the node before Terraform can clone one.
+Jarvis is the only configured Packer node.
+Adding another node needs approved public and private node files.
 
-1. Build the golden images on the node: add the node to `PKR_HOSTS` in
-   `.taskfiles/packer.yml`, create `packer/hosts/<node>.pkrvars.hcl` (node
-   facts) and `packer/hosts/<node>.local.pkrvars.hcl` (connection,
-   git-ignored), then run `task packer:build`. See
-   [Build the golden images](build-base-image.md).
+1. Keep public storage and bridge facts in `packer/hosts/<node>.pkrvars.hcl`.
+2. Keep private connection inputs in `<node>.local.pkrvars.hcl`, mode 600.
+3. Pin the exact parent basename in the selected recipe.
+   Base uses a vendor parent. Docker uses a qualified base archive.
+4. Get owner approval, then run
+   `task packer:build RECIPE=debian-13/lxc/base HOST=<node>`.
+   Use `task packer:build-all HOST=<node>` only for the approved development scope.
+5. Qualify and retain the archive before Terraform selects it. See
+   [Build and qualify the golden images](build-base-image.md).
 
 ## Clean up
 
