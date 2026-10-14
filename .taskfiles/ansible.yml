@@ -33,6 +33,7 @@ tasks:
     desc: Syntax-check all playbooks
     cmds:
       - uv run ansible-playbook --syntax-check playbooks/site.yml
+      - uv run ansible-playbook --syntax-check playbooks/bootstrap.yml
       - uv run ansible-playbook --syntax-check playbooks/verify.yml
       - uv run ansible-playbook --syntax-check playbooks/oper/sops_canary_check.yml
       - uv run ansible-playbook --syntax-check playbooks/servers/services/proxmox/converge.yml
@@ -66,6 +67,12 @@ tasks:
   playbook:
     desc: Run any playbook against the servers inventory. Pass the path and args after --.
     cmd: uv run ansible-playbook {{.CLI_ARGS}}
+
+  onboard:
+    desc: Onboard a raw machine - the fleet account, its proof, password login closed. Needs HOST and IDENTITY.
+    requires:
+      vars: [HOST, IDENTITY]
+    cmd: uv run ansible-playbook playbooks/bootstrap.yml -l {{.HOST}} -e bootstrap_user={{.IDENTITY}} {{.CLI_ARGS}}
 
   hostkey:
     desc: Show a host key fingerprint. Pass the IP after --. Compare it on the node.

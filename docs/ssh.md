@@ -30,8 +30,10 @@ For manual logins, pass the user explicitly: `ssh admin@<alias>`.
 
 The image build's Ansible run ignores this file. It connects through paramiko,
 which reads neither `~/.ssh/config` nor a password prompt, so the build takes
-its key from `pve_ssh_key_path` or from a loaded agent. Everything else,
-including every runtime play, goes through this block.
+its key from `pve_ssh_key_path` or from a loaded agent. A runtime play
+connects to the address in the encrypted group variables, so the block above
+doesn't match it. Its key comes from the loaded agent or from the SSH
+defaults. The block serves manual logins.
 
 ## Terraform-created machines
 

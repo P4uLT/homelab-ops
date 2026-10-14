@@ -2,3 +2,8 @@
 # Header text for template-managed files. Set as a variable: the
 # ansible_managed config option is deprecated and removed in 2.23.
 ansible_managed: "This file is managed by homelab-ops (Ansible). Manual edits will be overwritten."
+
+# The identity the fleet reaches every machine with. One value, because the
+# fleet account is the same everywhere. A machine that needs another account
+# overrides it in its own group_vars, where the exception stays visible.
+ansible_user: admin

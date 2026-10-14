@@ -44,7 +44,7 @@ name is overwritten. Terraform instantiates the archives under that name.
 What the images contain:
 
 - Debian 13, upgraded at build time.
-- `debian-13-standard-base`: `curl` and `ca-certificates`, systemd's
+- `debian-13-standard-base`: `curl`, `ca-certificates`, and `sudo`, systemd's
   networkd wait unit disabled.
 - the Docker image: the base plus Docker Engine from the upstream
   repository in deb822 source form, with the buildx and compose plugins.
@@ -55,8 +55,8 @@ What the images contain:
   `/etc/image-build-info`, the image identity the baseline layer asserts on
   the workload.
 - The fleet account: a user, its public keys in `authorized_keys`, and its
-  sudo options, validated by `visudo`. The `robertdebock.users` role creates
-  it from the data in
+  sudo options, validated by `visudo`. The `fleet_account` role prepares
+  `sudo`, then calls `robertdebock.users` with the data in
   `ansible/inventory/builders/group_vars/all/secrets.sops.yaml`, encrypted
   like every other secret. The servers inventory declares the same account
   for the hosts built by hand. A public key opens nothing by itself, so it can

@@ -1,0 +1,39 @@
+# code: language=ansible
+---
+# The proof the new way in works. This play never reads bootstrap_user, even
+# though the run carries it. Its identity comes from the inventory, so the
+# play only passes if the stored identity answers. That's what makes adoption
+# proved rather than assumed.
+- name: Prove the fleet account reaches the machine
+  hosts: grp_owned
+  gather_facts: true
+  tasks:
+    - name: Read the identity the inventory reaches
+      ansible.builtin.command:
+        cmd: id -un
+      register: adopt_prove_login
+      changed_when: false
+
+    - name: Assert the machine answers as the fleet account
+      ansible.builtin.assert:
+        that: (adopt_prove_login.stdout | trim) in (fleet_users | map(attribute='name') | list)
+        fail_msg: >-
+          The inventory reached this machine as
+          {{ adopt_prove_login.stdout | trim }}, not as the fleet account.
+          Check ansible_user and ansible_host.
+        quiet: true
+
+    - name: Read the identity become reaches
+      ansible.builtin.command:
+        cmd: id -un
+      become: true
+      register: adopt_prove_root
+      changed_when: false
+
+    - name: Assert the account escalates without a prompt
+      ansible.builtin.assert:
+        that: adopt_prove_root.stdout | trim == 'root'
+        fail_msg: >-
+          The fleet account answered but couldn't become root. Check
+          /etc/sudoers.d on the machine before hardening anything.
+        quiet: true

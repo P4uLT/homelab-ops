@@ -1,0 +1,20 @@
+---
+# Prepare sudoers and visudo before invoking the vendor's account management.
+- name: Assert the account list has entries
+  ansible.builtin.assert:
+    that: fleet_account_users | length > 0
+    fail_msg: Pass at least one account through fleet_account_users at the role call.
+    quiet: true
+
+- name: Install the sudo prerequisite
+  ansible.builtin.import_role:
+    name: apt
+  vars:
+    apt_packages: [sudo]
+    apt_upgrade: 'no'
+
+- name: Configure the fleet accounts
+  ansible.builtin.import_role:
+    name: robertdebock.users
+  vars:
+    users: "{{ fleet_account_users }}"

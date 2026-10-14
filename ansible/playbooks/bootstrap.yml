@@ -1,0 +1,8 @@
+# code: language=ansible
+---
+# The adoption entry point: a machine joins the fleet here, once, reached by
+# the identity it shipped with. It stays out of site.yml on purpose, because
+# the adopting play sets ansible_user and a play variable beats an inventory
+# one. An import would override the steady identity of every host in the run.
+- name: Import the adoption layer
+  ansible.builtin.import_playbook: bootstrap/all.yml

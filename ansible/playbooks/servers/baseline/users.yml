@@ -2,7 +2,8 @@
 ---
 # The account every host we own carries: a user, its keys, and its sudo
 # options. The image bakes it for a workload, and this play gives it to the
-# hosts we built by hand. Run it alone with task ansible:playbook.
+# hosts we built by hand. The package that lets the account become root comes
+# first. Run it alone with task ansible:playbook.
 - name: The account every host we own carries
   hosts: grp_owned
   become: true
@@ -17,8 +18,30 @@
           sops:edit.
         quiet: true
 
+    - name: Assert the fleet identity isn't root
+      ansible.builtin.assert:
+        that: ansible_user != 'root'
+        fail_msg: >-
+          A stored root identity contradicts the adoption path. Adopt the
+          machine with playbooks/bootstrap.yml, then set ansible_user to the
+          fleet account: see docs/runbooks/onboard-pve.md.
+        quiet: true
+
+    - name: Assert the fleet identity names a fleet account
+      ansible.builtin.assert:
+        that: ansible_user in (fleet_users | map(attribute='name') | list)
+        fail_msg: >-
+          ansible_user names an account that fleet_users doesn't declare.
+          Fix ansible/inventory/servers/group_vars/all/vars.yml.
+        quiet: true
+
+    # The account's sudo grant is global on purpose, and not a scoped list.
+    # The fleet logs in as this account and escalates without a prompt, on
+    # every host. On a PVE node a scoped list would be an illusion anyway,
+    # because the PVE commands each take a host path. The maintainers call
+    # that a false sense of security.
     - name: Create the fleet account
       ansible.builtin.import_role:
-        name: robertdebock.users
+        name: fleet_account
       vars:
-        users: "{{ fleet_users }}"
+        fleet_account_users: "{{ fleet_users }}"

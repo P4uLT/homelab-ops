@@ -1,0 +1,14 @@
+# code: language=ansible
+---
+# The onboarding, one file per concern, in the order the machine needs. The
+# proof comes second, so the account is proved before anything relies on it.
+# The hardening comes last, because that proof is exactly what makes it safe.
+# It stays out of site.yml and image.yml: a fleet run must never close a login.
+- name: Import the adoption of the fleet account
+  ansible.builtin.import_playbook: adopt.yml
+
+- name: Import the proof of the new way in
+  ansible.builtin.import_playbook: prove.yml
+
+- name: Import the closing of password login
+  ansible.builtin.import_playbook: sshd.yml

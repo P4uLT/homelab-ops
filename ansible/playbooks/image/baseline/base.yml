@@ -35,6 +35,6 @@
 
     - name: Create the fleet account
       ansible.builtin.import_role:
-        name: robertdebock.users
+        name: fleet_account
       vars:
-        users: "{{ fleet_users }}"
+        fleet_account_users: "{{ fleet_users }}"

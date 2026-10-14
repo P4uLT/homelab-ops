@@ -14,6 +14,7 @@ Terraform on Proxmox VE, Ansible runtime configuration, and a Talos/Flux lab.
 task verify                                   # full local proof. No host contact.
 task ansible:inventory -- --host jarvis       # resolved vars, decrypted in memory
 task ansible:site                            # applies server config, may contact hosts
+task ansible:onboard HOST=<node> IDENTITY=<raw>  # onboard a raw machine. Contacts it.
 task sops:encrypt -- <path>                   # also: decrypt, edit, encrypt-all, check-all
 task ansible:galaxy                           # vendor install if missing
 task ansible:galaxy-reinstall                 # purge and reinstall. Needs network.
@@ -55,8 +56,9 @@ ansible/
 
 ## Hard rules
 
-- Public repo. No cleartext IPs, credentials, or usernames. Hostnames and
-  group names are fine.
+- Public repo. No cleartext IPs, credentials, or personal usernames.
+  Hostnames, group names, and the fleet account name are fine: it's a role,
+  and its login is key-only.
 - Secrets live only in `*.sops.yaml` files (SOPS + age). Encrypt with
   `task sops:encrypt`. Procedures: `docs/sops.md`.
 - The canary variable loads on every inventory-based run. Without the age
@@ -144,6 +146,10 @@ bare metal. Use `host` only when the system type is unknown.
   exits 0, so `.vale.ini` raises every rule it enables to `error`.
 - The legacy sibling repository that fed the migration keeps a read-only
   status. Never change it.
+- A Proxmox VE node ships without `sudo`, so `/etc/sudoers` doesn't exist
+  there. A play that writes that file or checks it with `visudo` fails on
+  the node first. The `fleet_account` role installs the package before it
+  calls the vendor role.
 - Add at most one gotcha per PR, and only for a mistake it prevented or
   fixed.
 

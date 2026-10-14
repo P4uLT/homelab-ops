@@ -1,0 +1,27 @@
+# code: language=ansible
+---
+# Adopt a raw machine: the fleet account, its keys, and its sudo options. The
+# connection identity is the one the machine shipped with. It comes in as a
+# required variable and is stored nowhere: a missing value stops the run
+# before any contact.
+- name: Adopt a raw machine into the fleet
+  hosts: grp_owned
+  become: true
+  gather_facts: true
+  vars:
+    ansible_user: "{{ bootstrap_user | mandatory }}"
+  tasks:
+    - name: Assert the inventory carries the fleet account
+      ansible.builtin.assert:
+        that: fleet_users | default([]) | length > 0
+        fail_msg: >-
+          Fill fleet_users in
+          ansible/inventory/servers/group_vars/all/secrets.sops.yaml: task
+          sops:edit.
+        quiet: true
+
+    - name: Create the fleet account
+      ansible.builtin.import_role:
+        name: fleet_account
+      vars:
+        fleet_account_users: "{{ fleet_users }}"
