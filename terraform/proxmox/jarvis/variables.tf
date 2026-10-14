@@ -33,7 +33,7 @@ variable "lxc_workloads" {
     mountpoints = optional(list(object({
       volume    = string
       path      = string
-      size      = optional(number)
+      size      = optional(string)
       backup    = optional(bool, false)
       read_only = optional(bool, false)
     })))

@@ -56,6 +56,13 @@ tasks:
     dir: terraform
     cmd: tflint --recursive
 
+  test:
+    desc: Test the LXC module with mocked providers. No host contact.
+    dir: terraform/proxmox/modules/lxc
+    cmds:
+      - tofu init -backend=false -input=false
+      - tofu test {{.CLI_ARGS}}
+
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
     dotenv: [".env.tf"]

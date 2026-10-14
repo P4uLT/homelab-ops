@@ -133,10 +133,13 @@ lxc_workloads = {
   tf-test = {
     id       = 1000
     template = "NAS:vztmpl/<artifact>"
-    ipv4     = { address = "10.0.0.5/24", gateway = "10.0.0.1" }
+    ipv4     = { address = "<address>/<prefix>", gateway = "<gateway>" }
   }
 }
 ```
+
+Replace the address, prefix, and gateway placeholders with your network values.
+Omit `ipv4`, or set it to `null`, to use DHCP.
 
 A static address has a second effect. The provider reads the interface's
 address right after creation, so the `ct_ipv4` output is true at apply time.
@@ -172,7 +175,35 @@ See [the Ansible shell](../../ansible/README.md) for the workload model, and
 [Add a Proxmox VE node](onboard-pve.md) for the same inventory mechanics on a
 PVE host.
 
+## Add a storage mount point
+
+Use a storage-backed volume with this root's API token.
+Host bind mounts need `root@pam` authentication without an API token.
+Edit the workload entry in the git-ignored tfvars:
+
+```hcl
+mountpoints = [{
+  volume = "local-lvm"
+  path   = "/srv/data"
+  size   = "10G"
+  backup = true
+}]
+```
+
+Sizes require a `K`, `M`, `G`, or `T` suffix. `disk` remains numeric, in gibibytes.
+Replace existing unitless sizes with values that match the volume size.
+Don't append `G` to a byte count.
+Review the plan for replacement before applying a size change, with owner approval.
+`backup = true` includes the volume in PVE backups. It doesn't create a backup.
+
 ## Destroy
+
+If protection is enabled, disable it and apply that change with owner approval before removing the entry.
+To remove one workload, delete its entry from `lxc_workloads` in the local tfvars.
+With owner approval, save a plan with `task tf:jarvis-plan -- -out=delete.tfplan`.
+Review the resource and disk deletions before applying `task tf:jarvis-apply -- delete.tfplan`.
+
+The state defines resource ownership. A `terraform` tag alone doesn't import or delete a container.
 
 One command removes every workload in this root's state. The golden image is
 untouched.

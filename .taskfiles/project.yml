@@ -14,6 +14,7 @@ tasks:
     cmds:
       - task: docs:check
       - task: docs:links
+      - task: tf:test
       - task: ansible:verify
       - task: tf:fmt-check
       - task: tf:lint

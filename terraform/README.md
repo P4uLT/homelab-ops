@@ -43,6 +43,14 @@ root stores at `proxmox/jarvis/terraform.tfstate`. That's the layout Terragrunt
 generates, so adopting Terragrunt needs no migration, and a root moved with
 `git mv` moves its state with it. See `BACKEND.md` for the full rules.
 
+## Local tests
+
+Run `task tf:test` for the LXC module tests.
+The task uses OpenTofu mock providers, without root connection variables or host contact.
+Provider installation can require registry access.
+`task verify` includes these tests.
+Generated module lock files stay local. Root lock files remain tracked.
+
 ## Editor setup
 
 These files are OpenTofu. The HashiCorp Terraform language server

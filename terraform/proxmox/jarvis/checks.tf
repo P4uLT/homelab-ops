@@ -11,11 +11,6 @@ data "proxmox_datastores" "node" {
 
 data "proxmox_version" "node" {}
 
-data "proxmox_virtual_environment_containers" "tagged" {
-  node_name = local.node
-  tags      = ["terraform"]
-}
-
 locals {
   # The storages this root actually addresses: the root-disk storage, plus the
   # store named in each workload's golden-image volid ("NAS:vztmpl/...").
@@ -23,9 +18,6 @@ locals {
     [local.storage],
     [for workload in var.lxc_workloads : element(split(":", workload.template), 0)],
   ))
-
-  # The ids this root manages, read from the map.
-  managed_vm_ids = [for workload in module.workload : workload.ct_id]
 }
 
 resource "terraform_data" "assertions" {
@@ -46,12 +38,5 @@ resource "terraform_data" "assertions" {
       error_message = "The node runs PVE ${data.proxmox_version.node.release}; this root is validated on PVE 8 or newer."
     }
 
-    precondition {
-      condition = length(setsubtract(
-        [for c in data.proxmox_virtual_environment_containers.tagged.containers : tostring(c.vm_id)],
-        local.managed_vm_ids
-      )) == 0
-      error_message = "Containers tagged terraform exist on the node outside this root: ${join(", ", setsubtract([for c in data.proxmox_virtual_environment_containers.tagged.containers : tostring(c.vm_id)], local.managed_vm_ids))}."
-    }
   }
 }
