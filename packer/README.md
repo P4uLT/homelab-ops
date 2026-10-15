@@ -43,10 +43,14 @@ The native manifest records the image, parent, build ID, source revision,
 and declared plugin source/version.
 It doesn't record or verify the parent or output checksum.
 
-Packer provisions through the separate Ansible builders inventory.
-Each recipe selects one Ansible inventory target. Base selects `builder-base`,
-and Docker selects `builder-docker`. Docker inheritance comes from its Packer
-parent, not Ansible group membership.
+Packer's native Ansible provisioner uses the builders inventory for LXC builds.
+It passes the same inventory directory as `task ansible:image`. Ansible owns
+parent, image, and service group membership.
+The provisioner disables Packer's SSH proxy and keeps
+`community.proxmox.proxmox_pct_remote`. That connection reaches PVE with Paramiko
+and runs commands through `pct exec`. Packer supplies the PVE address, SSH user,
+key path, container ID, and image facts. Each recipe selects its host alias.
+Docker inheritance comes from its Packer parent, not Ansible group membership.
 
 Adding an LXC product needs one recipe and one Ansible target. The shared HCL
 and Taskfile don't enumerate product names.

@@ -26,8 +26,7 @@ collections:
   # Required by lae.proxmox: modprobe and zfs modules.
   - name: community.general
     version: 13.4.0
-  # proxmox_pct_remote: the image build reaches its container through the
-  # PVE node with pct exec. The workload runtime path reaches a clone over SSH,
-  # through the fleet account the image carries.
+  # proxmox_pct_remote: Packer and direct Ansible image runs reach containers
+  # through PVE pct exec. Runtime reaches clones over SSH through the fleet account.
   - name: community.proxmox
     version: 2.0.0

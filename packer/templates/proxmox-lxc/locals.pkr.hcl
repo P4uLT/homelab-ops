@@ -1,8 +1,7 @@
 locals {
-  parent_volume = "${var.artifact_storage}:vztmpl/${var.parent_archive}"
-  artifact_name = "homelab-${var.image_id}-lxc_${var.build_id}_${var.arch}.tar.zst"
-
-  ansible_image_conn = "-e ansible_host=${var.pve_ssh_host} -e ansible_user=${var.pve_ssh_user} -e ansible_private_key_file=${var.pve_ssh_key_path}"
+  repository_root = abspath("${path.root}/../../..")
+  parent_volume   = "${var.artifact_storage}:vztmpl/${var.parent_archive}"
+  artifact_name   = "homelab-${var.image_id}-lxc_${var.build_id}_${var.arch}.tar.zst"
 
   manifest_custom_data = {
     image_id        = var.image_id
