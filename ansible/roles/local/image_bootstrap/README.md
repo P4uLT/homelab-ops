@@ -8,8 +8,9 @@ Keep the existing image capability, using native `raw`, `setup`, and `assert` mo
 Interpreter bootstrap alone doesn't cover its `pct` shell boundaries and builder identity check.
 This role isn't population package policy or a general Python installation role.
 
-The target is a Debian build container reached through `proxmox_pct_remote`.
-The connection must provide privileged access inside that container.
+Packer's native Ansible provisioner and direct Ansible runs reach the Debian
+build container through `proxmox_pct_remote`. The connection plugin uses PVE
+`pct exec` and needs privileged access inside the container.
 Call this role before content roles, with play-level fact gathering disabled.
 
 ## Interface
