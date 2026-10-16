@@ -66,6 +66,15 @@ tasks:
       - for: { var: TF_TEST_MODULES, as: MODULE }
         cmd: tofu -chdir="{{.MODULE}}" test {{.CLI_ARGS}}
 
+  test-root-inputs:
+    desc: Test Jarvis input contracts with mock providers. No host contact.
+    preconditions:
+      - sh: test -f terraform/proxmox/jarvis/.terraform/modules/modules.json
+        msg: "Run task tf:init before testing the root inputs."
+    cmd: >-
+      tofu -chdir=terraform/proxmox/jarvis test
+      -filter=tests/settings.tftest.hcl {{.CLI_ARGS}}
+
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
     dotenv: [".env.tf"]

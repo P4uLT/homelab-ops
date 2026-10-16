@@ -49,12 +49,114 @@ Moving a root directory doesn't move its remote state.
 Keep the existing backend key during a code move, or review a separate state migration.
 See [State locations and code moves](BACKEND.md#state-locations-and-code-moves) for the rules.
 
+## VM hardware settings
+
+Each `vm_workloads` entry accepts typed settings with these defaults:
+
+| Setting | Default |
+| --- | --- |
+| `cpu` | 2 cores, 1 socket, `qemu64`, no hotplugged count, `numa = false` |
+| `memory` | `dedicated = 4096`, `floating = 0`, `shared = 0`, in mebibytes |
+| `disk` | `size = 64` gibibytes, `interface = "scsi0"`, on the node storage |
+| `agent` | Enabled, `virtio`, `timeout = "15m"`, `trim = false` |
+| `network_devices` | One `virtio` device on the node bridge |
+| `vga` | `null`, no explicit display block |
+| `timeouts` | Provider defaults: 1800 seconds per operation, 300 for `stop_vm` |
+| `bios` | `"ovmf"` |
+| `machine` | `null`, provider default |
+| `boot_order` | The selected `disk.interface` |
+| `scsi_hardware` | `"virtio-scsi-single"` |
+| `hotplug` | `["disk", "network", "usb"]` |
+| `os_type` | `"l26"` |
+| `reboot_after_update` | `true` |
+| `efi_disk` | Enabled, `4m`, no pre-enrolled keys, on the node storage |
+
+Omitted, empty, or null setting objects retain defaults, except `vga`.
+A null `vga` leaves that block unset. An empty `vga` selects `std` with 16 mebibytes.
+A null `boot_order` selects the imported disk.
+
+- `cpu` accepts `cores`, `sockets`, `type`, `hotplugged`, and `numa`.
+  CPU models and versioned machine names use provider validation rather than local allowlists.
+- `memory.floating = 0` disables ballooning. Other values set its minimum, up to `dedicated`.
+- `disk` and `additional_disks` accept `file_format`, `cache`, `backup`, `discard`, `iothread`, `ssd`, and `queues`.
+  Omitted tuning retains provider defaults. Queues require a `scsi` interface and `virtio-scsi-single`.
+  Additional disks must use unique interfaces outside the selected boot slot.
+- `agent` also accepts an optional `wait_for_ip` object with `disabled`, `ipv4`, and `ipv6`.
+  An omitted object retains provider wait behavior.
+- `network_devices` accepts 1 to 32 ordered devices.
+  Each accepts `bridge`, `model`, `vlan_id`, `mac_address`, `firewall`, `disconnected`, `queues`, `mtu`, and `rate_limit`.
+  A null bridge uses the node bridge. Device order determines interface indexes.
+- `efi_disk` accepts `enabled`, `datastore_id`, `file_format`, `type`, and `pre_enrolled_keys`.
+  Setting `enabled = false` omits that disk, for example with SeaBIOS.
+- `timeouts` accepts `create`, `migrate`, `reboot`, `shutdown_vm`, `start_vm`, and `stop_vm`, in seconds.
+  The module doesn't expose clone or deprecated disk-move timeouts.
+
+Closed string choices follow the
+[pinned provider values](https://github.com/bpg/terraform-provider-proxmox/blob/v0.116.0/docs/resources/virtual_environment_vm.md).
+The hardware families also appear in
+[trfore's VM modules](https://github.com/trfore/terraform-bpg-proxmox/tree/b4bf9fb524ddcbd0c79afc2cb9a759de70bb3f9e/modules).
+LXC OS and console types retain their own allowlists.
+
+The `hotplug` set accepts `disk`, `network`, `usb`, `cpu`, and `memory`.
+An empty set disables hotplug. Memory hotplug requires `cpu.numa = true`.
+The guest must support the selected features.
+Only `cpu.hotplugged` controls the active processor count.
+Changing `cpu.cores` or `cpu.sockets` can require a restart.
+A memory decrease can fail before the provider restarts the VM.
+An approved full stop before the decrease avoids guest memory-unplug failures.
+
+### VM input migration
+
+VM settings use objects rather than the scalar fields below.
+LXC inputs don't change. Existing resource addresses and image ownership don't change.
+
+| Old setting | Object field |
+| --- | --- |
+| `cpu = 4` | `cpu = { cores = 4 }` |
+| `ram = 8192` | `memory = { dedicated = 8192 }` |
+| `disk = 128` | `disk = { size = 128 }` |
+| `numa` | `cpu.numa` |
+| `boot_disk_interface` | `disk.interface` |
+| `agent_enabled` | `agent.enabled` |
+| `network_model` | `network_devices[0].model` |
+| `vlan_id` | `network_devices[0].vlan_id` |
+| `mac_address` | `network_devices[0].mac_address` |
+
+The root rejects old named settings rather than silently dropping them during object conversion.
+Scalar `cpu` and `disk` values fail type validation.
+Adapt the private tfvars using the
+[tracked example](proxmox/jarvis/jarvis.local.auto.tfvars.example) before the next approved plan.
+The new inputs don't authorize host contact or a state migration.
+
+## Workload deletion protection
+
+VM workloads expose two independent settings in `vm_workloads`:
+
+| Setting | Default | Effect |
+| --- | --- | --- |
+| `protection` | `true` | Proxmox blocks deletion of the VM and its disks |
+| `prevent_destroy` | `true` | OpenTofu rejects plans that destroy or replace the VM |
+
+Omitted or null values retain these defaults.
+A deliberate replacement requires both settings to be `false`.
+Proxmox protection must be disabled by an apply before planning the replacement.
+Removing a workload entry also removes its lifecycle guard from the configuration.
+Proxmox protection remains active until explicitly disabled.
+These guards don't replace backups.
+
+LXC workloads expose only `protection`, with a default of `false`.
+The LXC module doesn't set `prevent_destroy`.
+
 ## Local tests
 
 Run `task tf:test` for the LXC and VM module tests.
 The task uses OpenTofu mock providers, without root connection variables or host contact.
 Provider installation can require registry access.
-`task verify` includes these tests.
+After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract and migration guards.
+These tests use fixtures rather than connection credentials.
+Successful input plans target the local inventory because the provider's datastore outputs aren't mockable.
+They don't qualify node checks or live VM changes.
+`task verify` includes both test suites.
 Generated module lock files stay local. Root lock files remain tracked.
 
 ## Editor setup

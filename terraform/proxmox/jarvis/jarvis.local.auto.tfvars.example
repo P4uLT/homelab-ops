@@ -131,6 +131,9 @@ lxc_workloads = {
 # removing a vm_workloads entry leaves the image in place. To delete a pinned
 # image, remove its pin here. Terraform then deletes the file in Proxmox.
 #
+# VM protection and prevent_destroy both default to true.
+# For replacement or removal, set both false and apply before changing the entry.
+# Review each plan and get owner approval before host contact.
 # Basic VM settings use provider-safe defaults.
 # vm_workloads = {
 #   home-assistant = {
@@ -139,20 +142,76 @@ lxc_workloads = {
 #   }
 # }
 
-# Common VM overrides.
+# Common VM overrides. LXC scalar settings above don't change.
 # vm_workloads = {
 #   home-assistant = {
-#     id            = 1001
-#     image         = "haos"
-#     description   = "Home Assistant OS"
-#     tags          = ["terraform", "haos"]
-#     cpu           = 4
-#     ram           = 8192
-#     disk          = 128
-#     vlan_id       = 123
-#     mac_address   = "<mac-address>"
-#     started       = true
-#     start_on_boot = true
+#     id                  = 1001
+#     image               = "haos"
+#     description         = "Home Assistant OS"
+#     tags                = ["terraform", "haos"]
+#     bios                = "ovmf"
+#     machine             = null
+#     boot_order          = ["scsi0"]
+#     scsi_hardware       = "virtio-scsi-single"
+#     hotplug             = ["disk", "network", "usb"]
+#     os_type             = "l26"
+#     started             = true
+#     start_on_boot       = true
+#     protection          = true
+#     prevent_destroy     = true
+#     reboot_after_update = true
+#     cpu = {
+#       cores      = 4
+#       sockets    = 1
+#       type       = "qemu64"
+#       hotplugged = 0
+#       numa       = false
+#     }
+#     memory = {
+#       dedicated = 8192
+#       floating  = 0
+#       shared    = 0
+#     }
+#     # Add memory hotplug only with cpu.numa = true and guest support.
+#     disk = {
+#       size      = 128
+#       interface = "scsi0"
+#       # Optional tuning: file_format, cache, backup, discard, iothread, ssd, queues.
+#       # datastore_id = "<storage>"
+#     }
+#     agent = {
+#       enabled = true
+#       type    = "virtio"
+#       timeout = "15m"
+#       trim    = false
+#       # wait_for_ip = { ipv4 = true }
+#     }
+#     network_devices = [
+#       {
+#         model       = "virtio"
+#         vlan_id     = 123
+#         mac_address = "<mac-address>"
+#         firewall    = false
+#         # Optional: bridge, disconnected, queues, mtu, rate_limit.
+#       },
+#     ]
+#     efi_disk = {
+#       enabled           = true
+#       type              = "4m"
+#       pre_enrolled_keys = false
+#       # datastore_id = "<storage>"
+#       # file_format  = "raw"
+#     }
+#     # Optional display. Omit it to keep provider defaults.
+#     # vga = { type = "std", memory = 16 }
+#     timeouts = {
+#       create      = 1800
+#       migrate     = 1800
+#       reboot      = 1800
+#       shutdown_vm = 1800
+#       start_vm    = 1800
+#       stop_vm     = 300
+#     }
 #     startup = {
 #       order    = 30
 #       up_delay = 30

@@ -208,16 +208,16 @@ Review the resource and disk deletions before applying `task tf:jarvis-apply -- 
 
 The state defines resource ownership. A `terraform` tag alone doesn't import or delete a container.
 
-One command removes every workload in this root's state. The golden image is
-untouched.
+Don't use a root-wide destroy to remove one container.
+The root also manages optional VM workloads and downloaded VM images.
+VM deletion guards block a root-wide destroy by default.
+See [Workload deletion protection](../../terraform/README.md#workload-deletion-protection).
+Removing a workload leaves its source image in place.
+Removing a `vm_image_downloads` pin deletes that downloaded image from Proxmox.
 
-```sh
-task tf:jarvis-apply -- -destroy -auto-approve
-```
-
-The destroy removes the workloads and their disks. The golden image stays in
-the template storage. To move a workload to a newer image, rebuild it with a
-bumped build number, then change its `template` in the git-ignored tfvars.
+To move an LXC workload to a newer image, rebuild the image with a bumped build number.
+Then change the workload's `template` in the git-ignored tfvars.
+Review the replacement and disk deletions before applying, with owner approval.
 
 ## A second PVE server
 
