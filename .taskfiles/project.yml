@@ -19,6 +19,7 @@ tasks:
       - task: tf:fmt-check
       - task: tf:lint
       - task: tf:validate
+      - task: tf:test-root-inputs
       - task: packer:fmt-check
       - task: packer:validate
 
