@@ -2,7 +2,6 @@ variable "state_passphrase" {
   description = "Passphrase from TF_VAR_state_passphrase."
   type        = string
   sensitive   = true
-  ephemeral   = true
 
   validation {
     condition     = length(var.state_passphrase) >= 16
