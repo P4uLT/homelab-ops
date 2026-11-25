@@ -39,9 +39,13 @@ variable "datasets" {
   type = map(object({
     name = string
     filesystem_acl = optional(object({
-      type           = string
+      preset         = optional(string)
+      group_gid      = optional(number)
+      group_name     = optional(string)
+      group_names    = optional(set(string), [])
+      type           = optional(string)
       inherit_access = optional(bool, false)
-      entries = list(object({
+      entries = optional(list(object({
         tag         = string
         who         = optional(string)
         id          = optional(number)
@@ -51,7 +55,7 @@ variable "datasets" {
         basic_perms = optional(string)
         flags       = optional(map(bool))
         basic_flags = optional(string)
-      }))
+      })), [])
     }))
     aclmode                  = optional(string)
     acltype                  = optional(string)

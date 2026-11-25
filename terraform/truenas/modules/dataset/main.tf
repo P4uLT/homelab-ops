@@ -33,40 +33,6 @@ resource "truenas_dataset" "this" {
   }
 }
 
-data "truenas_filesystem_acl" "this" {
-  for_each = var.dataset.filesystem_acl == null ? {} : { managed = var.dataset.filesystem_acl }
-
-  path = truenas_dataset.this.mountpoint
-}
-
-resource "truenas_filesystem_acl" "this" {
-  for_each = var.dataset.filesystem_acl == null ? {} : { managed = var.dataset.filesystem_acl }
-
-  path      = data.truenas_filesystem_acl.this[each.key].path
-  recursive = false
-  entries = jsonencode([
-    for ace in(each.value.inherit_access ? concat(
-      [for entry in each.value.entries : merge(entry, { default = false })],
-      [for entry in each.value.entries : merge(entry, { default = true })],
-      ) : each.value.entries) : {
-      for key, value in merge(
-        { for key, value in ace : key => value if !contains(["basic_perms", "basic_flags"], key) },
-        ace.basic_perms == null ? {} : { perms = { BASIC = ace.basic_perms } },
-        ace.basic_flags == null ? {} : { flags = { BASIC = ace.basic_flags } }
-      ) : key => value if value != null
-    }
-  ])
-
-  lifecycle {
-    prevent_destroy = true
-
-    precondition {
-      condition     = data.truenas_filesystem_acl.this[each.key].acltype == each.value.type
-      error_message = "The dataset's ACL type must match the declared filesystem ACL."
-    }
-  }
-}
-
 resource "truenas_nfs_share" "this" {
   for_each = var.dataset.nfs == null ? {} : { share = var.dataset.nfs }
 

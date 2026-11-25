@@ -10,7 +10,8 @@ services = {
 
 provision_smb_shares = false
 
-# Optional SMB login. Grant access separately for each dataset.
+# Optional SMB login. Add more users with primary_group = "smb" to share access.
+# Grant the group permissions on each dataset. Use matching keys in user_passwords.
 # groups = {
 #   smb = { name = "smb-users", smb = true }
 # }
@@ -26,3 +27,6 @@ provision_smb_shares = false
 
 # Enables filesystem ACL management from the storage root. Not scoped to a dataset.
 # provision_dataset_acls = true
+
+# Optional account read access for ACL presets that use group_name or group_names.
+# provision_group_lookup = true

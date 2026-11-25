@@ -30,7 +30,8 @@ resource "truenas_privilege" "provisioner" {
   local_groups = [truenas_group.provisioner.gid]
   roles = concat(
     ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE"], var.provision_smb_shares ? ["SHARING_SMB_READ", "SHARING_SMB_WRITE"] : [],
-    var.provision_dataset_acls ? ["FILESYSTEM_ATTRS_READ", "FILESYSTEM_ATTRS_WRITE"] : []
+    var.provision_dataset_acls ? ["FILESYSTEM_ATTRS_READ", "FILESYSTEM_ATTRS_WRITE"] : [],
+    var.provision_group_lookup ? ["ACCOUNT_READ"] : []
   )
   web_shell = false
 }

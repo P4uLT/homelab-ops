@@ -78,6 +78,156 @@ run "mirrors_posix_access_entries_for_inheritance" {
   }
 }
 
+run "plans_the_posix_group_preset" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        preset    = "posix_group_rw_others_ro"
+        group_gid = 12345
+      }
+    }
+  }
+
+  assert {
+    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode(flatten([
+      for inherited in [false, true] : [
+        for tag in ["USER_OBJ", "GROUP_OBJ", "GROUP", "MASK", "OTHER"] : merge({
+          tag     = tag
+          default = inherited
+          perms   = { READ = true, WRITE = contains(["USER_OBJ", "GROUP", "MASK"], tag), EXECUTE = true }
+        }, tag == "GROUP" ? { id = 12345 } : {})
+      ]
+    ]))
+    error_message = "The preset must produce exactly the same ACL as the explicit POSIX rule."
+  }
+
+  assert {
+    condition     = length(data.truenas_group.acl) == 0
+    error_message = "A numeric group ID must not need an account lookup."
+  }
+}
+
+run "resolves_acl_group_name_to_gid" {
+  command = plan
+
+  override_data {
+    target = data.truenas_group.acl
+    values = { gid = 12345 }
+  }
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        preset     = "posix_group_rw_others_ro"
+        group_name = "smb-users"
+      }
+    }
+  }
+
+  assert {
+    condition = (
+      data.truenas_group.acl["managed"].name == "smb-users" &&
+      jsondecode(truenas_filesystem_acl.this["managed"].entries)[2].id == 12345 &&
+      jsondecode(truenas_filesystem_acl.this["managed"].entries)[7].id == 12345 &&
+      !can(jsondecode(truenas_filesystem_acl.this["managed"].entries)[2].who)
+    )
+    error_message = "Resolve the group by name but send its numeric GID in both ACEs."
+  }
+}
+
+run "looks_up_each_group_in_a_preset" {
+  command = plan
+
+  override_data {
+    target = data.truenas_group.acl
+    values = { gid = 12345 }
+  }
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        preset      = "posix_group_rw_others_ro"
+        group_names = ["smb-users", "iso-editors"]
+      }
+    }
+  }
+
+  assert {
+    condition = (
+      toset(keys(data.truenas_group.acl)) == toset(["smb-users", "iso-editors"]) &&
+      data.truenas_group.acl["smb-users"].name == "smb-users" &&
+      data.truenas_group.acl["iso-editors"].name == "iso-editors" &&
+      [for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : ace.id if ace.tag == "GROUP"] == [12345, 12345]
+    )
+    error_message = "Resolve each group by name and emit one access and one inherited entry per distinct GID."
+  }
+}
+
+run "rejects_mixing_singular_and_plural_group_names" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        preset      = "posix_group_rw_others_ro"
+        group_name  = "smb-users"
+        group_names = ["iso-editors"]
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_both_group_name_and_gid" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        preset     = "posix_group_rw_others_ro"
+        group_name = "smb-users"
+        group_gid  = 12345
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_an_unknown_acl_preset" {
+  command = plan
+
+  variables {
+    dataset = {
+      name           = "tank/example"
+      filesystem_acl = { preset = "unknown", group_gid = 12345 }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_mixing_a_preset_with_custom_acl_settings" {
+  command = plan
+
+  variables {
+    dataset = {
+      name           = "tank/example"
+      filesystem_acl = { preset = "posix_group_rw_others_ro", group_gid = 12345, type = "POSIX1E" }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
 run "retains_the_disabled_share_address" {
   command = plan
 

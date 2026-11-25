@@ -3,9 +3,13 @@ variable "dataset" {
   type = object({
     name = string
     filesystem_acl = optional(object({
-      type           = string
+      preset         = optional(string)
+      group_gid      = optional(number)
+      group_name     = optional(string)
+      group_names    = optional(set(string), [])
+      type           = optional(string)
       inherit_access = optional(bool, false)
-      entries = list(object({
+      entries = optional(list(object({
         tag         = string
         who         = optional(string)
         id          = optional(number)
@@ -15,7 +19,7 @@ variable "dataset" {
         basic_perms = optional(string)
         flags       = optional(map(bool))
         basic_flags = optional(string)
-      }))
+      })), [])
     }))
     aclmode                  = optional(string)
     acltype                  = optional(string)
@@ -105,7 +109,34 @@ variable "dataset" {
   nullable = false
 
   validation {
-    condition = var.dataset.filesystem_acl == null ? true : try(
+    condition = var.dataset.filesystem_acl == null ? true : (
+      var.dataset.filesystem_acl.preset == null
+      ? var.dataset.filesystem_acl.group_gid == null && var.dataset.filesystem_acl.group_name == null && length(var.dataset.filesystem_acl.group_names) == 0
+      : try(
+        var.dataset.filesystem_acl.preset == "posix_group_rw_others_ro" &&
+        length(compact([
+          var.dataset.filesystem_acl.group_gid == null ? "" : "group_gid",
+          var.dataset.filesystem_acl.group_name == null ? "" : "group_name",
+          length(var.dataset.filesystem_acl.group_names) == 0 ? "" : "group_names",
+        ])) == 1 &&
+        (var.dataset.filesystem_acl.group_gid == null ? true :
+          var.dataset.filesystem_acl.group_gid > 0 && floor(var.dataset.filesystem_acl.group_gid) == var.dataset.filesystem_acl.group_gid
+        ) &&
+        alltrue([
+          for name in concat(var.dataset.filesystem_acl.group_name == null ? [] : [var.dataset.filesystem_acl.group_name], tolist(var.dataset.filesystem_acl.group_names)) :
+          trimspace(name) != "" && trimspace(name) == name
+        ]) &&
+        var.dataset.filesystem_acl.type == null &&
+        !var.dataset.filesystem_acl.inherit_access &&
+        length(var.dataset.filesystem_acl.entries) == 0,
+        false
+      )
+    )
+    error_message = "Use a known ACL preset with exactly one of group_gid, group_name, or group_names, and no custom ACL settings."
+  }
+
+  validation {
+    condition = var.dataset.filesystem_acl == null ? true : var.dataset.filesystem_acl.preset != null ? true : try(
       contains(["POSIX1E", "NFS4"], var.dataset.filesystem_acl.type) &&
       length(var.dataset.filesystem_acl.entries) > 0 &&
       alltrue([

@@ -131,6 +131,13 @@ variable "users" {
   }
 }
 
+variable "provision_group_lookup" {
+  description = "Grant account and group read access to resolve ACL group names from the storage root."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "provision_dataset_acls" {
   description = "Grant the storage identity filesystem ACL read and write access. TrueNAS doesn't scope these roles to a dataset."
   type        = bool
