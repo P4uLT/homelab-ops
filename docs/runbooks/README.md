@@ -12,6 +12,11 @@ Check mode can change a node.
 
 - [Bootstrap PVE access](bootstrap-pve-access.md): create the workload API token.
 - [Bootstrap TrueNAS](bootstrap-truenas.md): create the pool and provisioning access.
+- [Share over NFS](truenas-share-nfs.md): serve a dataset to NFS clients.
+- [Share over SMB](truenas-share-smb.md): serve a dataset to Windows clients.
+- [Share over SMB and NFS](truenas-share-multiprotocol.md): serve one dataset to both.
+- [Set dataset permissions](truenas-dataset-permissions.md): grant access through OpenTofu.
+- [Recover TrueNAS storage](recover-truenas-storage.md): adopt a pool or recreate a dataset.
 - [Bootstrap the state backend](bootstrap-tf-backend.md): create the OVH S3 bucket and credentials.
 - [Rotate the S3 credential](rotate-s3-credential.md): replace the backend key pair.
 - [Move Terraform code or state](move-tf-state.md)
