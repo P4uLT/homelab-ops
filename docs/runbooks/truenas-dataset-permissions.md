@@ -20,15 +20,15 @@ For a share with one or more publishing groups, declare the preset:
 
 ```hcl
 filesystem_acl = {
-  preset      = "nfs4_group_rw_others_ro"
+  preset      = "nfs4_group_rw"
   group_names = ["SMB_GROUP"]
 }
 ```
 
 Replace `SMB_GROUP` with the group that publishes files, such as `smb-users`.
 
-The preset grants the owner full control and each group modify access. Every
-entry inherits to new children. The dataset needs an NFSv4 ACL: create it with
+The preset grants the owner full control and each group modify access. Other
+identities get nothing, and every entry inherits to new children. The dataset needs an NFSv4 ACL: create it with
 `share_type = "SMB"` or `"MULTIPROTOCOL"`, or set `acltype = "nfsv4"`.
 
 Name one group with `group_gid`, `group_name`, or `group_names`. Use only one of

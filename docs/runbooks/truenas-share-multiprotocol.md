@@ -31,7 +31,7 @@ iso = {
   recordsize  = "1M"
   compression = "lz4"
   filesystem_acl = {
-    preset      = "nfs4_group_rw_others_ro"
+    preset      = "nfs4_group_rw"
     group_names = ["SMB_GROUP"]
   }
   nfs = {

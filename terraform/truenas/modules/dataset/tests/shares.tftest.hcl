@@ -95,7 +95,7 @@ run "plans_the_nfs4_group_preset" {
       name       = "tank/example"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset      = "nfs4_group_rw_others_ro"
+        preset      = "nfs4_group_rw"
         group_names = ["smb-users"]
       }
     }
@@ -124,7 +124,7 @@ run "allows_an_acl_conversion_in_the_same_apply" {
       acltype    = "nfsv4"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset    = "nfs4_group_rw_others_ro"
+        preset    = "nfs4_group_rw"
         group_gid = 12345
       }
     }
@@ -143,7 +143,7 @@ run "rejects_the_nfs4_preset_on_a_posix_dataset" {
     dataset = {
       name           = "tank/example"
       share_type     = "GENERIC"
-      filesystem_acl = { preset = "nfs4_group_rw_others_ro", group_gid = 12345 }
+      filesystem_acl = { preset = "nfs4_group_rw", group_gid = 12345 }
     }
   }
 
@@ -163,7 +163,7 @@ run "resolves_acl_group_name_to_gid" {
       name       = "tank/example"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset     = "nfs4_group_rw_others_ro"
+        preset     = "nfs4_group_rw"
         group_name = "smb-users"
       }
     }
@@ -192,7 +192,7 @@ run "looks_up_each_group_in_a_preset" {
       name       = "tank/example"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset      = "nfs4_group_rw_others_ro"
+        preset      = "nfs4_group_rw"
         group_names = ["smb-users", "iso-editors"]
       }
     }
@@ -217,7 +217,7 @@ run "rejects_mixing_singular_and_plural_group_names" {
       name       = "tank/example"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset      = "nfs4_group_rw_others_ro"
+        preset      = "nfs4_group_rw"
         group_name  = "smb-users"
         group_names = ["iso-editors"]
       }
@@ -235,7 +235,7 @@ run "rejects_both_group_name_and_gid" {
       name       = "tank/example"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset     = "nfs4_group_rw_others_ro"
+        preset     = "nfs4_group_rw"
         group_name = "smb-users"
         group_gid  = 12345
       }
@@ -264,7 +264,7 @@ run "rejects_mixing_a_preset_with_custom_acl_settings" {
   variables {
     dataset = {
       name           = "tank/example"
-      filesystem_acl = { preset = "nfs4_group_rw_others_ro", group_gid = 12345, type = "NFS4" }
+      filesystem_acl = { preset = "nfs4_group_rw", group_gid = 12345, type = "NFS4" }
     }
   }
 
@@ -319,7 +319,7 @@ run "allows_a_reviewed_replacement" {
       protect    = false
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset      = "nfs4_group_rw_others_ro"
+        preset      = "nfs4_group_rw"
         group_names = ["smb-users"]
       }
     }

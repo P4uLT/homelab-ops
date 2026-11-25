@@ -51,7 +51,7 @@ locals {
   ]
 
   filesystem_acl = local.acl == null ? null : merge(local.acl, {
-    type           = local.acl.preset == "nfs4_group_rw_others_ro" ? "NFS4" : local.acl.type
+    type           = local.acl.preset == "nfs4_group_rw" ? "NFS4" : local.acl.type
     inherit_access = local.acl.inherit_access
   })
 

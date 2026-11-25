@@ -135,7 +135,7 @@ variable "dataset" {
       var.dataset.filesystem_acl.preset == null
       ? var.dataset.filesystem_acl.group_gid == null && var.dataset.filesystem_acl.group_name == null && length(var.dataset.filesystem_acl.group_names) == 0
       : try(
-        var.dataset.filesystem_acl.preset == "nfs4_group_rw_others_ro" &&
+        var.dataset.filesystem_acl.preset == "nfs4_group_rw" &&
         length(compact([
           var.dataset.filesystem_acl.group_gid == null ? "" : "group_gid",
           var.dataset.filesystem_acl.group_name == null ? "" : "group_name",
@@ -159,7 +159,7 @@ variable "dataset" {
 
   validation {
     condition = var.dataset.filesystem_acl == null ? true : try(
-      var.dataset.filesystem_acl.preset != "nfs4_group_rw_others_ro" ||
+      var.dataset.filesystem_acl.preset != "nfs4_group_rw" ||
       contains(["MULTIPROTOCOL", "SMB"], coalesce(var.dataset.share_type, "")) ||
       lower(coalesce(var.dataset.acltype, "")) == "nfsv4",
       false
