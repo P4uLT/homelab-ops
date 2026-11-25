@@ -1,4 +1,8 @@
-mock_provider "truenas" {}
+mock_provider "truenas" {
+  mock_data "truenas_service" {
+    defaults = { running = true, enabled = true }
+  }
+}
 
 variables {
   truenas_host     = "nas.example.invalid"

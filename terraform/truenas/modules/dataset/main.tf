@@ -33,6 +33,16 @@ resource "truenas_dataset" "this" {
   }
 }
 
+# A share created while its service is stopped fails later, at the client.
+data "truenas_service" "files" {
+  for_each = toset(concat(
+    var.dataset.nfs == null ? [] : ["nfs"],
+    var.dataset.smb == null ? [] : ["cifs"],
+  ))
+
+  name = each.value
+}
+
 locals {
   nfs_share = var.dataset.nfs == null ? {} : { share = var.dataset.nfs }
 
@@ -60,6 +70,13 @@ resource "truenas_nfs_share" "this" {
   security         = each.value.security
 
   depends_on = [truenas_filesystem_acl.this]
+
+  lifecycle {
+    precondition {
+      condition     = data.truenas_service.files["nfs"].running
+      error_message = "Start the NFS service on TrueNAS before creating this export."
+    }
+  }
 }
 
 resource "truenas_smb_share" "this" {
@@ -87,4 +104,11 @@ resource "truenas_smb_share" "this" {
   timemachine_quota = each.value.timemachine_quota
 
   depends_on = [truenas_filesystem_acl.this]
+
+  lifecycle {
+    precondition {
+      condition     = data.truenas_service.files["cifs"].running
+      error_message = "Start the SMB service on TrueNAS before creating this share."
+    }
+  }
 }

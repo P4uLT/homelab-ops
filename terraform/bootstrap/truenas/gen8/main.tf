@@ -26,7 +26,7 @@ resource "truenas_user" "provisioner" {
 }
 
 locals {
-  storage_roles = ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE"]
+  storage_roles = ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE", "SERVICE_READ"]
 
   # Each optional capability adds only the roles its operations require.
   share_roles     = var.provision_smb_shares ? ["SHARING_SMB_READ", "SHARING_SMB_WRITE"] : []

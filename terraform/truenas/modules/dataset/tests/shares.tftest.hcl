@@ -1,4 +1,7 @@
 mock_provider "truenas" {
+  mock_data "truenas_service" {
+    defaults = { running = true, enabled = true }
+  }
 
   mock_resource "truenas_dataset" {
     defaults = { mountpoint = "/mnt/tank/example" }
