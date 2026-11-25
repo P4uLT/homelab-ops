@@ -75,6 +75,13 @@ tasks:
       tofu -chdir=terraform/proxmox/jarvis test
       -filter=tests/settings.tftest.hcl {{.CLI_ARGS}}
 
+  test-pve-bootstrap:
+    desc: Test the PVE access bootstrap with a mock provider. No host contact.
+    preconditions:
+      - sh: test -d terraform/bootstrap/pve/jarvis/.terraform/providers
+        msg: "Run task tf:init before testing the access root."
+    cmd: tofu -chdir=terraform/bootstrap/pve/jarvis test {{.CLI_ARGS}}
+
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
     dotenv: [".env.tf"]

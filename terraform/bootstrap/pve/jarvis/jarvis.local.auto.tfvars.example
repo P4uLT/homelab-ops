@@ -4,3 +4,6 @@
 
 pve_endpoint  = "https://<address>:8006/"
 pve_api_token = "root@pam!terraform-bootstrap=<secret>"
+
+# Set false only for a clean PVE node with a fresh access state.
+# adopt_existing_access = false
