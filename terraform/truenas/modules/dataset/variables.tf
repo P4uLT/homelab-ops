@@ -167,14 +167,30 @@ variable "dataset" {
     error_message = "The NFSv4 preset needs a dataset created with the MULTIPROTOCOL or SMB preset, or acltype = nfsv4."
   }
 
+  # Keep identity and shape apart. One condition joined with || would skip
+  # every shape check as soon as an entry names an identity.
+  validation {
+    condition = var.dataset.filesystem_acl == null ? true : var.dataset.filesystem_acl.preset != null ? true : try(
+      alltrue([
+        for ace in var.dataset.filesystem_acl.entries :
+        length(compact([
+          ace.who == null ? "" : "who",
+          ace.id == null ? "" : "id",
+          ace.group == null ? "" : "group",
+          ace.user == null ? "" : "user",
+        ])) <= 1
+      ]),
+      false
+    )
+    error_message = "Give each ACL entry at most one identity: who, id, group, or user."
+  }
+
   validation {
     condition = var.dataset.filesystem_acl == null ? true : var.dataset.filesystem_acl.preset != null ? true : try(
       contains(["POSIX1E", "NFS4"], var.dataset.filesystem_acl.type) &&
       length(var.dataset.filesystem_acl.entries) > 0 &&
       alltrue([
         for ace in var.dataset.filesystem_acl.entries :
-        length(compact([ace.who == null ? "" : "who", ace.id == null ? "" : "id", ace.group == null ? "" : "group", ace.user == null ? "" : "user"])) == 1 ||
-        (ace.id == null && ace.who == null && ace.group == null && ace.user == null) &&
         (ace.group == null || ace.tag == "GROUP") &&
         (ace.user == null || ace.tag == "USER") &&
         ((ace.perms == null) != (ace.basic_perms == null)) &&
@@ -185,7 +201,7 @@ variable "dataset" {
       ]),
       false
     )
-    error_message = "Declare a non-empty POSIX1E or NFS4 ACL. Use one permission form and at most one identity and flag form per entry."
+    error_message = "Declare a non-empty POSIX1E or NFS4 ACL. Use one permission form and at most one flag form per entry."
   }
 
   validation {

@@ -335,6 +335,60 @@ run "allows_a_reviewed_replacement" {
   }
 }
 
+run "rejects_an_invalid_type_on_a_named_entry" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        type = "NFS4"
+        entries = [
+          { tag = "GROUP", group = "smb-users", type = "BOGUS", perms = { READ = true } },
+        ]
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_two_permission_forms_on_a_named_entry" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        type = "NFS4"
+        entries = [
+          { tag = "GROUP", group = "smb-users", type = "ALLOW", perms = { READ = true }, basic_perms = "MODIFY" },
+        ]
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_two_identities_on_one_entry" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        type = "NFS4"
+        entries = [
+          { tag = "GROUP", group = "smb-users", id = 12345, type = "ALLOW", basic_perms = "MODIFY" },
+        ]
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
 run "rejects_an_unknown_dataset_preset" {
   command = plan
 
