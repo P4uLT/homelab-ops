@@ -1,5 +1,6 @@
 """Check that the Gen8 catalog exposes the full dataset module input type."""
 
+from difflib import unified_diff
 from pathlib import Path
 
 
@@ -20,7 +21,8 @@ def main() -> None:
     datasets = type_body(root, "datasets", "map(object(")
     dataset = type_body(module / "variables.tf", "dataset", "object(")
     if datasets != dataset:
-        raise SystemExit("Gen8 datasets must expose the same object type as the dataset module")
+        diff = "\n".join(unified_diff(dataset, datasets, "module/dataset", "gen8/datasets", lineterm=""))
+        raise SystemExit(f"Gen8 datasets must expose the same object type as the dataset module\n{diff}")
 
 
 if __name__ == "__main__":
