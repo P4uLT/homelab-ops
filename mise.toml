@@ -18,7 +18,9 @@ lychee = "0.24.2"
 packer = "1.16.0"
 # Ops-only OVHcloud CLI: mint API keys once, debug the state bucket.
 # The pipeline itself runs on OpenTofu, not on this CLI.
-"github:ovh/ovhcloud-cli" = "0.14.0"
+# 0.11.0 to 0.15.0 shipped compromised release assets on 2026-10-19.
+# Never pin that range; 0.10.0 and 0.16.0 are clean.
+"github:ovh/ovhcloud-cli" = "0.16.0"
 
 [env]
 # Absolute, cwd-proof age-key path: [env] entries support {{ config_root }}
