@@ -20,7 +20,7 @@ packer = "1.16.0"
 # The pipeline itself runs on OpenTofu, not on this CLI.
 # 0.11.0 to 0.15.0 shipped compromised release assets on 2026-10-19.
 # Never pin that range; 0.10.0 and 0.16.0 are clean.
-"github:ovh/ovhcloud-cli" = "0.16.0"
+"github:ovh/ovhcloud-cli" = "0.17.2"
 
 [env]
 # Absolute, cwd-proof age-key path: [env] entries support {{ config_root }}
