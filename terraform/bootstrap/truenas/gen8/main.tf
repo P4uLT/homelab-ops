@@ -26,6 +26,9 @@ resource "truenas_user" "provisioner" {
 }
 
 locals {
+  # Role names come from the TrueNAS middleware role.py for 25.10, not from the
+  # provider docs. The first apply is the check that TrueNAS accepts them.
+  # https://github.com/truenas/middleware/blob/TS-25.10.0/src/middlewared/middlewared/role.py
   storage_roles = ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE", "SERVICE_READ"]
 
   # Each optional capability adds only the roles its operations require.
