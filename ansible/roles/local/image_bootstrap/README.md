@@ -4,18 +4,16 @@ Bootstrap the module interpreter and verify the expected Packer build container.
 
 ## Decision and scope
 
-Keep the existing image capability, using native `raw`, `setup`, and `assert` modules.
-Interpreter bootstrap alone doesn't cover its `pct` shell boundaries and builder identity check.
-This role isn't population package policy or a general Python installation role.
+Use native `raw`, `setup`, and `assert` modules for image bootstrap and identity checks.
+This role doesn't define population packages or general Python installation policy.
 
-Packer's native Ansible provisioner and direct Ansible runs reach the Debian
-build container through `proxmox_pct_remote`. The connection plugin uses PVE
-`pct exec` and needs privileged access inside the container.
+Packer and direct Ansible runs use `proxmox_pct_remote` with PVE `pct exec`.
+The connection requires privileged access inside the Debian build container.
 Call this role before content roles, with play-level fact gathering disabled.
 
 ## Interface
 
-The required input is declared in [argument specifications](meta/argument_specs.yml).
+The [argument specifications](meta/argument_specs.yml) define the required input.
 The caller binds Packer's container identifier to `image_bootstrap_vmid`.
 The expected hostname is `builder-<identifier>`, matching the image builder's contract.
 
@@ -30,8 +28,8 @@ The explicit `/bin/sh -c` keeps shell operators inside the container.
 The connection plugin joins command arguments, so uncontained operators could run on the Proxmox hypervisor.
 A connection failure remains a failure rather than becoming a successful missing-interpreter result.
 
-An existing interpreter skips installation. The role doesn't separately verify its apt bindings.
-The identity check runs after bootstrap, before content provisioning.
+If Python exists, the role skips installation without separately checking its apt bindings.
+Identity verification follows bootstrap and precedes content provisioning.
 
 ## Verification
 

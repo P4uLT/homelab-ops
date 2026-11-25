@@ -1,37 +1,29 @@
 # Runbooks
 
-Operational procedures for servers, storage, and the images they run. Every
-runbook touches a real host or a billable resource, so get owner approval
-before the run.
+Get owner approval before host contact or changes to cloud resources.
+Check mode can change a node.
 
 ## Servers
 
-- [Add a Proxmox VE node](onboard-pve.md): inventory entry, secrets, SSH
-  access, storages, first image build.
-- [Pin a host key](pin-host-keys.md): verify a node fingerprint and pin it
-  before Ansible contacts it.
+- [Add a Proxmox VE node](onboard-pve.md): inventory, access, storage, and images.
+- [Pin a host key](pin-host-keys.md): verify the fingerprint before connecting.
 
 ## Terraform access and state
 
-- [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md):
-  mint the API token the workload roots use.
-- [Bootstrap the Terraform state backend](bootstrap-tf-backend.md): the
-  one-time OVH S3 bucket and its credentials.
-- [Rotate the S3 credential](rotate-s3-credential.md): replace a leaked or
-  ageing access key pair.
+- [Bootstrap PVE access](bootstrap-pve-access.md): create the workload API token.
+- [Bootstrap the state backend](bootstrap-tf-backend.md): create the OVH S3 bucket and credentials.
+- [Rotate the S3 credential](rotate-s3-credential.md): replace the backend key pair.
+- [Move Terraform code or state](move-tf-state.md)
+- [Recover Terraform state](recover-tf-state.md)
 
 ## Images and workloads
 
-- [Build the golden images](build-base-image.md): Packer builds a container
-  template, Ansible provisions it, and Packer packs it as a versioned archive.
-- [Provision an LXC workload with Terraform](provision-pve-ct.md): clone a
-  golden image into a running container.
+- [Build and qualify golden images](build-base-image.md)
+- [Provision an LXC workload](provision-pve-ct.md)
+- [Override the Packer plugin locally](override-packer-plugin.md): install a development binary and restore the pinned release, without node contact.
 
 ## Design
 
-The why behind these procedures lives outside this directory:
-
 - [Terraform state design](../../terraform/BACKEND.md)
 - [OVH object storage conventions](../object-storage.md)
-- [OVH least privilege](../ovh-least-privilege.md): why the bootstrap
-  credential is broad, and what replaces it.
+- [OVH least privilege](../ovh-least-privilege.md)

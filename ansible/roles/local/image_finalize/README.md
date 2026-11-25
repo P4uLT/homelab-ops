@@ -4,18 +4,15 @@ Seal a Debian golden image without leaving a shared clone identity.
 
 ## Decision and scope
 
-Keep finalization in the image lifecycle rather than a population baseline.
-A generic package or service role doesn't own these combined sealing postconditions.
-
-Run this role after the final boot and package installation.
-Later boot or installation steps can recreate identity and cache state.
+Run after the final boot and package installation: later steps can recreate
+identity or cache state. Sealing is an image operation, separate from runtime
+population policy.
 The target needs privileged access, systemd, and facts gathered earlier in the build.
 Missing build-time facts fail before identity changes.
 
 ## Interface
 
-The required image name, version, and parent are declared in
-[argument specifications](meta/argument_specs.yml).
+The [argument specifications](meta/argument_specs.yml) require the image name, version, and parent.
 The build marker uses those inputs and the previously gathered fact timestamp.
 
 ## Flow
@@ -28,11 +25,9 @@ The build marker uses those inputs and the previously gathered fact timestamp.
 - [Verification](tasks/verify.yml): require an existing empty machine identity and no host keys.
 
 The root password lock has a read-only verification inside the identity phase.
-The fixed paths, root lock, and [host-key unit](files/ssh-host-keys.service) are sealing invariants,
-not configurable population choices.
-
-The unit needs its daemon reload before enabling. Keep that ordering rather than
-deferring it to a handler after sealing.
+Keep the fixed paths, root lock, and [host-key unit](files/ssh-host-keys.service)
+outside population configuration. Reload the daemon before enabling the unit,
+instead of deferring this to a handler after sealing.
 
 ## Verification limits
 
@@ -41,4 +36,4 @@ A marker timestamp and cache-directory recreation can report changes on a repeat
 Don't describe this lifecycle role as proof of a runtime baseline's idempotence.
 
 Use image syntax checks, production-profile lint, and `task verify`.
-Real provisioning and checking a clone's identity require owner approval.
+Get owner approval before real provisioning or clone-identity checks.

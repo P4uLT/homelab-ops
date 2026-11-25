@@ -1,11 +1,8 @@
 # Build and qualify the golden images
 
-The build tasks are operational, but the pinned `proxmox-lxc` plugin hasn't
-passed the proposed release-safety qualification. Get owner approval before
-node contact. Treat the limits below as accepted build risks.
-
-Use the [Packer reference](../../packer/README.md) for the layout,
-image contents, and local checks.
+Get owner approval before node contact. The pinned `proxmox-lxc` plugin is
+operational but hasn't passed release-safety qualification. Review its risks below.
+The [Packer reference](../../packer/README.md) covers layout and local checks.
 
 ## 1. Review the plugin limits
 
@@ -20,10 +17,9 @@ The current plugin doesn't enforce all these controls:
 - Publish a complete archive atomically on the actual NAS storage.
   Reject destination collisions without changing existing bytes.
 
-A normal build may proceed after owner approval, but don't describe these
-controls as implemented. Record the selected binary's path, digest, and
-version with qualification evidence. A local binary carrying the upstream
-version label isn't upstream-release evidence.
+Proceed only within the approved scope. Record the selected binary's path,
+digest, and version with qualification evidence. A local binary reporting an
+upstream version label isn't evidence of an upstream release.
 
 The current Ansible image connection enables host-key auto-add for paramiko.
 Preverify its key as described in [Pin a host key](pin-host-keys.md).
@@ -61,7 +57,7 @@ Use a pseudo-terminal if Ansible requires one.
    A protected key or loaded agent must work on both qualified connection paths.
    A password-only plugin connection doesn't establish Ansible access.
 4. Select the exact Debian 13 vendor parent basename for base.
-   Obtain its digest from trusted vendor evidence and verify the stored bytes.
+   Get its digest from trusted vendor evidence. Check the stored bytes against that digest.
    A checksum computed from an untrusted download alone doesn't establish trust.
 5. For Docker, select an already qualified base archive and its retained digest.
    Keep the full parent basename, including its build ID.
@@ -72,7 +68,7 @@ Don't infer a child product ID from its parent filename.
 ## 4. Check the local configuration
 
 Run `task verify`. Review `git status --short` before a build.
-Confirm that the selected recipe contains the intended exact parent basename.
+Check that the selected recipe contains the intended exact parent basename.
 The repository doesn't enforce a clean source tree for builds.
 
 Don't add automatic `.auto.pkrvars.hcl` or `.auto.pkrvars.json` files to the
@@ -104,7 +100,7 @@ After an approved build, retain `packer/manifests/<build-id>/packer.json`.
 
 ## 6. Qualify the candidate archive
 
-Don't adopt the candidate until every check passes.
+Adopt the candidate only after all checks pass.
 
 1. Verify that the published archive is complete and readable.
    Compute its digest from the published bytes, not a temporary dump.
@@ -120,7 +116,7 @@ Don't adopt the candidate until every check passes.
    Check that `/var/lib/apt/lists/` has no package lists.
    Check for temporary connection files and private keys.
    First-boot state isn't a substitute for archive inspection.
-3. Create and start two approved throwaway clones from the exact archive.
+3. Create two approved throwaway clones from the exact archive. Start both clones.
    Use separate approved identifiers and network settings.
    Record both identifiers against the archive digest.
 4. In each clone, compare `/etc/image-build-info` with the manifest.
@@ -143,22 +139,21 @@ Don't adopt the candidate until every check passes.
    ```
 
    Record its expected result and exit code.
-10. Stop and remove only the approved clones whose ownership is proven.
+10. Stop only the approved clones whose ownership is proven. Remove only those clones.
     Leave failed candidates unqualified.
 
 ## 7. Retain evidence and select releases
 
-Record every check in private `qualification.md`, beside the checksum and
-native manifest. Include:
+Record results in private `qualification.md` beside the checksum and manifest:
 
 - Archive name, build ID, output digest, and parent reference/digest.
 - Source revision and the actual tool/plugin binary identity.
 - Clone identifiers, check results, and qualified or failed outcome.
 - The approved durable evidence location.
 
-Copy that evidence to an owner-approved private durable location with the
-retained archives. An ignored workstation directory isn't a recovery copy.
-Review manifests and logs for private connection data before sharing them.
+Copy evidence and archives to approved private durable storage.
+An ignored workstation directory isn't a recovery copy.
+Review manifests and logs for private connection data before sharing.
 
 Retain N and N−1 for each image kind, product, and architecture.
 N−1 is the previous selected qualified release.

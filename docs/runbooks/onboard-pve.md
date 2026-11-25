@@ -3,13 +3,10 @@
 Keep addresses and credentials in SOPS-encrypted group variables. See
 [SOPS and age procedures](../sops.md) for the encryption itself.
 
-Four sections below contact the node: **Create the users**, **Onboard the
-machine**, **Storages**, and **Golden images**. Get owner approval before you
-start them. Check mode can change the node too.
+Get owner approval before host contact, including SSH scans, convergence,
+onboarding, storage changes, and builds. Check mode can also change the node.
 
 ## Inventory and secrets
-
-Three steps put the node on paper before anything touches it.
 
 1. Add `grp_servers_proxmox_<node>` to
    `ansible/inventory/servers/groups.yml`, then add the hostname to
@@ -23,8 +20,6 @@ Three steps put the node on paper before anything touches it.
 
 ## SSH access
 
-These two steps give you login and prove the host is the one you expect.
-
 1. Add the node to `~/.ssh/config`. Use `StrictHostKeyChecking accept-new` and
    the automation key. The block pattern is in
    [SSH key and host-key practices](../ssh.md). The key must be reachable by
@@ -36,8 +31,6 @@ These two steps give you login and prove the host is the one you expect.
 
 ## Create the users
 
-Four steps run the role and prove the credential it needs.
-
 1. Run the local checks: `task verify`.
 2. Preview the changes: `task ansible:converge-check HOST=<node>`. Set
    `HOST=grp_servers_proxmox` only when you intend to target every PVE node.
@@ -48,8 +41,8 @@ Four steps run the role and prove the credential it needs.
    task ansible:converge HOST=<node> -- -e @/tmp/skip-storages.yml
    ```
 
-   The file form survives the shell layers. An inline `-e "pve_storages=[]"`
-   becomes the string `[]` and breaks the role.
+   Use the file form. The shell layers turn inline `-e "pve_storages=[]"` into
+   the string `[]`, which breaks the role.
 
    The Terraform access chain isn't part of this run. It comes from the
    node's own frozen root under `terraform/bootstrap/pve/`, created by copying
@@ -61,27 +54,23 @@ Four steps run the role and prove the credential it needs.
 
 ## Onboard the machine
 
-The node's own users aren't the fleet account. Onboarding gives the machine the
-account the whole fleet reaches it with, using the identity the node still
-ships. It proves that account, then closes password login.
-
-This contacts the node and closes a login. Get owner approval first.
+Onboarding creates the fleet account using the node's initial login identity.
+It verifies access and privilege escalation before disabling password login.
+This is separate from the node-specific users created above and requires owner approval.
 
 1. Check the console. A node needs the PVE console or a management card,
    reachable and tested: the run ends by closing password login.
-2. For a PVE node, give the image build a key. It reaches the node as `root`
-   with a password, so closing password login breaks it. Set `pve_ssh_key_path`
-   in `packer/hosts/<node>.local.pkrvars.hcl` and load that key.
-3. Onboard it, passing the identity the node answers to today:
+2. Configure key-based image-build access before disabling password login.
+   Set `pve_ssh_key_path` in `packer/hosts/<node>.local.pkrvars.hcl`.
+   Load the key for `root` access to the PVE node.
+3. Onboard with the initial login identity:
 
    ```sh
    task ansible:onboard HOST=<node> IDENTITY=root
    ```
 
-   The run creates the account, proves it answers and escalates, then closes
-   password login. Each phase gates the next, so a broken key stops the run
-   before anything is closed.
-4. Confirm the fleet's own contract holds:
+   The run disables password login only after the account and escalation checks pass.
+4. Check the fleet account:
 
    ```sh
    task ansible:playbook -- playbooks/servers/system/users.yml -l <node>
@@ -89,20 +78,16 @@ This contacts the node and closes a login. Get owner approval first.
 
    Expect `changed=0`, which says the account was already complete.
 
-The identity passed at onboarding is stored nowhere. `ansible_user` in
-`ansible/inventory/servers/group_vars/all/vars.yml` names the fleet account
-before the run, during it, and after it. Root keeps working by key, and a
-cluster needs that: the play's header says why.
+Onboarding doesn't store the initial identity.
+`ansible_user` in `ansible/inventory/servers/group_vars/all/vars.yml` remains
+the fleet account. Root key access remains available for cluster operations.
 
 ## Storages
 
-The node serves container disks from the NAS, so the export has to exist first.
-
-1. Apply the storage configuration: `task ansible:converge HOST=<node>`. Before running
-   it: create the NFS export `/export/Proxmox` on the NAS and allow the node
-    IP. Check the `pve_storages` values in the shared group secrets
-    (`task sops:decrypt -- ...`). After the run, check Datacenter → Storage in
-    the PVE UI.
+1. Create the NAS NFS export `/export/Proxmox` and allow the node IP.
+2. Check `pve_storages` in the shared group secrets (`task sops:decrypt -- ...`).
+3. With owner approval, apply `task ansible:converge HOST=<node>`.
+4. Check Datacenter → Storage in the PVE UI.
 
 ## Golden images
 
@@ -113,15 +98,15 @@ Adding another node needs approved public and private node files.
 2. Keep private connection inputs in `<node>.local.pkrvars.hcl`, mode 600.
 3. Pin the exact parent basename in the selected recipe.
    Base uses a vendor parent. Docker uses a qualified base archive.
-4. Get owner approval, then run
+4. With owner approval, run
    `task packer:build RECIPE=debian-13/lxc/base HOST=<node>`.
    Use `task packer:build-all HOST=<node>` only for the approved development scope.
-5. Qualify and retain the archive before Terraform selects it. See
+5. Qualify the archive before Terraform selects it. Retain the qualified archive. See
    [Build and qualify the golden images](build-base-image.md).
 
-## Clean up
+## Remove reviewed logs
 
-Review `ansible/config/tmp/ansible.log`, then delete it.
+Review `ansible/config/tmp/ansible.log`. Delete the reviewed log.
 
 ## Next steps
 

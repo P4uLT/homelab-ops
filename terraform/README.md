@@ -1,53 +1,45 @@
 # terraform/
 
-Infrastructure as code for Proxmox VE and TrueNAS, on OpenTofu.
+OpenTofu roots and modules, grouped by provider and target.
 
-The tree groups by provider category. A category holds one root per
-target.
+## Layout
 
-- `proxmox/` holds one root per PVE server, plus `proxmox/modules/` for
-  what those roots share. The PVE resources use the
+- `proxmox/`: one root per PVE server, using the
   [bpg provider](https://github.com/bpg/terraform-provider-proxmox).
-  `proxmox/jarvis/` owns LXC workloads and optional imported-image VMs through
-  separate maps in its git-ignored tfvars. An apply writes an Ansible inventory
-  fragment for each LXC workload:
-  `ansible/inventory/servers/iac.tf.<node>.yml`. Each LXC workload joins
-  `grp_servers_immutable` through a `grp_servers_immutable_<host>` leaf. The leaf
-  repeats its parent's name and replaces hyphens with underscores. The fragment
-  includes the LXC hostname and container ID, but no address.
-  A later PVE server gets its own root, named after it.
-- `proxmox/modules/lxc/` wraps one LXC workload: a golden image clone,
-  started, addressed by DHCP unless the caller pins a static address from its
-  git-ignored tfvars. Node facts live in the calling root, in its `locals.tf`.
-- `proxmox/modules/vm/` wraps one VM booted from an imported QCOW2 image.
-  The Jarvis root owns server-side downloads and keeps VM workloads out of Linux Ansible.
-  A declared download pin owns its source image. Removing a workload leaves the
-  image. Removing the pin deletes it. Existing managed images enter state
-  through conditional imports. `vm_image_files` reads existing files without
-  taking ownership. Downloads use the API. VM disk imports use SSH with an
-  agent key.
-- `truenas/` imports datasets, NFS shares, and snapshots. Everything that
-  democratic-csi creates stays out of Terraform management.
-  Planned. The directory doesn't exist yet.
-- `talos-lab/` holds discovery VMs only. Production Talos nodes are
-  bare metal and stay outside Terraform. Planned.
-- `bootstrap/` mints credentials and stays frozen. `bootstrap/ovh/` owns the
-  state backend, and is the only root with a local state. `bootstrap/pve/<node>/`
-  owns one PVE node's Terraform access chain.
+  `proxmox/jarvis/` defines LXC workloads and imported-image VMs in separate
+  maps in its git-ignored tfvars. Node facts are in the root's `locals.tf`.
+- `proxmox/modules/lxc/`: one running container cloned from a golden image.
+  DHCP is the default, with optional static addressing in tfvars.
+- `proxmox/modules/vm/`: one VM booted from an imported QCOW2 image.
+  The Jarvis root manages API downloads and excludes VMs from Linux Ansible.
+  Disk imports use SSH with an agent key. Conditional imports adopt managed
+  images, while `vm_image_files` references existing files without managing them.
+  Removing a workload preserves its image. Removing a download pin deletes that image.
+- `bootstrap/`: frozen credential and backend roots. `bootstrap/ovh/` creates
+  the state backend and uses local state. `bootstrap/pve/<node>/` creates a
+  node's Terraform access chain.
+- `truenas/` (planned) imports datasets, NFS shares, and snapshots, excluding
+  resources created by democratic-csi. The directory doesn't exist yet.
+- `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
 
-State lives in the OVH S3 backend, never in git. Read `BACKEND.md`
-before the first stateful run.
+An LXC apply writes `ansible/inventory/servers/iac.tf.<node>.yml` with the
+hostname and container ID, without an address. Workloads join
+`grp_servers_immutable` through `grp_servers_immutable_<host>` leaves.
+Leaf names repeat the parent name and replace hyphens with underscores.
+
+State uses OVH S3, except the OVH bootstrap's local state. Read the
+[state design](BACKEND.md) before a stateful run. Keep state out of git.
 
 ## Root rules
 
-One root covers one provider, one blast radius, and one apply cadence.
-Don't split roots by resource type. `bootstrap/ovh/` stays frozen and owns
-only the state backend. Every root declares its own state key in its
-`backend.tf`, mirroring its path under `terraform/`: the `proxmox/jarvis`
-root stores at `proxmox/jarvis/terraform.tfstate`.
-Moving a root directory doesn't move its remote state.
-Keep the existing backend key during a code move, or review a separate state migration.
-See [State locations and code moves](BACKEND.md#state-locations-and-code-moves) for the rules.
+Group resources by provider, failure scope, and apply cadence, rather than type.
+Give a new PVE server a root named after it. Restrict `bootstrap/ovh/` to the
+state backend.
+
+Declare the state key in each root's `backend.tf`, using
+`<path>/terraform.tfstate`, as in `proxmox/jarvis/terraform.tfstate`.
+A directory move doesn't move state. Keep the existing key unless a separate
+[state migration](BACKEND.md#state-locations-and-code-moves) is approved.
 
 ## VM hardware settings
 
@@ -105,29 +97,6 @@ Changing `cpu.cores` or `cpu.sockets` can require a restart.
 A memory decrease can fail before the provider restarts the VM.
 An approved full stop before the decrease avoids guest memory-unplug failures.
 
-### VM input migration
-
-VM settings use objects rather than the scalar fields below.
-LXC inputs don't change. Existing resource addresses and image ownership don't change.
-
-| Old setting | Object field |
-| --- | --- |
-| `cpu = 4` | `cpu = { cores = 4 }` |
-| `ram = 8192` | `memory = { dedicated = 8192 }` |
-| `disk = 128` | `disk = { size = 128 }` |
-| `numa` | `cpu.numa` |
-| `boot_disk_interface` | `disk.interface` |
-| `agent_enabled` | `agent.enabled` |
-| `network_model` | `network_devices[0].model` |
-| `vlan_id` | `network_devices[0].vlan_id` |
-| `mac_address` | `network_devices[0].mac_address` |
-
-The root rejects old named settings rather than silently dropping them during object conversion.
-Scalar `cpu` and `disk` values fail type validation.
-Adapt the private tfvars using the
-[tracked example](proxmox/jarvis/jarvis.local.auto.tfvars.example) before the next approved plan.
-The new inputs don't authorize host contact or a state migration.
-
 ## Workload deletion protection
 
 VM workloads expose two independent settings in `vm_workloads`:
@@ -149,15 +118,13 @@ The LXC module doesn't set `prevent_destroy`.
 
 ## Local tests
 
-Run `task tf:test` for the LXC and VM module tests.
-The task uses OpenTofu mock providers, without root connection variables or host contact.
-Provider installation can require registry access.
-After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract and migration guards.
-These tests use fixtures rather than connection credentials.
-Successful input plans target the local inventory because the provider's datastore outputs aren't mockable.
-They don't qualify node checks or live VM changes.
-`task verify` includes both test suites.
-Generated module lock files stay local. Root lock files remain tracked.
+Run `task tf:test` for mocked LXC and VM module tests.
+After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
+Both are included in `task verify` and use fixtures without host contact or
+connection credentials. Provider installation can need registry access.
+Successful root plans target local inventory because datastore outputs aren't
+mockable. They don't qualify live node or VM behavior.
+Module lock files are ignored. Root lock files are tracked.
 
 ## Editor setup
 

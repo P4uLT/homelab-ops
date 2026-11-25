@@ -1,125 +1,111 @@
 # ansible/
 
-Configuration as code for the homelab: one entry point per run, one layer per
-scope, and separate inventories for servers and image builders.
+Ansible configuration with separate entry points and inventories for server
+maintenance, image builds, and machine onboarding.
 
 ## Layout
 
 | Path | Purpose |
-| ---- | ------- |
-| `config/` | `ansible.cfg` (symlinked at `ansible/` for auto-discovery), logs, retry files, project `known_hosts` |
-| `requirements.yml` | Vendor pins: roles + collections (single galaxy source) |
-| `inventory/` | `servers/`: the machines Ansible manages, with `groups.yml` (tree) and `hosts.yml` (membership). A Terraform-created container lands here as a generated group, written by the workload root. `builders/`: the Packer build containers, one host per image. Group names read `grp_<scope>_<specifics>`: `grp_servers_*` for server maintenance populations, `grp_image_builders_*` for Packer builders, and `grp_services_*` for opt-in service memberships |
-| `inventory/*/group_vars/` | Each inventory owns its own. One directory per group that carries variables, named after the group: `vars.yml` for cleartext, `secrets.sops.yaml` for secrets. A directory holds one or both |
-| `playbooks/` | Three entries, each unreachable from the others. `site.yml` runs `servers/system/` and `servers/services/`. `image.yml` runs the image build chain. `bootstrap.yml` runs `bootstrap/`, the one-time onboarding of a raw machine: the account, the proof it works, and password login closed. `image/base.yml` is the base-image recipe, `services/<name>.yml` adds a service to an image, and `stacks/<name>.yml` ships a whole stack. The entries stay separate on purpose. A build seals its container, and the adopting play sets `ansible_user`, which would otherwise override every host's steady identity. `verify.yml` proves the shell |
-| `roles/` | `local/` (original or adopted source, tracked), `vendors/` (downloaded, exact pins, ignored) |
-| `collections/` | `local/` (ours), `vendors/` (downloaded, ignored except the marker) |
-| `plugins/` | Local filter, lookup, callback, and module code |
-| `vars/` | Variable files loaded explicitly by name. Empty today |
+| --- | --- |
+| `config/` | `ansible.cfg`, symlinked at `ansible/` for auto-discovery, plus logs, retry files, and project `known_hosts` |
+| `requirements.yml` | Role and collection pins for Galaxy |
+| `inventory/servers/` | Managed machines. `groups.yml` defines the tree and `hosts.yml` defines membership. Workload roots generate inventory fragments for Terraform-created LXC containers |
+| `inventory/builders/` | Packer build containers, one host per image |
+| `inventory/*/group_vars/` | Variables beside each inventory. Each group directory contains `vars.yml`, `secrets.sops.yaml`, or both |
+| `playbooks/site.yml` | Server system configuration and opt-in services |
+| `playbooks/image.yml` | Image build chain: `image/base.yml`, `image/services/<name>.yml`, and `image/stacks/<name>.yml` |
+| `playbooks/bootstrap.yml` | One-time account creation, access verification, and password-login closure |
+| `playbooks/verify.yml` | Local verification |
+| `roles/`, `collections/` | Tracked `local/` content and pinned, ignored `vendors/` content. Collection vendor markers remain tracked |
+| `plugins/` | Local filters, lookups, callbacks, and modules |
+| `vars/` | Explicitly loaded variable files, empty |
 
-A layer is a directory behind an `all.yml` router. Each concern gets a file,
-so a topic is found by its name and runs alone with `task ansible:playbook`.
-A check that runs as one command stays one file.
+Group names use `grp_<scope>_<specifics>`: `grp_servers_*` for maintenance
+populations, `grp_image_builders_*` for builders, and `grp_services_*` for services.
+Keep the entry points separate. Image builds seal containers, and onboarding
+sets `ansible_user` for a temporary connection identity.
+
+A layer has an `all.yml` router and one file per concern. Run a concern with
+`task ansible:playbook`. Keep single-command checks in one file.
 
 ## Roles and parameters
 
-A role owns a reusable capability. A playbook selects roles and orders their
-calls. Modules implement the operations inside each role. Reuse a fitting role
-before adding a parallel task or a role for one installation.
+Playbooks select and order roles. Reuse a suitable role before adding a
+parallel task or an installation-specific wrapper.
 
-The [apt role](roles/local/apt/README.md) adopts WeAreInteractive's Advanced Package Tool (APT) role.
-Its [provenance record](roles/local/apt/UPSTREAM.md) pins the source revision and documents local changes.
-Existing callers retain package, upgrade, and cache inputs.
-Defaults select no population packages or upgrades and ensure the `python3-apt` dependency.
-Global configuration, service-start restrictions, cleanup, and unattended upgrades require explicit inputs.
-Image preparation keeps `apt_cache_valid_time: 0` because an empty cache can carry a recent timestamp.
-Server calls retain the default cache lifetime.
+| Role | Contract |
+| --- | --- |
+| [apt](roles/local/apt/README.md) | Local adoption of WeAreInteractive's Advanced Package Tool (APT) role. Inventory selects packages and upgrades. Image preparation uses `apt_cache_valid_time: 0` to refresh a potentially empty sealed cache |
+| [fleet_account](roles/local/fleet_account/README.md) | Install `sudo` with upgrades off, then pass a nonempty `fleet_account_users` list to `robertdebock.users`. Callers bind their inventory's `fleet_users` |
+| [image_bootstrap](roles/local/image_bootstrap/README.md) | Install the module interpreter and verify the build-container identity |
+| [image_finalize](roles/local/image_finalize/README.md) | Seal the image after provisioning |
+| [systemd](roles/local/systemd/README.md) | Manage existing services from `systemd_services`, without creating units or installing dependencies. Privilege escalation belongs to the caller |
 
-Population policy belongs in each inventory's `group_vars`. The Debian LXC and base-image groups list `curl` and `ca-certificates`.
+The [provenance record](roles/local/apt/UPSTREAM.md) specifies its source
+and local changes. Server calls use the default cache lifetime.
+Population packages belong in inventory `group_vars`. The Debian LXC and
+base-image groups select `curl` and `ca-certificates`.
+Docker and Proxmox use their vendor role interfaces and repository setup.
 
-The [fleet account role](roles/local/fleet_account/README.md) requires a non-empty
-`fleet_account_users` list in the
-`robertdebock.users` format. Each caller binds its inventory's `fleet_users` at
-the role call. The role installs `sudo` through `apt`, with upgrades off, then
-calls `robertdebock.users`. Adoption, runtime, and image builds share that
-contract. The prerequisite isn't part of a population's package policy.
-
-A composition role owns a shared invariant, not another copy of a vendor's
-interface. The image roles own [interpreter bootstrap](roles/local/image_bootstrap/README.md)
-and [sealing](roles/local/image_finalize/README.md).
-
-The [systemd role](roles/local/systemd/README.md) manages existing services through the native module.
-Its typed `systemd_services` list accepts boot enablement, runtime state, and explicit absence policy.
-An empty list changes no services. Omitted actions leave their settings unchanged.
-The two inventories declare static `container_service_units` lists in `grp_servers_lxc` and `grp_image_builders_base`.
-Each caller binds that population to `systemd_services`.
-The container profile stops and disables `systemd-networkd-wait-online.service` when present, without masking it.
-The role doesn't create unit files or add dependencies. Privilege escalation stays with the caller.
-Docker and Proxmox keep their vendor interfaces and their repository setup.
+The static `container_service_units` lists in `grp_servers_lxc` and
+`grp_image_builders_base` bind to `systemd_services` at the call site.
+They stop and disable `systemd-networkd-wait-online.service` when present,
+without masking it. Omitted actions leave existing settings unchanged.
 
 ## Populations
 
-- **Image-derived workloads**: Terraform creates an LXC from a Packer image.
-  Each joins `grp_servers_immutable` through a `grp_servers_immutable_<host>`
-  leaf, so the leaf repeats its parent's name.
-  The image owns its operating-system baseline. `playbooks/servers/system/workload_preflight.yml`
-  requires an explicit, nonblank address and a regular image marker file before system configuration.
-  It doesn't validate the marker's contents or image provenance. Store the address in that
-  workload group's encrypted variables. Rebuild a workload to change its image.
-  Don't upgrade its operating system in place. [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md)
-  walks through the process.
-- **Mutable servers**: `grp_servers_mutable` contains systems maintained by
-  Ansible. Its current branches are `grp_servers_lxc` and
-  `grp_servers_proxmox`. Debian LXC hosts join `grp_servers_lxc_debian` for
-  package policy. Proxmox nodes stay outside that group. Use
-  `task ansible:onboard HOST=<node> IDENTITY=<raw>` to onboard a raw machine.
-- **Manual LXC**: a manually created Debian container joins a leaf such as
-  `grp_servers_lxc_<host>` under `grp_servers_lxc_debian`.
+- **Image-derived workloads:** Terraform clones a Packer image and generates
+  a `grp_servers_immutable_<host>` leaf under `grp_servers_immutable`.
+  The image defines the OS baseline. Rebuild to change it instead of upgrading
+  the OS in place. Follow [Provision an LXC workload](../docs/runbooks/provision-pve-ct.md).
+- **Mutable servers:** `grp_servers_mutable` contains `grp_servers_lxc` and
+  `grp_servers_proxmox`. Debian LXC hosts use `grp_servers_lxc_debian` for
+  package policy. Proxmox nodes don't join that group.
+- **Manual Debian LXC:** use a leaf such as `grp_servers_lxc_<host>` under
+  `grp_servers_lxc_debian`.
 
-Mutable and immutable membership stays disjoint. Each group name has one
-identity in an inventory. The image-build inventory stays separate from the
-server inventory. Packer passes the Docker image's parent artifact. Ansible
-group inheritance doesn't connect the two image recipes.
+Mutable and immutable membership must be disjoint. Group names must be unique
+within an inventory. Packer defines artifact inheritance across separate
+builder and server inventories, without Ansible group inheritance.
 
-The convergence tasks require an explicit `HOST`, such as
-`task ansible:converge HOST=jarvis` or
-`task ansible:converge-check HOST=jarvis`. Use
-`HOST=grp_servers_proxmox` only for a deliberate group-wide run.
+Before system configuration, `playbooks/servers/system/workload_preflight.yml`
+requires an explicit, nonblank workload address and a regular image marker file.
+Store the address in the workload group's encrypted variables.
+Preflight validates file type only, without marker contents or image provenance.
+
+Onboard a raw machine with `task ansible:onboard HOST=<node> IDENTITY=<raw>`.
+Convergence requires `HOST`, as in `task ansible:converge HOST=jarvis` or
+`task ansible:converge-check HOST=jarvis`.
+Use `HOST=grp_servers_proxmox` only for an intended group-wide run.
 
 ## Services
 
-A service is opt-in per inventory group, independent of the population. The
-group lists who runs it, and both tracks call the same vendor role. The
-runtime runs `servers/services/docker.yml`. The golden image build runs
-`image/services/docker.yml`. The role carries the mechanism. Each inventory
-declares the policy in its own `group_vars/<group>/vars.yml`, because Ansible
-shares no group_vars between inventories. `grp_services_docker` selects runtime Docker recipients in the server inventory.
-In the builders inventory, `builder-docker` joins the same service group for
-Docker policy. Its recipe is selected by `grp_image_builders_docker` and Packer's
-`builder-docker` host limit. The Docker artifact inherits its base through
-Packer, not through Ansible group membership. The Docker image call refreshes
-the apt index from its sealed parent before the vendor installs Debian dependencies.
+Service membership is opt-in and independent of maintenance populations.
+`grp_services_docker` selects runtime Docker recipients. The runtime play is
+`servers/services/docker.yml`, and the image play is `image/services/docker.yml`.
+Both use the same vendor role, with policy in their own inventory's
+`group_vars/<group>/vars.yml`. Variables aren't shared between inventories.
 
-Talos nodes are out of scope for Ansible: no SSH, no playbooks, ever.
+In builders, `builder-docker` joins `grp_services_docker` for policy.
+`grp_image_builders_docker` and Packer's host limit select its recipe.
+The Docker call refreshes the apt index from the sealed parent before
+installing Debian dependencies. Packer selects its parent artifact.
+
+Talos nodes don't use Ansible or SSH.
 
 ## Verify
-
-The shell proves itself without any managed host:
 
 ```console
 task ansible:verify
 ```
 
-That runs `uv sync`, the galaxy install, the syntax passes, `ansible-lint`,
-the SOPS canary, and the verification playbook. The syntax
-passes cover the fleet track, the converge play, and the image entry with its
-own inventory. The
-verification playbook runs against `inventory/servers` on localhost, with no
-credentials and no managed-host contact. The canary needs the age key, so a
-keyless clone stops there. The repository-wide `task verify` adds the docs,
-Terraform, and Packer legs, and still contacts no host.
+This runs `uv sync`, Galaxy installation, syntax checks, `ansible-lint`, the
+SOPS canary, and `verify.yml`. Syntax checks cover the fleet, convergence, and
+image entry with its builders inventory. The verification playbook uses
+`inventory/servers` on localhost without connection credentials.
+The canary requires the age key. Without it, inventory loading fails.
+`task verify` also checks docs, Terraform, and Packer without managed-host contact.
 
-These checks read the content. They install no package and change no machine.
-Prove a role's behavior on a target before claiming it there: run its play, then
-repeat the apply and require no change. That run needs owner approval.
-A syntax pass and a lint report never prove idempotence.
+Local checks don't apply packages or services to managed machines.
+Get approval before verifying live behavior and idempotence. Apply the role
+on its target, then repeat it and expect `changed=0`.

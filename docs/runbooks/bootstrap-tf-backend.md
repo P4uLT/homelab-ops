@@ -1,16 +1,9 @@
 # Bootstrap the Terraform state backend
 
-One-time procedure. It creates the OVH S3 bucket that stores Terraform state,
-plus its access chain. The design is in
-[Terraform state design](../../terraform/BACKEND.md). Re-running any step is
-safe: everything converges.
-
-Two things happen here, in order. First you mint the OVH API credentials, then
-you create the bucket with them.
+Create the OVH API credentials, then the state bucket and its access chain.
+See [Terraform state design](../../terraform/BACKEND.md) for the frozen bootstrap root.
 
 ## Prerequisites
-
-Have these ready before you start:
 
 - The `OVH_*` values from `.env.account.ovh.tf.example` and
   `TF_VAR_state_passphrase` from `.env.tf.example`, filled into the matching
@@ -18,21 +11,18 @@ Have these ready before you start:
 - Owner approval, because this creates billable resources.
 - The design in [Terraform state design](../../terraform/BACKEND.md).
 
-## Mint the OVH API credentials
+## Create the OVH API credentials
 
-The OVH API needs three values: an application key, an application secret, and
-a consumer key. The key pair identifies an API application. The consumer key
-binds that application to your account. They can touch your whole account, so
-treat them like the age key. They stay in the git-ignored
-`.env.account.ovh.tf` and in the recovery kit. Never in a tracked file, shell
-history, or ticket.
+The application key and secret identify the API application. The consumer key
+authorizes it on your account. These account-wide credentials need the same
+protection as the age key. Store them in git-ignored `.env.account.ovh.tf` and
+the recovery kit, not tracked files, shell history, or tickets.
 
-Pick one of the two paths below. Path A is faster. Path B creates the keys by
-hand, so you control the exact rules.
+Use the CLI browser flow, or the web page to choose permission rules.
 
 ### Path A. Log in with the CLI (recommended)
 
-The browser flow mints all three keys at once, with full access.
+The browser flow creates all three keys with full access.
 
 1. Run `ovhcloud login`.
 2. The CLI prints a URL. Open it in a browser.
@@ -46,20 +36,18 @@ under `~/.config/ovhcloud/`, outside the repository.
 
 ### Path B. Create the keys on the web page
 
-Use this path when you want to choose the rules the key carries.
-
 1. Open `https://www.ovh.com/auth/api/createToken`.
 2. Fill the application name and description. Example name:
    `homelab-ops-tofu`.
-3. Pick the expiration. `Unlimited` fits infrastructure credentials that must
-   not break mid-flight. Rotate them deliberately instead.
+3. Pick the expiration. `Unlimited` fits credentials that must remain valid during infrastructure operations.
+   Rotate them deliberately instead.
 4. Add the rules. The provider checks the credential at start-up with
    `GET /auth/details`, an account-level call outside `/cloud/project`. A
    token scoped only to `/cloud/project/*` fails there. The message reads
    `OVH client seems to be misconfigured` followed by
    `403 This call has not been granted`.
 
-   **Recommended rules.** Four rules, all on `/*`:
+   **Recommended rules:**
 
    | Method | Path |
    | --- | --- |
@@ -67,10 +55,6 @@ Use this path when you want to choose the rules the key carries.
    | POST | `/*` |
    | `PUT` | `/*` |
    | DELETE | `/*` |
-
-   This is the configuration the provider expects, and the one other users
-   report as working. It's also a broad credential that can act on the whole
-   account. Treat it like the age key.
 
    Don't add `PATCH`. The OVH form returns an internal server error.
 
@@ -81,8 +65,6 @@ Use this path when you want to choose the rules the key carries.
    | --- | --- |
    | GET | `/auth/details` |
    | `GET`, `POST`, `PUT`, `DELETE` | `/cloud/project/*` |
-
-   Two caveats:
 
    - The star doesn't match the bare path `/cloud/project`. The
      `cloud project list` command needs `GET /cloud/project` as well. Without
@@ -104,25 +86,21 @@ choice instead.
 
 ### Check the credentials
 
-One command proves the three keys reach your account.
-
-Run `task ovh:cli -- cloud project list`. It lists your Public Cloud projects,
-which proves the three keys work. The task loads `.env.account.ovh.tf` for
-that one command, so nothing lands in your shell. Note the `project_id`. It's
-the value for `OVH_CLOUD_PROJECT_SERVICE` in `.env.account.ovh.tf`.
+Run `task ovh:cli -- cloud project list` to check account access and get the
+`project_id` for `OVH_CLOUD_PROJECT_SERVICE` in `.env.account.ovh.tf`.
+The task loads the credentials for that command only.
 
 ## Create the bucket and its access chain
 
-The run takes the credentials from the section above and ends with a frozen
-root. Step 5 creates billable resources, so get owner approval first.
+Get owner approval before creating billable resources in step 5.
 
 1. Fill the credential values from the section above into
    `.env.account.ovh.tf`, and `TF_VAR_state_passphrase` into `.env.tf`.
    Restrict both files to your user: `chmod 600`.
 2. Choose the bucket name and the region. Fill `TF_VAR_bucket_name` in
    `.env.tf`, and `region` in `terraform/bootstrap/ovh/ovh.local.auto.tfvars`.
-   Keep both values out of any tracked file. Use a 3-AZ region, and enter it
-   in uppercase exactly as the project API reports it (`EU-WEST-PAR`,
+   Keep both values out of tracked files. Use a 3-AZ region.
+   Enter its code in uppercase exactly as the project API reports it (`EU-WEST-PAR`,
    `EU-SOUTH-MIL`). Lowercase returns `Invalid region parameter`.
 3. Initialize the root: `task tf:init`. It downloads the OVH provider.
 4. Preview: `task tf:bootstrap-plan`. Expect five resources to add.
@@ -148,8 +126,8 @@ root. Step 5 creates billable resources, so get owner approval first.
    to the passphrase.
 9. Run the local checks: `task verify`.
 
-The bootstrap root is frozen now. Use `task tf:bootstrap-plan` to check for
-drift. Don't add resources to this root.
+Use `task tf:bootstrap-plan` for drift checks. Keep the bootstrap root frozen
+without additional resources.
 
 ## When the API returns `403 This call has not been granted`
 

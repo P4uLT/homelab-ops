@@ -1,12 +1,8 @@
 # Override the installed Packer plugin locally
 
-Replace the installed `proxmox-lxc` plugin with a local build. Use this when a
-change awaits review or merge, or whenever a local binary must run before a
-release. Local validation and approved build tasks use that replacement.
-Reinstall the pinned release from upstream to return to the official plugin.
-
-This procedure changes the default plugin registry, not the Taskfile or the
-committed version pin. It doesn't contact a Proxmox node.
+Install a local `proxmox-lxc` development build in the default plugin registry,
+then restore the pinned release. Validation and approved builds use the replacement.
+This changes neither the Taskfile nor the committed pin and doesn't contact PVE.
 
 ## Before starting
 
@@ -16,14 +12,12 @@ committed version pin. It doesn't contact a Proxmox node.
 - Stop Packer processes before replacing the binary.
 - Don't commit plugin binaries, credentials, or logs.
 
-The local binary reports the version pinned by this project so Packer selects
-it without a configuration change. It isn't the upstream release, even though
-it reports the same version. Don't publish it as a release.
+The local binary reports the pinned version for selection without configuration
+changes. Publish neither that binary nor its version label as an upstream release.
 
 ## 1. Set up the shell
 
-Run this block unchanged. It reads the release version from the project pin, so
-no version number needs manual substitution.
+Run this block unchanged to read the release version from the project pin:
 
 ```zsh
 unset PACKER_PLUGIN_PATH
@@ -36,9 +30,8 @@ chmod 700 "$LOCAL_ROOT"
 printf 'Plugin version: %s\n' "$PLUGIN_VERSION"
 ```
 
-Stop if a command fails. `unset PACKER_PLUGIN_PATH` clears an earlier
-temporary-registry selection from this shell, so the steps target the default
-registry.
+Stop on command failure. `unset PACKER_PLUGIN_PATH` clears temporary registry
+selection so these steps use the default registry.
 
 ## 2. Build and install the local replacement
 
@@ -53,26 +46,21 @@ binary and its checksum together, replacing the installed release:
 
 ```zsh
 packer plugins install --force --path "$LOCAL_ROOT/packer-plugin-proxmox-lxc" "$PLUGIN_SOURCE"
-task packer:validate
 ```
-
-Stop if a command fails. Successful validation proves the local plugin loads
-with the existing configuration. It doesn't prove a complete image build.
 
 ## 3. Validate locally
 
-Use the local validation task:
+Check that the replacement loads with the project configuration:
 
 ```zsh
 task packer:validate
 ```
 
-Don't use this override for a release build.
-A matching version label and checksum sidecar don't establish approved binary
-identity, parent verification, ownership, trust, or atomic publication.
-Record the actual binary digest privately.
-Follow the separate safety gate in
-[Build and qualify the golden images](build-base-image.md).
+Stop on failure. Validation doesn't establish a complete image build or release safety.
+A version label and checksum sidecar don't qualify parent verification,
+container ownership, SSH trust, or atomic publication.
+Record the actual binary digest privately. Don't use this override for release builds.
+Follow [Build and qualify the golden images](build-base-image.md).
 
 ## 4. Reinstall the official release
 
@@ -99,11 +87,10 @@ packer plugins install --force "$PLUGIN_SOURCE" "$PLUGIN_VERSION"
 task packer:validate
 ```
 
-`PLUGIN_VERSION` holds the version read from the project pin in step 1. Re-run
-that block first if this is a new shell. Neither command needs the local build
-removed first: the force option replaces it.
+In a new shell, repeat step 1 to set `PLUGIN_VERSION`. The force option replaces
+the local binary without a separate removal.
 
-Confirm the registry now holds the release:
+Check the installed plugin listing:
 
 ```zsh
 packer plugins installed | grep '/github.com/leoarry/proxmox-lxc/packer-plugin-proxmox-lxc_v'

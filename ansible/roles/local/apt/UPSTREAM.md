@@ -2,7 +2,7 @@
 
 ## Source
 
-This copy adopts the WeAreInteractive Advanced Package Tool (APT) role.
+Source for the local Advanced Package Tool (APT) role:
 
 | Field | Value |
 | --- | --- |
@@ -13,11 +13,9 @@ This copy adopts the WeAreInteractive Advanced Package Tool (APT) role.
 | License | [Upstream MIT license](LICENSE), retained verbatim with its copyright notice |
 | Maintenance | This repository's maintainers own compatibility fixes and source updates |
 
-The tasks, templates, handlers, and defaults come from this revision.
-The role retains its existing local name and caller inputs.
-Galaxy installation doesn't replace this tracked copy.
-The supported repository target remains Debian trixie on the pinned Ansible core.
-Upstream platform declarations aren't proof of live compatibility here.
+Galaxy doesn't replace this tracked copy or change its local role name and inputs.
+The supported target is Debian trixie on the pinned Ansible core.
+Upstream platform declarations don't establish live compatibility here.
 
 ## Intentional differences
 

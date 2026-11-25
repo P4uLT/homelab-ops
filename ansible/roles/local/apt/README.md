@@ -1,15 +1,15 @@
 # apt
 
-Manage Advanced Package Tool (APT) packages through a local adoption of WeAreInteractive APT.
+Manage Advanced Package Tool (APT) packages with a local copy of WeAreInteractive APT.
 
 ## Source and ownership
 
+Read [provenance and local changes](UPSTREAM.md) for the source revision and maintenance policy.
 The role retains upstream tasks, templates, and native inputs.
-Read [provenance and local changes](UPSTREAM.md) for the exact source revision and maintenance responsibility.
 The upstream [MIT license and copyright notice](LICENSE) apply to the adopted code.
 
-Inventory owns package selection, repositories, cleanup, and upgrade policy.
-Call sites supply operational prerequisites without inheriting population upgrades.
+Inventory selects packages, repositories, cleanup, and upgrades.
+Prerequisite calls don't inherit population upgrades.
 Docker and Proxmox retain their vendor repository and key management.
 
 ## Interface
@@ -51,17 +51,14 @@ Review signing-key scope before enabling them. Their deprecation needs a future 
 
 `apt_cache_valid_time` controls the cache lifetime in seconds.
 Zero forces refresh. Negative values fail before package operations.
-Image preparation keeps zero explicitly, including the Docker cache-only call.
-A recently timestamped but empty sealed cache must not suppress that refresh.
-Prerequisite calls keep upgrades off.
+Use `apt_cache_valid_time: 0` for image preparation, including Docker's cache-only
+call: a sealed cache can be empty despite a recent timestamp. Keep prerequisite upgrades off.
 
 ## Verification and rollback
 
-Use caller syntax checks, production-profile lint, and `task verify`.
-These checks don't establish live package behavior or idempotence.
-Applying package operations to managed systems requires owner approval.
-No test framework or managed-host deployment accompanies this adoption.
+Run `task verify` and the caller's syntax and production-profile lint checks.
+Live package behavior and idempotence need separate, owner-approved verification.
 
-Before deployment, reverting the adoption restores the prior local implementation without changing caller inputs.
+Before deployment, reverting the adoption restores the prior role without changing caller inputs.
 After deployment, a code revert doesn't remove packages or restore optional managed configuration.
 Review those effects separately before contacting a managed system.
