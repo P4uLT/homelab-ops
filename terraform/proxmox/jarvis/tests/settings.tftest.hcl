@@ -101,6 +101,33 @@ run "haos_profile_uses_import_content_without_ssh_or_lxc" {
   }
 }
 
+run "external_import_rejects_an_iso_filename" {
+  command = plan
+
+  variables {
+    vm_image_files = {
+      fixture = { storage = "local", content_type = "import", file_name = "fixture-1.0.qcow2.img" }
+    }
+  }
+
+  expect_failures = [var.vm_image_files]
+}
+
+run "existing_iso_image_also_requires_ssh" {
+  command = plan
+
+  variables {
+    pve_ssh_username   = null
+    vm_image_downloads = {}
+    vm_image_files = {
+      fixture = { storage = "local", file_name = "fixture-1.0.qcow2.img" }
+    }
+    vm_workloads = { fixture = { id = 1001, image = "fixture" } }
+  }
+
+  expect_failures = [var.vm_workloads]
+}
+
 run "legacy_iso_path_still_requires_ssh" {
   command = plan
   variables {

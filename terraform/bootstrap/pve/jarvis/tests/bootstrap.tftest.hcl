@@ -14,7 +14,14 @@ run "fresh_node_has_no_imports" {
   }
 
   assert {
-    condition     = length(local.access_imports) == 0
-    error_message = "A fresh node must not import access objects."
+    condition = (
+      length(local.access_imports) == 0 &&
+      proxmox_virtual_environment_role.terraform_provisioning.role_id == "Terraform_Provisioning" &&
+      proxmox_virtual_environment_group.terraform_provisioning.group_id == "Terraform_Provisioning" &&
+      proxmox_virtual_environment_user.terraform_prov.user_id == "terraform-prov@pve" &&
+      proxmox_acl.terraform_provisioning.path == "/" &&
+      proxmox_user_token.tf.token_name == "tf"
+    )
+    error_message = "A fresh node must plan the access chain without imports."
   }
 }

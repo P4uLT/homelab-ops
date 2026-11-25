@@ -45,8 +45,10 @@ Keep locking enabled. This removes the state binding without deleting the file.
 ## Confirm the result
 
 1. Run a new `task tf:jarvis-plan`. Expect no changes to Proxmox resources.
-   Confirm that the external image lookup succeeds and the VM isn't replaced.
-   Don't apply the earlier plan. Stop if the new plan proposes any change.
+   If a VM references the image, confirm that the lookup succeeds and the VM
+   isn't replaced. Otherwise, check the file directly in PVE storage. OpenTofu
+   doesn't look up an unreferenced image. Don't apply the earlier plan.
+   Stop if the new plan proposes any change.
 2. If you need to return the image to OpenTofu management, restore the managed
    download declaration and remove the external reference. Review a plan that
    adopts the verified existing file without replacing it or changing the VM.

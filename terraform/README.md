@@ -76,7 +76,9 @@ and declare one VM. Don't use that configuration against the existing Jarvis
 state, which also manages an LXC workload.
 
 For a fresh install, use the managed `vm_image_downloads` example. PVE
-fetches, verifies, and decompresses the official archive. Set `pve_ssh_username`
+verifies and decompresses the archive on a new download. If the plan adopts
+an existing file by name, verify its contents independently before approval.
+Set `pve_ssh_username`
 and load the dedicated key into `ssh-agent` for the disk import. Verify the
 node's host key first. This path needs no local copy or image mirror.
 Leave the existing image reference unchanged when keeping a running VM.
