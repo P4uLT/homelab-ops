@@ -353,6 +353,26 @@ run "keeps_guest_access_closed_on_a_legacy_share" {
   }
 }
 
+run "passes_the_recursive_choice_to_the_provider" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      filesystem_acl = {
+        type      = "NFS4"
+        recursive = true
+        entries   = [{ tag = "owner@", type = "ALLOW", basic_perms = "FULL_CONTROL", basic_flags = "INHERIT" }]
+      }
+    }
+  }
+
+  assert {
+    condition     = var.dataset.filesystem_acl.recursive && length(truenas_filesystem_acl.this) == 1
+    error_message = "A recursive ACL update must reach the ACL resource."
+  }
+}
+
 run "rejects_a_posix_acl_on_an_smb_dataset" {
   command = plan
 

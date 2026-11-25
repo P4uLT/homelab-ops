@@ -46,6 +46,8 @@ variable "datasets" {
       group_names    = optional(set(string), [])
       type           = optional(string)
       inherit_access = optional(bool, false)
+      recursive      = optional(bool, false)
+      traverse       = optional(bool, false)
       entries = optional(list(object({
         tag         = string
         who         = optional(string)

@@ -94,7 +94,8 @@ resource "truenas_filesystem_acl" "this" {
   for_each = local.acl_managed
 
   path      = data.truenas_filesystem_acl.this[each.key].path
-  recursive = false
+  recursive = each.value.recursive
+  traverse  = each.value.traverse
   entries   = coalesce(local.preset_entries_json, jsonencode(local.ace_payload))
 
   lifecycle {

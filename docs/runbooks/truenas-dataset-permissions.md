@@ -60,8 +60,9 @@ default entry, so new children inherit the same rights.
 1. Run `task tf:truenas-gen8-plan`.
 2. Review the current permissions in TrueNAS. The resource replaces the full ACL
    on that path.
-3. Review the planned ACL. It doesn't change existing child files or
-   directories.
+3. Review the planned ACL. By default it doesn't change existing child files
+   or directories. Set `recursive = true` to replace their ACLs too, and
+   `traverse = true` to cross child datasets.
 4. Run `task tf:truenas-gen8-apply` after approval.
 
 Don't bypass deletion protection to stop managing an ACL. Destroying the
