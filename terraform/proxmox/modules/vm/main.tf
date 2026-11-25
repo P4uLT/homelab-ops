@@ -54,7 +54,8 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   disk {
     datastore_id = coalesce(var.disk.datastore_id, var.storage)
-    file_id      = var.image_file_id
+    file_id      = strcontains(var.image_file_id, ":iso/") ? var.image_file_id : null
+    import_from  = strcontains(var.image_file_id, ":import/") ? var.image_file_id : null
     interface    = var.disk.interface
     size         = var.disk.size
     file_format  = var.disk.file_format

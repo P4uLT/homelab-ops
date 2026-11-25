@@ -70,19 +70,14 @@ resource "terraform_data" "assertions" {
         for image in values(local.referenced_vm_images) :
         anytrue([
           for ds in data.proxmox_datastores.node.datastores :
-          ds.id == image.storage && contains(ds.content_types, "iso")
+          ds.id == image.storage && contains(ds.content_types, image.content_type)
         ])
       ])
-      error_message = "Every referenced VM image datastore must allow ISO content."
+      error_message = "Every referenced VM image datastore must allow its declared content type."
     }
 
     precondition {
-      condition     = length(var.vm_workloads) == 0 || var.pve_ssh_username != null
-      error_message = "VM disk import requires pve_ssh_username and a loaded ssh-agent key."
-    }
-
-    precondition {
-      condition     = length(distinct([for image in values(local.referenced_vm_images) : "${image.storage}/${image.file_name}"])) == length(local.referenced_vm_images)
+      condition     = length(distinct([for image in values(local.referenced_vm_images) : "${image.storage}/${image.content_type}/${image.file_name}"])) == length(local.referenced_vm_images)
       error_message = "Image labels must use distinct datastore filenames."
     }
 

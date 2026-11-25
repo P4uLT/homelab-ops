@@ -31,7 +31,7 @@ locals {
     if contains(local.referenced_vm_image_labels, label)
   }
   referenced_vm_images = merge(
-    { for label, image in local.download_vm_images : label => image },
+    { for label, image in local.download_vm_images : label => merge(image, { content_type = "iso" }) },
     { for label, image in local.external_vm_images : label => image },
   )
   valid_vm_workloads = {

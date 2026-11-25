@@ -101,8 +101,9 @@ variable "vm_image_downloads" {
 variable "vm_image_files" {
   description = "Existing VM images managed outside Terraform, keyed by image label."
   type = map(object({
-    file_name = string
-    storage   = string
+    file_name    = string
+    storage      = string
+    content_type = optional(string, "iso")
   }))
   default  = {}
   nullable = false
@@ -110,9 +111,10 @@ variable "vm_image_files" {
   validation {
     condition = alltrue([
       for image in values(var.vm_image_files) :
-      can(regex("^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2[.]img$", image.file_name))
+      contains(["iso", "import"], image.content_type) &&
+      can(regex(image.content_type == "import" ? "^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2$" : "^[A-Za-z0-9_.-]+-[0-9]+[.][0-9]+([.][0-9]+)?[.]qcow2[.]img$", image.file_name))
     ])
-    error_message = "Existing VM image files require a versioned QCOW2.IMG filename."
+    error_message = "External images require a versioned QCOW2 file in Import content, or a versioned QCOW2.IMG file in ISO content."
   }
 }
 
@@ -237,6 +239,16 @@ variable "vm_workloads" {
       workload.id == floor(workload.id) && workload.id >= 1000 && workload.id <= 999999999
     ])
     error_message = "VM IDs must be integers from 1000 to 999999999."
+  }
+
+  validation {
+    condition = var.pve_ssh_username != null || !anytrue([
+      for workload in values(var.vm_workloads) :
+      contains(keys(var.vm_image_downloads), workload.image) ||
+      try(var.vm_image_files[workload.image].content_type == "iso", false) ||
+      anytrue([for disk in workload.additional_disks : disk.file_id != null])
+    ])
+    error_message = "VM disks using file_id require pve_ssh_username and a loaded ssh-agent key."
   }
 
   validation {
