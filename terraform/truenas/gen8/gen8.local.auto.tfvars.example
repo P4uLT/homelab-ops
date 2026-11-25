@@ -3,73 +3,48 @@ truenas_api_key = "replace-locally"
 # truenas_ca_cert = "/path/to/management-ca.pem"
 
 datasets = {
+  # Multiprotocol ISO library: Windows uploads, Proxmox reads and writes.
   iso = {
     name        = "tank/iso"
+    acltype     = "nfsv4"
+    share_type  = "MULTIPROTOCOL"
     recordsize  = "1M"
     compression = "lz4"
-    nfs = {
-      hosts = ["pve.example.invalid"] # Replace with a host that TrueNAS can resolve.
-      # Or replace hosts with networks = ["192.0.2.0/24"] for an authorized subnet.
-      comment = "Proxmox VE ISO library"
-      ro      = true
+    filesystem_acl = {
+      preset      = "nfs4_group_rw_others_ro"
+      group_names = ["smb-users"] # Needs provision_group_lookup.
     }
-    # Optional Windows access. Grant file permissions before enabling the share.
-    # For uploads, set ro = false and grant write access, as shown below.
-    # smb = {
-    #   name      = "iso"
-    #   browsable = true
-    #   purpose   = "MULTIPROTOCOL_SHARE"
-    #   ro        = true
-    # }
-
-    # Optional write access for smb-users on the Gen8 ISO dataset.
-    # Enable provision_dataset_acls in the bootstrap root first.
-    # Compare the preset with the live ACL. Replace 12345 with the smb-users GID.
-    # With provision_group_lookup, use group_name = "smb-users" or
-    # group_names = ["smb-users", "iso-editors"] instead of group_gid.
-    # filesystem_acl = {
-    #   preset    = "posix_group_rw_others_ro"
-    #   group_gid = 12345
-    # }
+    nfs = {
+      hosts   = ["pve.example.invalid"] # TrueNAS must resolve it. networks also works.
+      comment = "Proxmox VE ISO library"
+      ro      = false
+    }
+    smb = {
+      name      = "iso"
+      purpose   = "MULTIPROTOCOL_SHARE"
+      browsable = true
+      ro        = false
+    }
   }
 
-  # Shared documents. Grant the SMB group read access in the dataset ACL.
+  # SMB-only documents, read-only for the SMB group.
   # documents = {
   #   name = "tank/documents"
   #   smb = {
   #     name      = "documents"
-  #     browsable = true
   #     purpose   = "DEFAULT_SHARE"
+  #     browsable = true
   #     ro        = true
   #   }
   # }
 
-  # NFS backups. NFS defaults to read/write. Replace the example client IP.
+  # NFS-only backups.
   # backups = {
   #   name = "tank/backups"
-  #   nfs = {
-  #     hosts = ["192.0.2.10"]
-  #   }
+  #   nfs  = { hosts = ["192.0.2.10"] }
   # }
 
-  # New dataset shared by Windows and Proxmox. Review and declare its ACL
-  # before making the share available. Don't add this preset to an existing dataset.
-  # media = {
-  #   name       = "tank/media"
-  #   share_type = "MULTIPROTOCOL"
-  #   nfs = {
-  #     hosts = ["pve.example.invalid"]
-  #     ro    = true
-  #   }
-  #   smb = {
-  #     name      = "media"
-  #     purpose   = "MULTIPROTOCOL_SHARE"
-  #     browsable = true
-  #     ro        = true
-  #   }
-  # }
-
-  # Local app data. Omit nfs and smb to keep it unshared.
+  # Local app data, no share.
   # appdata = {
   #   name = "tank/appdata"
   # }

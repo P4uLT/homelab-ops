@@ -67,8 +67,9 @@ removing its shares. Both services default to `true` on the Gen8.
 task tf:truenas-gen8-plan
 ```
 
-For a new NAS, expect `tank/iso` and its read-only NFS export. Replace the
-example host with a client hostname that TrueNAS can resolve. For a subnet,
+For an NFS-only library, expect `tank/iso` and its NFS export. For a new
+library shared with Windows, follow [the multiprotocol procedure](#move-a-populated-library-to-a-multiprotocol-dataset) instead.
+Replace the example host with a client hostname that TrueNAS can resolve. For a subnet,
 use `networks` instead of `hosts` and include the prefix length.
 The role list is based on the documented dataset and NFS API permissions.
 It isn't restricted to `tank/iso` by TrueNAS. If the provider reports a
@@ -78,14 +79,12 @@ Don't switch this root to the admin key.
 After approval, run `task tf:truenas-gen8-apply`. Review the fresh plan
 before confirming.
 
-As a TrueNAS operator, place an image in `template/iso/` under the dataset
-through an authorized write path. Proxmox can't upload to this read-only
-export. In Proxmox, register the NFS storage with type `iso` only and check
-that the image appears. Run the provisioning plan again and check for no
+In Proxmox, register the NFS storage with type `iso` only. Check that the
+client can write in `template/iso/` and that an uploaded image appears. Run the provisioning plan again and check for no
 changes. After validating service access, revoke the bootstrap key and remove
 its local copy. Issue a fresh admin key if the bootstrap root needs maintenance.
 
-## Add Windows access to the image library
+## Add Windows access to the existing library
 
 1. In the bootstrap tfvars, set `provision_smb_shares = true`. Add the
    example group and user. Set `user_passwords` using the user's map key.
@@ -97,7 +96,7 @@ its local copy. Issue a fresh admin key if the bootstrap root needs maintenance.
    provisioning key. Apply only after approval.
 4. Review the permissions on `tank/iso`. Add the example `smb` block to
    `datasets.iso` in the storage tfvars. Leave the NFS export unchanged.
-   Keep `smb.ro = true` until you want uploads and have checked access.
+   Check the file user's write permissions before applying the share change.
    Plan and review the share and permission changes before applying.
 5. In Windows Explorer, open `\\<nas-address>\iso` with the file user.
    Use the NAS address, not the web reverse proxy.
@@ -113,6 +112,54 @@ Changing `username` forces account replacement with the pinned provider.
 To preserve access during a login change, create the new account in the same
 group. Test it before removing the old account in a separate reviewed apply.
 Keep map keys stable for existing accounts and groups.
+
+## Recreate an empty dataset
+
+The pinned provider replaces a dataset when its ACL type or share preset
+changes. Replacing a dataset that holds data needs a migration, not an edit.
+Use the procedure below only when the dataset holds no data you need.
+
+1. Change the dataset entry to the new preset and ACL, and set
+   `protect = false` on that entry. Add `acltype = "nfsv4"` when the dataset
+   reports `acltype = "inherit"`, as a dataset converted in place does.
+2. Delete the empty dataset in TrueNAS with the administrator account. Its
+   ACL goes with it. The storage identity has no delete role, and TrueNAS
+   doesn't scope one to a single dataset.
+3. Plan the replacement. Confirm that it replaces only that dataset and its
+   shares. Stop if it also replaces or changes other datasets.
+4. Apply after approval, then set `protect = true` again and confirm that
+   the next plan reports no changes.
+
+The replacement deletes the dataset and everything under it. Snapshots and
+child datasets go with it. Keep `protect = true` on every dataset that holds
+data.
+
+If the dataset disappears outside OpenTofu, a plan stops with
+`Missing Resource Identity After Read`. The provider fails instead of dropping
+the deleted dataset from the state. Back up the state, remove only that entry
+with `tofu state rm`, and plan again. The plan then shows the resources to
+recreate.
+
+## Move a populated library to a multiprotocol dataset
+
+1. Keep the existing `datasets.iso` entry and its shares. Add the example
+   `datasets.iso_next` entry instead of changing the existing dataset.
+   On a fresh NAS, use the multiprotocol example without the old entry.
+2. Enable `provision_smb_shares` and `provision_dataset_acls` in the bootstrap
+   root as needed. Plan and apply any approved role changes first.
+3. Replace the sample group and user IDs in the new ACL. Use the Windows
+   writers' group ID and the effective user ID of the Proxmox NFS client.
+   Check any identity mapping, including a mapped root user, before granting
+   write access. Restrict the NFS export to the intended clients.
+4. Review the storage plan. Expect the new dataset, its ACL, and two
+   read/write shares. Stop if the plan changes or replaces the old library.
+   Apply only after approval.
+5. Copy the image files to `template/iso/` on the new dataset. Let copied
+   files inherit the new ACL rather than copying the old permissions.
+   Verify that Windows and Proxmox can each create, read, and remove a test
+   file there. Check that Proxmox can use an uploaded image.
+6. Switch the clients to the new shares after both tests pass. Keep the old
+   dataset until you have verified the cutover and approved its retirement.
 
 ## Add datasets and shares
 
@@ -136,31 +183,43 @@ in the bootstrap tfvars. This grants filesystem attribute read and write
 roles to the storage identity. TrueNAS doesn't scope these roles to one
 dataset. The storage identity still can't manage users or groups.
 
-For an image library with a publishing group, use
-`filesystem_acl.preset = "posix_group_rw_others_ro"` and set `group_gid` to
-the group's numeric ID. For one group by name, use `group_name`. For several,
-use `group_names`. Use only one of these settings. For either name-based
-setting, enable `provision_group_lookup` in the bootstrap tfvars. This grants
-account and group read access through `ACCOUNT_READ`, not write access.
-Apply the approved bootstrap role changes before planning storage.
-The module resolves the names and sends only numeric IDs to the ACL.
-The preset grants the owner and each selected group write access. Others
-keep read and traverse access. The preset sets default entries for new
-children and requires a dataset with a `POSIX1E` ACL.
+For a new multiprotocol dataset, use
+`filesystem_acl.preset = "nfs4_group_rw_others_ro"` with one of the group
+settings. The preset grants the owner full control, each group modify access,
+and nothing else. Every entry inherits to new children.
+The dataset must be created with the `MULTIPROTOCOL` or `SMB` preset, or
+declare `acltype = "nfsv4"`.
+
+Name a group with `group_gid`, `group_name`, or `group_names`, using only one
+of them. For either name-based setting, enable `provision_group_lookup` in the
+bootstrap tfvars. This grants account and group read access through
+`ACCOUNT_READ`, not write access. Apply the approved bootstrap role changes
+before planning storage. The module resolves the names and sends only numeric
+IDs to the ACL.
 
 For a custom ACL, set `filesystem_acl.type` to match the dataset:
 `POSIX1E` or `NFS4`. Declare the full ACL in `filesystem_acl.entries`.
-Use `id` with the numeric group ID. Resolving `who` at refresh requires
-`ACCOUNT_READ`, which the storage identity doesn't have by default. The module encodes
-the entries for the provider. See `datasets.iso` in the provisioning example.
+Name an identity with `group = "smb-users"` or `user = "root"`, or pass a
+numeric `id`. The module resolves names to numeric IDs, so the state keeps no
+name that needs a lookup on refresh. Name resolution needs
+`provision_group_lookup`. Avoid `who`, which stores the name the provider
+then resolves on every refresh. The module encodes the entries for the
+provider. See `datasets.iso` in the provisioning example.
 Review the current permissions first. The resource replaces the full list
-on that path without changing existing child files or directories. Don't
-bypass deletion protection to stop managing an ACL: the provider removes
-extended ACL entries when it destroys the resource. To keep the ACL without
+on that path without changing existing child files or directories.
+
+For a POSIX ACL, `inherit_access = true` also writes each access entry as a
+default entry, so new children inherit the same rights.
+
+Don't bypass deletion protection to stop managing an ACL: the provider
+removes extended ACL entries when it destroys the resource. To keep the ACL without
 managing it, back up the state and use a reviewed state-only removal.
 
 For new datasets accessed over both protocols, use `share_type = "MULTIPROTOCOL"`
-and `smb.purpose = "MULTIPROTOCOL_SHARE"`. See the
+and `smb.purpose = "MULTIPROTOCOL_SHARE"`. TrueNAS uses an NFSv4 ACL with
+`PASSTHROUGH` mode for this dataset preset. See the
+[dataset preset table](https://www.truenas.com/docs/scale/25.10/scaletutorials/datasets/datasetsscale/#creating-a-dataset)
+and the
 [TrueNAS multiprotocol guide](https://www.truenas.com/docs/scale/25.10/scaletutorials/shares/mixedmodeshares/).
 Don't set a new preset or ACL type on an existing dataset to match this
 example. OpenTofu can plan to replace it.
