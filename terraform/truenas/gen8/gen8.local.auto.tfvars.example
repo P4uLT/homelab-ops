@@ -1,22 +1,26 @@
-truenas_host    = "nas.example.invalid"
-truenas_api_key = "replace-locally"
+# Copy this file to gen8.local.auto.tfvars and restrict it to your user.
+# Replace NAS_HOST, BOOTSTRAP_API_KEY, NFS_CLIENT, and SMB_GROUP.
+# The provisioning key goes in terraform/truenas/gen8/gen8.local.auto.tfvars.
+
+truenas_host    = "NAS_HOST"
+truenas_api_key = "BOOTSTRAP_API_KEY"
 # truenas_ca_cert = "/path/to/management-ca.pem"
 
 datasets = {
-  # Multiprotocol ISO library: Windows uploads, Proxmox reads and writes.
+  # Windows and Proxmox share this image library.
   iso = {
     name        = "tank/iso"
-    acltype     = "nfsv4"
     share_type  = "MULTIPROTOCOL"
+    acltype     = "nfsv4" # Only needed when an existing dataset reports "inherit".
     recordsize  = "1M"
     compression = "lz4"
     filesystem_acl = {
       preset      = "nfs4_group_rw_others_ro"
-      group_names = ["smb-users"] # Needs provision_group_lookup.
+      group_names = ["SMB_GROUP"] # Needs provision_group_lookup.
     }
     nfs = {
-      hosts   = ["pve.example.invalid"] # TrueNAS must resolve it. networks also works.
-      comment = "Proxmox VE ISO library"
+      hosts   = ["NFS_CLIENT"]
+      comment = "Proxmox VE image library"
       ro      = false
     }
     smb = {
@@ -27,9 +31,10 @@ datasets = {
     }
   }
 
-  # SMB-only documents, read-only for the SMB group.
+  # Windows only. Grant SMB_GROUP access in the dataset ACL.
   # documents = {
-  #   name = "tank/documents"
+  #   name       = "tank/documents"
+  #   share_type = "SMB"
   #   smb = {
   #     name      = "documents"
   #     purpose   = "DEFAULT_SHARE"
@@ -38,14 +43,15 @@ datasets = {
   #   }
   # }
 
-  # NFS-only backups.
+  # NFS only. Replace hosts with networks to authorize a subnet.
   # backups = {
   #   name = "tank/backups"
-  #   nfs  = { hosts = ["192.0.2.10"] }
+  #   nfs  = { hosts = ["NFS_CLIENT"] }
   # }
 
-  # Local app data, no share.
+  # Application data with no share.
   # appdata = {
-  #   name = "tank/appdata"
+  #   name       = "tank/appdata"
+  #   share_type = "APPS"
   # }
 }
