@@ -1,7 +1,8 @@
 variable "dataset" {
   description = "One filesystem dataset and its optional NFS and SMB shares."
   type = object({
-    name = string
+    name    = string
+    protect = optional(bool, true)
     filesystem_acl = optional(object({
       preset         = optional(string)
       group_gid      = optional(number)
@@ -13,6 +14,8 @@ variable "dataset" {
         tag         = string
         who         = optional(string)
         id          = optional(number)
+        group       = optional(string)
+        user        = optional(string)
         type        = optional(string)
         default     = optional(bool)
         perms       = optional(map(bool))
@@ -113,7 +116,7 @@ variable "dataset" {
       var.dataset.filesystem_acl.preset == null
       ? var.dataset.filesystem_acl.group_gid == null && var.dataset.filesystem_acl.group_name == null && length(var.dataset.filesystem_acl.group_names) == 0
       : try(
-        var.dataset.filesystem_acl.preset == "posix_group_rw_others_ro" &&
+        var.dataset.filesystem_acl.preset == "nfs4_group_rw_others_ro" &&
         length(compact([
           var.dataset.filesystem_acl.group_gid == null ? "" : "group_gid",
           var.dataset.filesystem_acl.group_name == null ? "" : "group_name",
@@ -136,12 +139,25 @@ variable "dataset" {
   }
 
   validation {
+    condition = var.dataset.filesystem_acl == null ? true : try(
+      var.dataset.filesystem_acl.preset != "nfs4_group_rw_others_ro" ||
+      contains(["MULTIPROTOCOL", "SMB"], coalesce(var.dataset.share_type, "")) ||
+      lower(coalesce(var.dataset.acltype, "")) == "nfsv4",
+      false
+    )
+    error_message = "The NFSv4 preset needs a dataset created with the MULTIPROTOCOL or SMB preset, or acltype = nfsv4."
+  }
+
+  validation {
     condition = var.dataset.filesystem_acl == null ? true : var.dataset.filesystem_acl.preset != null ? true : try(
       contains(["POSIX1E", "NFS4"], var.dataset.filesystem_acl.type) &&
       length(var.dataset.filesystem_acl.entries) > 0 &&
       alltrue([
         for ace in var.dataset.filesystem_acl.entries :
-        (ace.who == null || ace.id == null) &&
+        length(compact([ace.who == null ? "" : "who", ace.id == null ? "" : "id", ace.group == null ? "" : "group", ace.user == null ? "" : "user"])) == 1 ||
+        (ace.id == null && ace.who == null && ace.group == null && ace.user == null) &&
+        (ace.group == null || ace.tag == "GROUP") &&
+        (ace.user == null || ace.tag == "USER") &&
         ((ace.perms == null) != (ace.basic_perms == null)) &&
         (ace.flags == null || ace.basic_flags == null) &&
         (var.dataset.filesystem_acl.type == "POSIX1E"

@@ -37,7 +37,8 @@ variable "truenas_ca_cert" {
 variable "datasets" {
   description = "Managed filesystem datasets, keyed by stable deployment labels."
   type = map(object({
-    name = string
+    name    = string
+    protect = optional(bool, true)
     filesystem_acl = optional(object({
       preset         = optional(string)
       group_gid      = optional(number)
@@ -49,6 +50,8 @@ variable "datasets" {
         tag         = string
         who         = optional(string)
         id          = optional(number)
+        group       = optional(string)
+        user        = optional(string)
         type        = optional(string)
         default     = optional(bool)
         perms       = optional(map(bool))
