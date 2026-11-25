@@ -348,6 +348,23 @@ run "keeps_guest_access_closed_on_a_legacy_share" {
   }
 }
 
+run "rejects_a_posix_acl_on_an_smb_dataset" {
+  command = plan
+
+  variables {
+    dataset = {
+      name       = "tank/example"
+      share_type = "SMB"
+      filesystem_acl = {
+        type    = "POSIX1E"
+        entries = [{ tag = "USER_OBJ", perms = { READ = true, WRITE = true, EXECUTE = true } }]
+      }
+    }
+  }
+
+  expect_failures = [var.dataset]
+}
+
 run "maps_dataset_acl_types_to_entry_types" {
   command = plan
 

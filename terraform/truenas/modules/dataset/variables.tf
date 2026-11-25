@@ -205,6 +205,14 @@ variable "dataset" {
   }
 
   validation {
+    condition = try(!(
+      var.dataset.filesystem_acl.type == "POSIX1E" &&
+      contains(["SMB", "MULTIPROTOCOL"], coalesce(var.dataset.share_type, ""))
+    ), true)
+    error_message = "An SMB or multiprotocol dataset needs an NFS4 ACL."
+  }
+
+  validation {
     condition = try(!var.dataset.filesystem_acl.inherit_access || (
       var.dataset.filesystem_acl.type == "POSIX1E" &&
       alltrue([for ace in var.dataset.filesystem_acl.entries : ace.default == null || ace.default == false])
