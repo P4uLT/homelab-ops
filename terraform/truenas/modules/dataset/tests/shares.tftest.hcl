@@ -335,6 +335,22 @@ run "allows_a_reviewed_replacement" {
   }
 }
 
+run "maps_dataset_acl_types_to_entry_types" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", acltype = "nfsv4", share_type = "MULTIPROTOCOL" }
+  }
+
+  assert {
+    condition = (
+      local.acl_type_from_dataset["nfsv4"] == "NFS4" &&
+      local.acl_type_from_dataset["posix"] == "POSIX1E"
+    )
+    error_message = "The dataset vocabulary and the entry vocabulary must map explicitly."
+  }
+}
+
 run "rejects_an_invalid_type_on_a_named_entry" {
   command = plan
 

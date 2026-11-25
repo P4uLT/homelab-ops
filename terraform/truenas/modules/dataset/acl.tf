@@ -22,6 +22,13 @@ data "truenas_group" "acl" {
 
 locals {
   acl = var.dataset.filesystem_acl
+
+  # The dataset reports posix or nfsv4. An ACL entry uses POSIX1E or NFS4.
+  acl_type_from_dataset = {
+    posix = "POSIX1E"
+    nfsv4 = "NFS4"
+  }
+
   # Sort by GID so the entry order stays stable.
   acl_group_gids = try(local.acl.group_gid, null) != null ? [local.acl.group_gid] : [
     for gid in sort(distinct([for group in data.truenas_group.acl : format("%020d", group.gid)])) : tonumber(gid)
@@ -98,7 +105,7 @@ resource "truenas_filesystem_acl" "this" {
       # A converted dataset reports its old ACL type until setacl runs.
       condition = (
         data.truenas_filesystem_acl.this[each.key].acltype == each.value.type ||
-        try(lower(coalesce(truenas_dataset.this.acltype, "")) == lower(each.value.type), false)
+        try(local.acl_type_from_dataset[lower(coalesce(truenas_dataset.this.acltype, ""))] == each.value.type, false)
       )
       error_message = "The dataset's ACL type must match the declared filesystem ACL, or be set to it in the same apply."
     }
