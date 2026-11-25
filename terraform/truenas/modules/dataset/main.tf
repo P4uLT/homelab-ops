@@ -33,8 +33,18 @@ resource "truenas_dataset" "this" {
   }
 }
 
+locals {
+  nfs_share = var.dataset.nfs == null ? {} : { share = var.dataset.nfs }
+
+  smb_share = var.dataset.smb == null ? {} : { share = var.dataset.smb }
+
+  # An omitted guestok is false for a legacy share. Other presets keep it unset,
+  # so the provider doesn't send a legacy-only option.
+  smb_guestok = var.dataset.smb != null && var.dataset.smb.options == null && coalesce(var.dataset.smb.purpose, "LEGACY_SHARE") == "LEGACY_SHARE" ? coalesce(var.dataset.smb.guestok, false) : try(var.dataset.smb.guestok, null)
+}
+
 resource "truenas_nfs_share" "this" {
-  for_each = var.dataset.nfs == null ? {} : { share = var.dataset.nfs }
+  for_each = local.nfs_share
 
   path             = truenas_dataset.this.mountpoint
   comment          = each.value.comment
@@ -53,22 +63,18 @@ resource "truenas_nfs_share" "this" {
 }
 
 resource "truenas_smb_share" "this" {
-  for_each = var.dataset.smb == null ? {} : { share = var.dataset.smb }
+  for_each = local.smb_share
 
-  path          = truenas_dataset.this.mountpoint
-  name          = each.value.name
-  abe           = each.value.abe
-  acl           = each.value.acl
-  audit         = each.value.audit
-  browsable     = each.value.browsable
-  comment       = each.value.comment
-  durablehandle = each.value.durablehandle
-  enabled       = each.value.enabled
-  guestok = (
-    each.value.options == null && coalesce(each.value.purpose, "LEGACY_SHARE") == "LEGACY_SHARE"
-    ? coalesce(each.value.guestok, false)
-    : each.value.guestok
-  )
+  path              = truenas_dataset.this.mountpoint
+  name              = each.value.name
+  abe               = each.value.abe
+  acl               = each.value.acl
+  audit             = each.value.audit
+  browsable         = each.value.browsable
+  comment           = each.value.comment
+  durablehandle     = each.value.durablehandle
+  enabled           = each.value.enabled
+  guestok           = local.smb_guestok
   home              = each.value.home
   hostsallow        = each.value.hostsallow
   hostsdeny         = each.value.hostsdeny

@@ -1,4 +1,5 @@
 mock_provider "truenas" {
+
   mock_resource "truenas_dataset" {
     defaults = { mountpoint = "/mnt/tank/example" }
   }
@@ -329,6 +330,36 @@ run "allows_a_reviewed_replacement" {
     )
     error_message = "A reviewed replacement must rebuild the dataset and its ACL without force-destroy."
   }
+}
+
+run "rejects_an_unknown_dataset_preset" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", share_type = "SMB2" }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_an_unknown_acl_type" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", acltype = "windows" }
+  }
+
+  expect_failures = [var.dataset]
+}
+
+run "rejects_an_unknown_smb_purpose" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", smb = { name = "example", purpose = "SHARE" } }
+  }
+
+  expect_failures = [var.dataset]
 }
 
 run "retains_the_disabled_share_address" {

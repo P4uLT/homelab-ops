@@ -25,15 +25,21 @@ resource "truenas_user" "provisioner" {
   smb                  = false
 }
 
+locals {
+  storage_roles = ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE"]
+
+  # Each optional capability adds only the roles its operations require.
+  share_roles     = var.provision_smb_shares ? ["SHARING_SMB_READ", "SHARING_SMB_WRITE"] : []
+  acl_roles       = var.provision_dataset_acls ? ["FILESYSTEM_ATTRS_READ", "FILESYSTEM_ATTRS_WRITE"] : []
+  lookup_roles    = var.provision_group_lookup ? ["ACCOUNT_READ"] : []
+  provision_roles = concat(local.storage_roles, local.share_roles, local.acl_roles, local.lookup_roles)
+}
+
 resource "truenas_privilege" "provisioner" {
   name         = "OpenTofu storage provisioning"
   local_groups = [truenas_group.provisioner.gid]
-  roles = concat(
-    ["DATASET_READ", "DATASET_WRITE", "SHARING_NFS_READ", "SHARING_NFS_WRITE"], var.provision_smb_shares ? ["SHARING_SMB_READ", "SHARING_SMB_WRITE"] : [],
-    var.provision_dataset_acls ? ["FILESYSTEM_ATTRS_READ", "FILESYSTEM_ATTRS_WRITE"] : [],
-    var.provision_group_lookup ? ["ACCOUNT_READ"] : []
-  )
-  web_shell = false
+  roles        = local.provision_roles
+  web_shell    = false
 }
 
 resource "truenas_api_key" "provisioner" {

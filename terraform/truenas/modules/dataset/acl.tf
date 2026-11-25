@@ -47,24 +47,22 @@ locals {
     type           = local.acl.preset == "nfs4_group_rw_others_ro" ? "NFS4" : local.acl.type
     inherit_access = local.acl.inherit_access
   })
-}
 
-data "truenas_filesystem_acl" "this" {
-  for_each = var.dataset.filesystem_acl == null ? toset([]) : toset(["managed"])
+  acl_managed = local.filesystem_acl == null ? {} : { managed = local.filesystem_acl }
 
-  path = truenas_dataset.this.mountpoint
-}
+  acl_entries = try(local.acl.entries, [])
+  acl_inherit = try(local.acl.inherit_access, false)
 
-resource "truenas_filesystem_acl" "this" {
-  for_each = var.dataset.filesystem_acl == null ? {} : { managed = local.filesystem_acl }
+  # POSIX inheritance duplicates each access entry as a default entry.
+  ace_source = local.acl_inherit ? concat(
+    [for ace in local.acl_entries : merge(ace, { default = false })],
+    [for ace in local.acl_entries : merge(ace, { default = true })],
+  ) : local.acl_entries
 
-  path      = data.truenas_filesystem_acl.this[each.key].path
-  recursive = false
-  entries = local.preset_entries == null ? jsonencode([
-    for ace in(each.value.inherit_access ? concat(
-      [for entry in each.value.entries : merge(entry, { default = false })],
-      [for entry in each.value.entries : merge(entry, { default = true })],
-      ) : each.value.entries) : {
+  # Provider shape: drop module-only fields, resolve named identities, and
+  # spell basic permissions as BASIC.
+  ace_payload = [
+    for ace in local.ace_source : {
       for key, value in merge(
         { for key, value in ace : key => value if !contains(["basic_perms", "basic_flags", "group", "user"], key) },
         ace.group == null ? {} : { id = data.truenas_group.entry[ace.group].gid },
@@ -73,7 +71,24 @@ resource "truenas_filesystem_acl" "this" {
         ace.basic_flags == null ? {} : { flags = { BASIC = ace.basic_flags } }
       ) : key => value if value != null
     }
-  ]) : jsonencode(local.preset_entries)
+  ]
+
+  preset_entries_json = local.preset_entries == null ? null : jsonencode(local.preset_entries)
+
+}
+
+data "truenas_filesystem_acl" "this" {
+  for_each = local.acl_managed
+
+  path = truenas_dataset.this.mountpoint
+}
+
+resource "truenas_filesystem_acl" "this" {
+  for_each = local.acl_managed
+
+  path      = data.truenas_filesystem_acl.this[each.key].path
+  recursive = false
+  entries   = coalesce(local.preset_entries_json, jsonencode(local.ace_payload))
 
   lifecycle {
     # Replacing a dataset destroys its ACL too.

@@ -112,6 +112,25 @@ variable "dataset" {
   nullable = false
 
   validation {
+    condition     = var.dataset.share_type == null || contains(["GENERIC", "SMB", "MULTIPROTOCOL", "NFS", "APPS"], upper(var.dataset.share_type))
+    error_message = "Use a TrueNAS dataset preset: GENERIC, SMB, MULTIPROTOCOL, NFS, or APPS."
+  }
+
+  validation {
+    condition     = var.dataset.acltype == null || contains(["posix", "nfsv4", "off", "inherit"], lower(var.dataset.acltype))
+    error_message = "Use an ACL type: posix, nfsv4, off, or inherit."
+  }
+
+  validation {
+    condition = try(
+      var.dataset.smb == null || var.dataset.smb.purpose == null ||
+      contains(["DEFAULT_SHARE", "LEGACY_SHARE", "TIMEMACHINE_SHARE", "MULTIPROTOCOL_SHARE", "TIME_LOCKED_SHARE", "PRIVATE_DATASETS_SHARE", "EXTERNAL_SHARE", "VEEAM_REPOSITORY_SHARE", "FCP_SHARE"], var.dataset.smb.purpose),
+      false
+    )
+    error_message = "Use a documented SMB share purpose."
+  }
+
+  validation {
     condition = var.dataset.filesystem_acl == null ? true : (
       var.dataset.filesystem_acl.preset == null
       ? var.dataset.filesystem_acl.group_gid == null && var.dataset.filesystem_acl.group_name == null && length(var.dataset.filesystem_acl.group_names) == 0
