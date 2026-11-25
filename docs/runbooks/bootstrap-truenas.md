@@ -1,7 +1,7 @@
 # Bootstrap TrueNAS on the Gen8
 
 Use this runbook for a fresh TrueNAS Community Edition 25.10 installation.
-OpenTofu manages the pool and shares, not the TrueNAS installation or its
+OpenTofu manages storage and access, not the TrueNAS installation or its
 initial network access. The roots use the
 [official TrueNAS provider](https://github.com/truenas/terraform-provider-truenas/tree/v1.9.3).
 
@@ -26,7 +26,6 @@ certificate verification.
 
 ```sh
 task tf:truenas-gen8-bootstrap-plan
-task tf:truenas-gen8-bootstrap-apply
 ```
 
 Review the plan before running apply. Apply presents a fresh plan. For a new
@@ -37,6 +36,9 @@ grant file access to `terraform-prov`. Stop if the plan deletes or replaces
 anything.
 `prevent_destroy` protects the pool while the resource stays in configuration.
 Don't remove the resource block as a way to bypass that check.
+
+After approval, run `task tf:truenas-gen8-bootstrap-apply`. Review the fresh
+plan before confirming.
 
 If you already applied the bootstrap without the API key resource, expect
 only `truenas_api_key.provisioner` to be added. Stop if the plan changes the
@@ -63,7 +65,6 @@ removing its shares. Both services default to `true` on the Gen8.
 
 ```sh
 task tf:truenas-gen8-plan
-task tf:truenas-gen8-apply
 ```
 
 For a new NAS, expect `tank/iso` and its read-only NFS export. Replace the
@@ -74,6 +75,9 @@ It isn't restricted to `tank/iso` by TrueNAS. If the provider reports a
 permission error, identify the failing method before granting another role.
 Don't switch this root to the admin key.
 
+After approval, run `task tf:truenas-gen8-apply`. Review the fresh plan
+before confirming.
+
 As a TrueNAS operator, place an image in `template/iso/` under the dataset
 through an authorized write path. Proxmox can't upload to this read-only
 export. In Proxmox, register the NFS storage with type `iso` only and check
@@ -83,33 +87,32 @@ its local copy. Issue a fresh admin key if the bootstrap root needs maintenance.
 
 ## Add Windows access to the image library
 
-1. In the bootstrap root's local tfvars, set `provision_smb_shares = true`.
-   Add the file group and account shown in the example. Set the password in
-   `user_passwords` using the same label as the account. Keep the file
-   readable only by its owner. To rotate a password, change the secret and
-   increment the account's `password_wo_version`.
-2. Review the bootstrap plan. Expect the file group and account, and a
-   privilege change only if share management wasn't already enabled.
-   The plan must not modify the pool or replace the provisioning key.
-3. Check the existing permissions on `tank/iso` in TrueNAS. Grant the file
-   group only the access it needs and preserve Proxmox's NFS read access.
-   Neither the account nor the share grants filesystem permissions. Don't
-   change the existing dataset's ACL type or preset to add a share: those
-   settings can cause replacement.
-4. Add the optional `smb` block to `datasets.iso` in the provisioning
-   root's local tfvars. Expect only an extra share in the plan. Leave
-   the NFS block unchanged. Keep the Windows share read-only until you need
-   uploads and have checked the effective permissions.
-5. In Windows Explorer, open `\\\\<nas-address>\\iso` as the file user.
-   Use an address that resolves directly to the NAS, not its reverse proxy.
-   If you enable uploads, place images under `template/iso/` so Proxmox
-   can find them.
+1. In the bootstrap tfvars, set `provision_smb_shares = true`. Add the
+   example group and user. Set `user_passwords` using the user's map key.
+   Keep the local file readable only by its owner.
+2. If OpenTofu will manage the dataset permissions, configure the bootstrap
+   roles in [Manage dataset permissions](#manage-dataset-permissions).
+3. Plan the bootstrap changes. Expect the new identities and any role
+   changes you enabled. Stop if the plan changes the pool or replaces the
+   provisioning key. Apply only after approval.
+4. Review the permissions on `tank/iso`. Add the example `smb` block to
+   `datasets.iso` in the storage tfvars. Leave the NFS export unchanged.
+   Keep `smb.ro = true` until you want uploads and have checked access.
+   Plan and review the share and permission changes before applying.
+5. In Windows Explorer, open `\\<nas-address>\iso` with the file user.
+   Use the NAS address, not the web reverse proxy.
 
-### Allow Windows uploads to the image library
+For uploads, set `smb.ro = false` and grant the publishing group write
+access on the dataset. The share setting alone doesn't grant file access.
+Create `template/iso/` from Windows if it doesn't exist. Create and remove
+a test file there, then check that an uploaded image appears in Proxmox.
 
-Set `smb.ro = false` in the provisioning tfvars for uploads. This doesn't
-change the NFS export mode. Review the dataset permissions before allowing
-writes. Create `template/iso/` from Windows if it doesn't exist yet.
+To rotate a password, change the local secret and increment the user's
+`password_wo_version`. Changing `full_name` doesn't change the login.
+Changing `username` forces account replacement with the pinned provider.
+To preserve access during a login change, create the new account in the same
+group. Test it before removing the old account in a separate reviewed apply.
+Keep map keys stable for existing accounts and groups.
 
 ## Add datasets and shares
 
@@ -133,19 +136,39 @@ in the bootstrap tfvars. This grants filesystem attribute read and write
 roles to the storage identity. TrueNAS doesn't scope these roles to one
 dataset. The storage identity still can't manage users or groups.
 
-In the provisioning tfvars, set `filesystem_acl.type` to match the dataset:
+For an image library with a publishing group, use
+`filesystem_acl.preset = "posix_group_rw_others_ro"` and set `group_gid` to
+the group's numeric ID. For one group by name, use `group_name`. For several,
+use `group_names`. Use only one of these settings. For either name-based
+setting, enable `provision_group_lookup` in the bootstrap tfvars. This grants
+account and group read access through `ACCOUNT_READ`, not write access.
+Apply the approved bootstrap role changes before planning storage.
+The module resolves the names and sends only numeric IDs to the ACL.
+The preset grants the owner and each selected group write access. Others
+keep read and traverse access. The preset sets default entries for new
+children and requires a dataset with a `POSIX1E` ACL.
+
+For a custom ACL, set `filesystem_acl.type` to match the dataset:
 `POSIX1E` or `NFS4`. Declare the full ACL in `filesystem_acl.entries`.
 Use `id` with the numeric group ID. Resolving `who` at refresh requires
-`ACCOUNT_READ`, which the storage identity doesn't have. The module encodes
+`ACCOUNT_READ`, which the storage identity doesn't have by default. The module encodes
 the entries for the provider. See `datasets.iso` in the provisioning example.
 Review the current permissions first. The resource replaces the full list
-on that path without changing existing child files or directories.
+on that path without changing existing child files or directories. Don't
+bypass deletion protection to stop managing an ACL: the provider removes
+extended ACL entries when it destroys the resource. To keep the ACL without
+managing it, back up the state and use a reviewed state-only removal.
 
 For new datasets accessed over both protocols, use `share_type = "MULTIPROTOCOL"`
 and `smb.purpose = "MULTIPROTOCOL_SHARE"`. See the
 [TrueNAS multiprotocol guide](https://www.truenas.com/docs/scale/25.10/scaletutorials/shares/mixedmodeshares/).
 Don't set a new preset or ACL type on an existing dataset to match this
 example. OpenTofu can plan to replace it.
+
+TrueNAS can require a full administrator to convert an existing Legacy Share
+to a Multi-Protocol Share. If the update fails on `auxsmbconf`, make the
+approved preset change in TrueNAS. Then run a storage plan to check for
+drift. Don't elevate the provisioning key for this conversion.
 
 ### Set capacity and encryption
 
@@ -166,4 +189,4 @@ plan would create a pool on disks that still hold data. Restore lost data from
 backup, not from the OpenTofu state.
 
 The mocked tests in `task tf:test-truenas` don't qualify live permissions,
-disk discovery, or NFS access. No live run has been verified yet.
+disk discovery, or client access. Verify those on the target system.

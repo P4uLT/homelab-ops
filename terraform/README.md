@@ -18,10 +18,10 @@ OpenTofu roots and modules, grouped by provider and target.
   node's Terraform access chain.
 - `bootstrap/truenas/gen8/` owns the Gen8 pool, provisioning identity, local
   users and groups, and NFS and `cifs` services. `truenas/gen8/` owns
-  datasets and shares. See the [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
+  datasets, permissions, and shares. See the [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
   Neither root manages dynamically provisioned Kubernetes volumes.
-- `truenas/modules/dataset/`: one protected filesystem dataset and optional
-  file shares. The Gen8 root calls it once per entry in `datasets`.
+- `truenas/modules/dataset/`: one protected filesystem dataset with optional
+  permissions and file shares. The Gen8 root calls it once per entry in `datasets`.
 - `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
 
 An LXC apply writes `ansible/inventory/servers/iac.tf.<node>.yml` with the

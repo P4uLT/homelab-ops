@@ -58,8 +58,8 @@ include unrelated resources through dependency graphs.
 | `bootstrap/ovh/` | the state bucket, its user, and its policy | once |
 | `bootstrap/pve/jarvis/` | the Terraform access chain on jarvis: role, group, user, ACL, API token | once |
 | `proxmox/jarvis/` | the PVE server jarvis | often |
-| `bootstrap/truenas/gen8/` | the Gen8 data pool, provisioning identity, and file services | rarely |
-| `truenas/gen8/` | the Gen8 datasets and shares | sometimes |
+| `bootstrap/truenas/gen8/` | the Gen8 data pool, identities, and file services | rarely |
+| `truenas/gen8/` | the Gen8 datasets, permissions, and shares | sometimes |
 | `dns/` (planned) | public DNS zone | sometimes |
 | `ovh-project/` (planned) | account-level users | rare |
 
