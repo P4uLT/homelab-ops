@@ -109,5 +109,10 @@ resource "truenas_filesystem_acl" "this" {
       )
       error_message = "The dataset's ACL type must match the declared filesystem ACL, or be set to it in the same apply."
     }
+
+    precondition {
+      condition     = alltrue([for gid in local.acl_group_gids : gid > 0])
+      error_message = "The ACL preset refuses a group whose ID is 0."
+    }
   }
 }

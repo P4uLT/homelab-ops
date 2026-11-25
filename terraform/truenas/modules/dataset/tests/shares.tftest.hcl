@@ -313,6 +313,11 @@ run "resolves_nfs4_group_and_user_names" {
 run "allows_a_reviewed_replacement" {
   command = plan
 
+  override_data {
+    target = data.truenas_group.acl
+    values = { gid = 12345 }
+  }
+
   variables {
     dataset = {
       name       = "tank/replacement"
