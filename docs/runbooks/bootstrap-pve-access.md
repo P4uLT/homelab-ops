@@ -53,9 +53,10 @@ Get owner approval before any step that contacts the node.
 2. Initialize the roots with `task tf:init`.
    This reads the remote state backend, not the PVE node.
 3. Plan with `task tf:pve-jarvis-plan`.
-   On the first run, review the imports for the existing role, group, user,
-   and ACL. The plan creates the workload token if it isn't in state.
-   For existing state, review the [address mappings](#recovery).
+   Leave `adopt_existing_access` at its default to import the existing role,
+   group, user, and ACL. Set it to `false` only for a clean PVE node with a
+   fresh access state. That plan creates the access objects instead of
+   importing them. For existing state, review the [address mappings](#recovery).
 4. Apply: `task tf:pve-jarvis-apply -- -auto-approve`. Owner
    approval: the apply writes to the node.
 5. Read the workload token with `task tf:pve-jarvis-output -- -raw token_value`.

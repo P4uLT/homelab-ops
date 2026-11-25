@@ -299,12 +299,12 @@ variable "os_type" {
 }
 
 variable "image_file_id" {
-  description = "Decompressed QCOW2 image ID in ISO content, imported through provider SSH."
+  description = "Decompressed QCOW2 image ID. Import volumes use the API; ISO volumes use SSH."
   type        = string
 
   validation {
-    condition     = can(regex("^[A-Za-z0-9_-]+:iso/[A-Za-z0-9_.-]+[.]qcow2[.]img$", var.image_file_id))
-    error_message = "image_file_id must identify a decompressed datastore:iso/name.qcow2.img image."
+    condition     = can(regex("^[A-Za-z0-9_-]+:(iso/[A-Za-z0-9_.-]+[.]qcow2[.]img|import/[A-Za-z0-9_.-]+[.]qcow2)$", var.image_file_id))
+    error_message = "image_file_id must identify a decompressed datastore:import/name.qcow2 or datastore:iso/name.qcow2.img image."
   }
 }
 

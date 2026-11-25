@@ -87,22 +87,30 @@ resource "proxmox_user_token" "tf" {
   }
 }
 
-import {
-  to = proxmox_virtual_environment_role.terraform_provisioning
-  id = "Terraform_Provisioning"
+locals {
+  access_imports = var.adopt_existing_access ? toset(["Terraform_Provisioning"]) : toset([])
 }
 
 import {
-  to = proxmox_virtual_environment_group.terraform_provisioning
-  id = "Terraform_Provisioning"
+  for_each = local.access_imports
+  to       = proxmox_virtual_environment_role.terraform_provisioning
+  id       = each.value
 }
 
 import {
-  to = proxmox_virtual_environment_user.terraform_prov
-  id = "terraform-prov@pve"
+  for_each = local.access_imports
+  to       = proxmox_virtual_environment_group.terraform_provisioning
+  id       = each.value
 }
 
 import {
-  to = proxmox_acl.terraform_provisioning
-  id = "/?Terraform_Provisioning?Terraform_Provisioning"
+  for_each = local.access_imports
+  to       = proxmox_virtual_environment_user.terraform_prov
+  id       = "terraform-prov@pve"
+}
+
+import {
+  for_each = local.access_imports
+  to       = proxmox_acl.terraform_provisioning
+  id       = "/?Terraform_Provisioning?Terraform_Provisioning"
 }

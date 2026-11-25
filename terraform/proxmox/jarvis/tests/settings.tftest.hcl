@@ -77,6 +77,66 @@ run "root_accepts_typed_overrides" {
   }
 }
 
+run "haos_profile_uses_import_content_without_ssh_or_lxc" {
+  command = plan
+  plan_options {
+    target = [local_file.ansible_inventory]
+  }
+  variables {
+    pve_ssh_username   = null
+    vm_image_downloads = {}
+    vm_image_files = {
+      haos = { storage = "local", content_type = "import", file_name = "haos-18.3.qcow2" }
+    }
+    vm_workloads = { home-assistant = { id = 1001, image = "haos" } }
+  }
+  assert {
+    condition = (
+      length(var.lxc_workloads) == 0 && var.pve_ssh_username == null &&
+      var.vm_image_files["haos"].content_type == "import" &&
+      var.vm_workloads["home-assistant"].protection &&
+      var.vm_workloads["home-assistant"].prevent_destroy
+    )
+    error_message = "The HAOS profile must allow native import without SSH and keep both VM guards."
+  }
+}
+
+run "external_import_rejects_an_iso_filename" {
+  command = plan
+
+  variables {
+    vm_image_files = {
+      fixture = { storage = "local", content_type = "import", file_name = "fixture-1.0.qcow2.img" }
+    }
+  }
+
+  expect_failures = [var.vm_image_files]
+}
+
+run "existing_iso_image_also_requires_ssh" {
+  command = plan
+
+  variables {
+    pve_ssh_username   = null
+    vm_image_downloads = {}
+    vm_image_files = {
+      fixture = { storage = "local", file_name = "fixture-1.0.qcow2.img" }
+    }
+    vm_workloads = { fixture = { id = 1001, image = "fixture" } }
+  }
+
+  expect_failures = [var.vm_workloads]
+}
+
+run "legacy_iso_path_still_requires_ssh" {
+  command = plan
+  variables {
+    pve_ssh_username = null
+    vm_workloads     = { fixture = { id = 1001, image = "fixture" } }
+  }
+  expect_failures = [var.vm_workloads]
+}
+
 run "legacy_ram_cannot_silently_reset_memory" {
   command = plan
   variables {

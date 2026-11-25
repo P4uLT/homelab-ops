@@ -1,3 +1,10 @@
+variable "adopt_existing_access" {
+  description = "Adopt existing PVE access objects. Set false only for a fresh access root on a clean PVE node."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
 variable "state_passphrase" {
   description = "Passphrase for the state encryption. Source: TF_VAR_state_passphrase in .env.tf."
   type        = string

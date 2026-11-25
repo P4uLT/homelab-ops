@@ -1,21 +1,21 @@
 # Discover existing files for managed downloads and external image references.
 data "proxmox_files" "vm_images" {
-  for_each = toset([for image in values(local.referenced_vm_images) : image.storage])
+  for_each = toset([for image in values(local.referenced_vm_images) : "${image.content_type}/${image.storage}"])
 
   node_name    = local.node
-  datastore_id = each.key
-  content_type = "iso"
+  datastore_id = split("/", each.key)[1]
+  content_type = split("/", each.key)[0]
 }
 
 locals {
   existing_vm_image_file_ids = {
     for label, image in local.referenced_vm_images :
     label => one([
-      for file in data.proxmox_files.vm_images[image.storage].files : file.id
+      for file in data.proxmox_files.vm_images["${image.content_type}/${image.storage}"].files : file.id
       if file.file_name == image.file_name
     ])
     if anytrue([
-      for file in data.proxmox_files.vm_images[image.storage].files :
+      for file in data.proxmox_files.vm_images["${image.content_type}/${image.storage}"].files :
       file.file_name == image.file_name
     ])
   }

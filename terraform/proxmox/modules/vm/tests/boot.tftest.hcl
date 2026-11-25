@@ -48,6 +48,23 @@ run "haos_boots_from_imported_disk_with_persistent_uefi" {
   }
 }
 
+run "haos_uses_native_import_for_an_import_volume" {
+  command = plan
+
+  variables {
+    image_file_id = "local:import/haos_ova-18.3.qcow2"
+  }
+
+  assert {
+    condition = (
+      proxmox_virtual_environment_vm.this.disk[0].file_id == null &&
+      proxmox_virtual_environment_vm.this.disk[0].import_from == var.image_file_id &&
+      proxmox_virtual_environment_vm.this.protection
+    )
+    error_message = "An Import volume must use the API disk path and keep VM protection."
+  }
+}
+
 run "additional_disks_are_attached_after_the_boot_disk" {
   command = plan
   variables {

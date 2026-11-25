@@ -11,10 +11,8 @@ OpenTofu roots and modules, grouped by provider and target.
 - `proxmox/modules/lxc/`: one running container cloned from a golden image.
   DHCP is the default, with optional static addressing in tfvars.
 - `proxmox/modules/vm/`: one VM booted from an imported QCOW2 image.
-  The Jarvis root manages API downloads and excludes VMs from Linux Ansible.
-  Disk imports use SSH with an agent key. Conditional imports adopt managed
-  images, while `vm_image_files` references existing files without managing them.
-  Removing a workload preserves its image. Removing a download pin deletes that image.
+  The Jarvis root excludes VMs from Linux Ansible. See [VM image sources](#vm-image-sources)
+  for download ownership and SSH requirements.
 - `bootstrap/`: frozen credential and backend roots. `bootstrap/ovh/` creates
   the state backend and uses local state. `bootstrap/pve/<node>/` creates a
   node's Terraform access chain.
@@ -40,6 +38,54 @@ Declare the state key in each root's `backend.tf`, using
 `<path>/terraform.tfstate`, as in `proxmox/jarvis/terraform.tfstate`.
 A directory move doesn't move state. Keep the existing key unless a separate
 [state migration](BACKEND.md#state-locations-and-code-moves) is approved.
+
+## VM image sources
+
+| Input | Use case | Image owner | Disk import |
+| --- | --- | --- | --- |
+| `vm_image_downloads` | Install from a published, versioned `.qcow2.xz` archive. Pin its URL and SHA256. PVE downloads and decompresses it into `iso` storage. | OpenTofu | `disk.file_id`, over SSH |
+| `vm_image_files`, `content_type = "iso"` | Reuse an existing `.qcow2.img` in `iso` storage, such as a file retained after a transfer of ownership. | Operator or another tool | `disk.file_id`, over SSH |
+| `vm_image_files`, `content_type = "import"` | Use a verified, decompressed `.qcow2` already available in Import storage. A separate tool can publish it. | Operator or another tool | `disk.import_from`, through the PVE API |
+
+The download itself uses the PVE API. For an `iso` volume, bpg connects to the
+hypervisor over SSH to import and attach the disk. With an `import` volume, PVE
+performs the import through its API. The API token and SSH key are separate
+credentials. See the [bpg compressed-image guide](https://github.com/bpg/terraform-provider-proxmox/blob/v0.116.0/docs/guides/cloud-image.md#create-a-vm-from-a-compressed-cloud-image).
+
+Set `pve_ssh_username` and use a dedicated SSH agent key when an import needs
+SSH. Keep the private key out of tfvars. Leave `pve_ssh_username` unset on
+roots that only use the API. An SSH login with broad privileges isn't limited
+by the API token's permissions.
+
+Use one image map per label. Removing a VM doesn't remove a managed image.
+Removing its download pin schedules file deletion. Before switching a managed
+file to `vm_image_files`, follow [the image retention runbook](../docs/runbooks/retain-pve-vm-image.md).
+A lookup or adoption by filename doesn't verify the existing bytes.
+
+Keep one workload root per PVE node for this workflow. A state split doesn't
+restrict SSH access on the hypervisor. Scope the key to the runs that need it.
+Split roots only when different operators, credentials, or apply schedules
+need separate control. See [root layout rules](BACKEND.md#root-layout-rules).
+
+## Example: Home Assistant OS on Jarvis
+
+Use the [Proxmox VM runbook](../docs/runbooks/provision-pve-vm.md) and the
+[Jarvis workload examples](proxmox/jarvis/jarvis.local.auto.tfvars.example).
+For a fresh Jarvis state with only Home Assistant, set `lxc_workloads = {}`
+and declare one VM. Don't use that configuration against the existing Jarvis
+state, which also manages an LXC workload.
+
+For a fresh install, use the managed `vm_image_downloads` example. PVE
+verifies and decompresses the archive on a new download. If the plan adopts
+an existing file by name, verify its contents independently before approval.
+Set `pve_ssh_username`
+and load the dedicated key into `ssh-agent` for the disk import. Verify the
+node's host key first. This path needs no local copy or image mirror.
+Leave the existing image reference unchanged when keeping a running VM.
+
+Before replacing an existing instance, verify its backup and encryption key
+outside Jarvis. Restore the backup only after separate approval. Upgrade Home
+Assistant OS from Home Assistant, not by changing the image pin.
 
 ## VM hardware settings
 
@@ -120,7 +166,8 @@ The LXC module doesn't set `prevent_destroy`.
 
 Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
-Both are included in `task verify` and use fixtures without host contact or
+Run `task tf:test-pve-bootstrap` to check the clean-node access path.
+These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't
 mockable. They don't qualify live node or VM behavior.
