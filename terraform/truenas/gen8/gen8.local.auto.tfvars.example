@@ -1,0 +1,81 @@
+truenas_host    = "nas.example.invalid"
+truenas_api_key = "replace-locally"
+# truenas_ca_cert = "/path/to/management-ca.pem"
+
+datasets = {
+  iso = {
+    name        = "tank/iso"
+    recordsize  = "1M"
+    compression = "lz4"
+    nfs = {
+      hosts = ["pve.example.invalid"] # Replace with a host that TrueNAS can resolve.
+      # Or replace hosts with networks = ["192.0.2.0/24"] for an authorized subnet.
+      comment = "Proxmox VE ISO library"
+      ro      = true
+    }
+    # Optional Windows access. Enable it with the ACL below for uploads.
+    # Use ro = true if Windows should only read.
+    # smb = {
+    #   name      = "iso"
+    #   browsable = true
+    #   guestok   = false
+    #   ro        = false
+    # }
+
+    # Optional write access for smb-users on the Gen8 ISO dataset.
+    # Enable provision_dataset_acls in the bootstrap root first.
+    # Compare this full ACL with the live ACL and replace 12345 with the smb-users GID.
+    # filesystem_acl = {
+    #   type           = "POSIX1E"
+    #   inherit_access = true
+    #   entries = [
+    #     { tag = "USER_OBJ", perms = { READ = true, WRITE = true, EXECUTE = true } },
+    #     { tag = "GROUP_OBJ", perms = { READ = true, WRITE = false, EXECUTE = true } },
+    #     { tag = "GROUP", id = 12345, perms = { READ = true, WRITE = true, EXECUTE = true } },
+    #     { tag = "MASK", perms = { READ = true, WRITE = true, EXECUTE = true } },
+    #     { tag = "OTHER", perms = { READ = true, WRITE = false, EXECUTE = true } },
+    #   ]
+    # }
+  }
+
+  # Shared documents. Grant the SMB group read access in the dataset ACL.
+  # documents = {
+  #   name = "tank/documents"
+  #   smb = {
+  #     name      = "documents"
+  #     browsable = true
+  #     guestok   = false
+  #     ro        = true
+  #   }
+  # }
+
+  # NFS backups. NFS defaults to read/write. Replace the example client IP.
+  # backups = {
+  #   name = "tank/backups"
+  #   nfs = {
+  #     hosts = ["192.0.2.10"]
+  #   }
+  # }
+
+  # New dataset shared by Windows and Proxmox. Review and declare its ACL
+  # before making the share available. Don't add this preset to an existing dataset.
+  # media = {
+  #   name       = "tank/media"
+  #   share_type = "MULTIPROTOCOL"
+  #   nfs = {
+  #     hosts = ["pve.example.invalid"]
+  #     ro    = true
+  #   }
+  #   smb = {
+  #     name      = "media"
+  #     purpose   = "MULTIPROTOCOL_SHARE"
+  #     browsable = true
+  #     ro        = true
+  #   }
+  # }
+
+  # Local app data. Omit nfs and smb to keep it unshared.
+  # appdata = {
+  #   name = "tank/appdata"
+  # }
+}

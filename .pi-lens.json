@@ -3,6 +3,8 @@
     "terraform/bootstrap/ovh/backend.tf",
     "terraform/bootstrap/pve/jarvis/backend.tf",
     "terraform/proxmox/jarvis/backend.tf",
+    "terraform/bootstrap/truenas/gen8/backend.tf",
+    "terraform/truenas/gen8/backend.tf",
     "ansible/inventory/servers/group_vars/all/secrets.sops.yaml",
     "ansible/inventory/servers/group_vars/grp_servers_proxmox/secrets.sops.yaml",
     "ansible/inventory/servers/group_vars/grp_servers_proxmox_jarvis/secrets.sops.yaml",

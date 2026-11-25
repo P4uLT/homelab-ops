@@ -29,7 +29,7 @@ ansible/config/tmp/*
 *.tfstate
 *.tfstate.*
 .terraform/
-terraform/proxmox/modules/**/.terraform.lock.hcl
+terraform/*/modules/**/.terraform.lock.hcl
 # Plans and variable files can carry secrets.
 *.tfplan
 *.tfvars

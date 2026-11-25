@@ -16,8 +16,12 @@ OpenTofu roots and modules, grouped by provider and target.
 - `bootstrap/`: frozen credential and backend roots. `bootstrap/ovh/` creates
   the state backend and uses local state. `bootstrap/pve/<node>/` creates a
   node's Terraform access chain.
-- `truenas/` (planned) imports datasets, NFS shares, and snapshots, excluding
-  resources created by democratic-csi. The directory doesn't exist yet.
+- `bootstrap/truenas/gen8/` owns the Gen8 pool, provisioning identity, local
+  users and groups, and NFS and `cifs` services. `truenas/gen8/` owns
+  datasets and shares. See the [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
+  Neither root manages dynamically provisioned Kubernetes volumes.
+- `truenas/modules/dataset/`: one protected filesystem dataset and optional
+  file shares. The Gen8 root calls it once per entry in `datasets`.
 - `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
 
 An LXC apply writes `ansible/inventory/servers/iac.tf.<node>.yml` with the
@@ -167,6 +171,7 @@ The LXC module doesn't set `prevent_destroy`.
 Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
 Run `task tf:test-pve-bootstrap` to check the clean-node access path.
+Run `task tf:test-truenas` for the Gen8 pool, identity, and export contracts.
 These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't

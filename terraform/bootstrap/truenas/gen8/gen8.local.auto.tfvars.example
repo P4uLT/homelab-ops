@@ -1,0 +1,28 @@
+truenas_host    = "nas.example.invalid"
+truenas_api_key = "replace-locally"
+# truenas_ca_cert = "/path/to/management-ca.pem"
+disk_serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"]
+
+services = {
+  nfs  = true
+  cifs = true # SMB
+}
+
+provision_smb_shares = false
+
+# Optional SMB login. Grant access separately for each dataset.
+# groups = {
+#   smb = { name = "smb-users", smb = true }
+# }
+# users = {
+#   smb = {
+#     username      = "smb-user"
+#     full_name     = "SMB user"
+#     primary_group = "smb"
+#     smb           = true
+#   }
+# }
+# user_passwords = { smb = "replace-locally" }
+
+# Enables filesystem ACL management from the storage root. Not scoped to a dataset.
+# provision_dataset_acls = true

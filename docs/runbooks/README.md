@@ -11,6 +11,7 @@ Check mode can change a node.
 ## Terraform access and state
 
 - [Bootstrap PVE access](bootstrap-pve-access.md): create the workload API token.
+- [Bootstrap TrueNAS](bootstrap-truenas.md): create the pool and provisioning access.
 - [Bootstrap the state backend](bootstrap-tf-backend.md): create the OVH S3 bucket and credentials.
 - [Rotate the S3 credential](rotate-s3-credential.md): replace the backend key pair.
 - [Move Terraform code or state](move-tf-state.md)

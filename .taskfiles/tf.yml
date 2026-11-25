@@ -30,7 +30,13 @@ vars:
 
   # OpenTofu roots, by path under terraform/. Keep the list explicit: the
   # categories hold roots and modules, so no tool may guess a root.
-  TF_ROOTS: [bootstrap/ovh, bootstrap/pve/jarvis, proxmox/jarvis]
+  TF_ROOTS:
+    - bootstrap/ovh
+    - bootstrap/pve/jarvis
+    - proxmox/jarvis
+    - bootstrap/truenas/gen8
+    - truenas/gen8
+  TF_TRUENAS_ROOTS: [bootstrap/truenas/gen8, truenas/gen8]
   TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
@@ -42,6 +48,12 @@ vars:
       bootstrap/ovh: ""
       bootstrap/pve/jarvis: '-backend-config=../../../backend.s3.ovh.hcl -backend-config="bucket=$TF_VAR_bucket_name"'
       proxmox/jarvis: '-backend-config=../../backend.s3.ovh.hcl -backend-config="bucket=$TF_VAR_bucket_name"'
+      bootstrap/truenas/gen8: >-
+        -backend-config=../../../backend.s3.ovh.hcl
+        -backend-config="bucket=$TF_VAR_bucket_name"
+      truenas/gen8: >-
+        -backend-config=../../backend.s3.ovh.hcl
+        -backend-config="bucket=$TF_VAR_bucket_name"
 
 tasks:
   fmt:
@@ -82,6 +94,18 @@ tasks:
         msg: "Run task tf:init before testing the access root."
     cmd: tofu -chdir=terraform/bootstrap/pve/jarvis test {{.CLI_ARGS}}
 
+  test-truenas:
+    desc: Test the TrueNAS module and roots. No host contact.
+    cmds:
+      - >-
+        python terraform/truenas/modules/dataset/tests/check_catalog_type.py
+      - tofu -chdir=terraform/truenas/modules/dataset init -backend=false
+      - tofu -chdir=terraform/truenas/modules/dataset test {{.CLI_ARGS}}
+      - for:
+          var: TF_TRUENAS_ROOTS
+          as: ROOT
+        cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
+
   init:
     desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
     dotenv: [".env.tf"]
@@ -102,6 +126,58 @@ tasks:
       - task: init
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
+
+  truenas-gen8-bootstrap-plan:
+    desc: Preview the Gen8 bootstrap. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: >-
+      tofu -chdir=terraform/bootstrap/truenas/gen8 plan
+      -input=false {{.CLI_ARGS}}
+
+  truenas-gen8-bootstrap-apply:
+    desc: Apply the Gen8 bootstrap. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: >-
+      tofu -chdir=terraform/bootstrap/truenas/gen8 apply
+      -input=false {{.CLI_ARGS}}
+
+  truenas-gen8-bootstrap-output:
+    desc: Read a Gen8 bootstrap output. Raw key output is secret.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+    cmd: tofu -chdir=terraform/bootstrap/truenas/gen8 output {{.CLI_ARGS}}
+
+  truenas-gen8-plan:
+    desc: Preview the Gen8 storage. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/truenas/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: tofu -chdir=terraform/truenas/gen8 plan -input=false {{.CLI_ARGS}}
+
+  truenas-gen8-apply:
+    desc: Apply the Gen8 storage. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/truenas/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: tofu -chdir=terraform/truenas/gen8 apply -input=false {{.CLI_ARGS}}
 
   bootstrap-plan:
     desc: Plan the state backend.
