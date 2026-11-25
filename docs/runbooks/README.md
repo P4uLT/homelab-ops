@@ -20,6 +20,8 @@ Check mode can change a node.
 
 - [Build and qualify golden images](build-base-image.md)
 - [Provision an LXC workload](provision-pve-ct.md)
+- [Provision a Proxmox VM from a disk image](provision-pve-vm.md)
+- [Keep a Proxmox VM image outside Terraform management](retain-pve-vm-image.md)
 - [Override the Packer plugin locally](override-packer-plugin.md): install a development binary and restore the pinned release, without node contact.
 
 ## Design

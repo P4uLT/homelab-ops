@@ -12,8 +12,9 @@ OpenTofu roots and modules, grouped by provider and target.
   DHCP is the default, with optional static addressing in tfvars.
 - `proxmox/modules/vm/`: one VM booted from an imported QCOW2 image.
   The Jarvis root manages API downloads and excludes VMs from Linux Ansible.
-  Disk imports use SSH with an agent key. Conditional imports adopt managed
-  images, while `vm_image_files` references existing files without managing them.
+  Disk imports from `iso` storage use an SSH agent key. A verified QCOW2 in Import
+  storage uses the API instead. Conditional imports adopt managed downloads,
+  while `vm_image_files` references existing files without managing them.
   Removing a workload preserves its image. Removing a download pin deletes that image.
 - `bootstrap/`: frozen credential and backend roots. `bootstrap/ovh/` creates
   the state backend and uses local state. `bootstrap/pve/<node>/` creates a
@@ -40,6 +41,18 @@ Declare the state key in each root's `backend.tf`, using
 `<path>/terraform.tfstate`, as in `proxmox/jarvis/terraform.tfstate`.
 A directory move doesn't move state. Keep the existing key unless a separate
 [state migration](BACKEND.md#state-locations-and-code-moves) is approved.
+
+## Example: Home Assistant OS on Jarvis
+
+Use the [Proxmox VM runbook](../docs/runbooks/provision-pve-vm.md) and the
+[Jarvis workload examples](proxmox/jarvis/jarvis.local.auto.tfvars.example).
+For a fresh Jarvis state with only Home Assistant, set `lxc_workloads = {}`
+and declare one VM. Don't use that configuration against the existing Jarvis
+state, which also manages an LXC workload.
+
+Before replacing an existing instance, verify its backup and encryption key
+outside Jarvis. Restore the backup only after separate approval. Upgrade Home
+Assistant OS from Home Assistant, not by changing the image pin.
 
 ## VM hardware settings
 
@@ -120,7 +133,8 @@ The LXC module doesn't set `prevent_destroy`.
 
 Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
-Both are included in `task verify` and use fixtures without host contact or
+Run `task tf:test-pve-bootstrap` to check the clean-node access path.
+These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't
 mockable. They don't qualify live node or VM behavior.
