@@ -96,10 +96,16 @@ tasks:
 
   test-truenas:
     desc: Test the TrueNAS module and roots. No host contact.
+    preconditions:
+      - sh: test -d terraform/bootstrap/truenas/gen8/.terraform/providers
+        msg: "Run task tf:init before testing the bootstrap root."
+      - sh: test -d terraform/truenas/gen8/.terraform/providers
+        msg: "Run task tf:init before testing the storage root."
+      - sh: test -d terraform/truenas/modules/dataset/.terraform/providers
+        msg: "Install the module provider once with network access before running this task."
     cmds:
       - >-
-        python terraform/truenas/modules/dataset/tests/check_catalog_type.py
-      - tofu -chdir=terraform/truenas/modules/dataset init -backend=false
+        uv run python terraform/truenas/modules/dataset/tests/check_catalog_type.py
       - tofu -chdir=terraform/truenas/modules/dataset test {{.CLI_ARGS}}
       - for:
           var: TF_TRUENAS_ROOTS
