@@ -1,85 +1,66 @@
 ---
 name: docs-sync
-description: Resync this repository's tracked docs with the code after a change. Use when a rename, move, or structural change landed, when asked to update, sync, or review the docs, or when a doc claim looks stale. Starts from the changed facts, greps the old vocabulary everywhere, and proves the result with the gates.
+description: Syncs this repository's documentation with code and operational policy. Use when asked to "update the docs", "review stale docs", or shorten documentation after a change. For editorial methods use docs-editor; for agent instructions or skill files use agents-md or agent-skills-creator.
 ---
 
 # Docs sync
 
-- **In scope:** bringing tracked documentation back in line with the code
-  after a change. Finding stale claims, fixing them, deleting the dead ones.
-- **Out of scope:** writing a new page from scratch, or changing the prose
-  rules. Those live in `docs/writing.md`. Planning history is frozen, see the
-  map.
+- **IS:** syncing this repository's documentation with current source facts, page ownership, and operational safeguards.
+- **Out of scope:** generic editorial guidance (`docs-editor`), agent-instruction editing (`agents-md`), and skill authoring (`agent-skills-creator`).
 
-## The map
+Apply the [writing rules](../../../docs/writing.md).
+Load `docs-editor` by name for writing, structure, concision, and clarity.
+The repository rules take precedence over its general guidance.
+If the skill isn't discoverable, report that and use the writing rules without claiming the full editorial workflow.
 
-Each fact has one owning page. When a fact moves, fix the owner and delete
-the copies instead of re-asserting them elsewhere.
+## Page ownership
 
-| Page | Owns |
-| ---- | ---- |
-| `README.md` | Orientation, install, quickstart, what's inside |
-| `AGENTS.md` | Agent guidance: commands, task layout, hard rules, gotchas, style |
-| `ansible/README.md` | The Ansible shell: layout, populations, services, verify |
-| `packer/README.md` | The Packer shell: image chain, contents, provisioning route |
-| `terraform/README.md` | The OpenTofu roots and the editor setup |
-| `terraform/BACKEND.md` | State backend design and recovery |
-| `docs/README.md` | The documentation index |
-| `docs/writing.md` | The prose rules and the source of each rule |
-| `docs/runbooks/*` | One runnable procedure per file, steps only |
-| `docs/sops.md`, `docs/object-storage.md`, `docs/ssh.md`, `docs/ovh-least-privilege.md` | Their named domain |
+Keep each fact on its canonical page and link to it elsewhere.
 
-`docs/superpowers/` is git-ignored planning history. Never rewrite it to
-match reality. Record a divergence in the spec's status section instead.
+| Page | Content |
+| --- | --- |
+| `README.md` | Orientation, install, quickstart, components |
+| `AGENTS.md` | Agent instructions |
+| `ansible/README.md` | Ansible layout, populations, services, verification |
+| `packer/README.md` | Image inheritance, contents, provisioning |
+| `terraform/README.md` | OpenTofu roots and editor setup |
+| `terraform/BACKEND.md` | State design and recovery-kit requirements |
+| `docs/README.md` | Documentation index |
+| `docs/writing.md` | Writing rules and sources |
+| `docs/runbooks/*` | Procedures |
+| `docs/sops.md`, `docs/object-storage.md`, `docs/ssh.md`, `docs/ovh-least-privilege.md` | Domain references |
 
-## The loop
+`docs/superpowers/` contains ignored planning archives, not live documentation. Leave those records unchanged.
 
-1. List what changed as facts: renames, moves, new files, new tasks, changed
-   commands, changed defaults. One line each.
-2. Turn each fact into grep patterns: the old path (`main/servers.yml`), the
-   old name (`grp_docker`), the old vocabulary (`spoke`), the removed file
-   (`docker_service.yml`).
-3. Grep every pattern across the tracked tree, excluding `docs/superpowers`
-   and vendor directories. Taskfiles, inventory, and code comments rot too,
-   not only `docs/`.
-4. Read every hit with its context. Fix the claim, or delete it when the
-   fact is gone. Don't patch the word and leave the claim wrong.
-5. Grep the new vocabulary as well. A claim can be stale without naming the
-   old world, like a procedure that still points at a file that moved.
-6. Check the map: every page that owns a changed fact.
-7. Stage deletions, then run `task docs:check` while iterating, and
-   `task verify` before claiming done.
+## Update the pages
 
-## Rules that bite
+1. Use the requested paths. If none are specified, identify the canonical page in the table and start there. Include a linked procedure or reference when the change affects it. Preserve staged and working edits.
+2. For code-driven updates, list the changed facts, then search old and new names, paths, and terms across tracked files. Include taskfiles, inventory, and comments. Exclude vendor content and `docs/superpowers/`. Read each hit in context. Check the canonical pages even when a search finds no matches.
+3. For review-only requests, report findings and proposed corrections without editing. For updates or authorized rewrites, check facts against source evidence, then use `docs-editor` for the relevant editorial work. Reuse canonical pages before adding new ones. Keep safety conditions beside the actions they constrain.
+4. Compare edits with the source and original text. Check commands, flags, defaults, prerequisites, approval requirements, recovery paths, errors, links, and attribution.
+5. Search for obsolete names and verify replacement names, paths, and anchors.
 
-`task docs:check` runs Vale on `git ls-files`, and it fails the run on any
-error. The rules that actually fire here:
+Don't add tooling without the owner's request. A green check doesn't replace correcting stale or misleading content.
 
-- Sentences stay under 25 words. Split, don't trim.
-- Contractions are required: "don't", "can't". A verbatim error string keeps
-  its long form, in backticks.
-- No semicolons or em dashes in Markdown.
-- No anthropomorphism. Vale rejects human qualities in software. Write "the
-  value is visible" instead of a sentence about what a reader does with it.
-- Comments inside code files are linted too: playbook headers, HCL blocks,
-  taskfile comments.
+## Verify and report
+
+Use focused checks while editing. Before reporting completion, run the required full local proof from the repository root:
+
+```sh
+task docs:check
+task docs:links
+task verify
+```
+
+`task verify` includes the first two checks. These tasks select tracked files. Check each untracked page directly with the relevant command. Don't stage a page only to make a task discover it.
+
+Fix failures caused by the edits. Don't add suppressions to hide real findings. Never run a host-contacting procedure just to validate its documentation. Get owner approval before any host contact, including Ansible check mode.
+
+For shortening requests, compare before and after word counts using the same method. Exclude fenced code and link URLs, and report the actual reduction without a target. For factual updates, report corrections and necessary additions instead of forcing a reduction.
+
+Report changed paths, the main correction, checks and outcomes, and any unverified operation. Include a short before/after example when it clarifies a substantial rewrite. Leave commit and push decisions to the owner.
 
 ## Gotchas
 
-- `task docs:check` lints `git ls-files`. A deleted but unstaged file kills
-  it with a missing-argument error. Stage deletions before running any
-  gate.
-- A check-mode or plan task that contacts a host needs owner approval, and
-  so does any doc procedure that describes one. Keep the approval wording
-  when editing a runbook.
-- AGENTS.md takes at most one new gotcha per pull request, and only for a
-  mistake it prevented. A sync isn't a gotcha generator.
-- Renames in prose are found by grepping the old word everywhere, then by
-  reading the files that use the new word. Both passes, or the review is
-  half-blind.
-
-## Where the work ends
-
-The greps come back clean, the gates are green, the changes are staged, and
-the report names each stale claim that was fixed or deleted. Anything left
-open goes to the owner, in the report, not silently.
+- Ansible check mode can change a node. Treat a runbook's check-mode command as a host operation, not as a harmless documentation test.
+- `task docs:check` and `task docs:links` read tracked paths. A new untracked page is skipped unless you check it directly.

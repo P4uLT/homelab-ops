@@ -149,9 +149,8 @@ bare metal. Use `host` only when the system type is unknown.
   the policy to the minimal allowlist.
 - A plan that waits for approval fails with `error asking for approval:
   EOF` without a terminal. Pass `-auto-approve` after `--`.
-- Vale fails a run on an `error` alert only. A rule left at the
-  `suggestion` or `warning` level it ships with reports findings and still
-  exits 0, so `.vale.ini` raises every rule it enables to `error`.
+- Vale fails a run on an `error` alert only. Keep blocking prose rules at
+  `error` level in `.vale.ini`.
 - The legacy sibling repository that fed the migration keeps a read-only
   status. Never change it.
 - A Proxmox VE node ships without `sudo`, so `/etc/sudoers` doesn't exist
@@ -182,6 +181,6 @@ bare metal. Use `host` only when the system type is unknown.
 - `docs/README.md`: the documentation index. Start here.
 - `docs/writing.md`: the writing rules, the tooling, and each rule's source.
 - `terraform/BACKEND.md`: Terraform state design and recovery.
-- `.agents/skills/docs-sync`: the loop that resyncs the docs after a change.
+- `.agents/skills/docs-sync`: documentation updates and concise prose.
 - `.agents/skills/ansible-layout`: where a play, a layer, or a file belongs.
 - `.agents/skills/ansible-roles`: when a local role earns its directory.

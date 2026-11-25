@@ -1,11 +1,10 @@
 # Rotate the S3 credential
 
-Rotate the state-backend key pair when it may have leaked. One apply revokes
-the old pair and mints a new one. Anything that already authenticates with
-the old keys stops working until you re-point it.
+Rotate the backend key pair after a suspected leak. Clients using the old keys
+stop working until you update their credentials.
 
-No workload root authenticates with the pair. The exposure is limited to the
-state files in the bucket.
+The pair authorizes access to bucket state files, not the workload APIs.
+Workload roots use it for their S3 backend.
 
 ## Before you start
 
@@ -26,7 +25,7 @@ state files in the bucket.
    ```
 
    Expect `1 to add, 0 to change, 1 to destroy`. The apply revokes the old
-   pair and mints a new one.
+   pair and creates a new one.
 
 3. Read the new pair:
 
@@ -44,7 +43,5 @@ state files in the bucket.
 
 - [Bootstrap the Terraform state backend](bootstrap-tf-backend.md) for the
   root the credential belongs to, and for the initial key read.
-- [Terraform state design](../../terraform/BACKEND.md) for the four guards,
-  the import path, and what the key can reach.
-- [OVH least privilege](../ovh-least-privilege.md) when the broad account key
-  is the real problem, not the S3 pair.
+- [Terraform state design](../../terraform/BACKEND.md) for access controls and recovery.
+- [OVH least privilege](../ovh-least-privilege.md) for account-key restrictions.

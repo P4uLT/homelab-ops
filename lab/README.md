@@ -1,3 +1,3 @@
 # lab/
 
-Experiments and scratch infrastructure. Not production.
+Non-production experiments and scratch infrastructure.

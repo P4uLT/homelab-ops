@@ -1,32 +1,20 @@
 # Documentation
 
-For a temporary local Packer binary override and restoration, use
-[Override the installed Packer plugin](runbooks/override-packer-plugin.md).
-
-Everything in this directory describes the repository as it works now. Start
-here.
-
 ## Reference
 
-- [Writing rules](writing.md): how we write docs, the twelve published rules,
-  the tooling, and where each rule comes from.
-- [SOPS and age procedures](sops.md): encrypt, decrypt, back up the key,
-  recover a fresh clone.
-- [SSH key and host-key practices](ssh.md): which key belongs where, how to
-  pin a host key, what to rotate and when.
-- [OVH object storage conventions](object-storage.md): bucket per data class,
-  one access boundary each.
-- [OVH least privilege](ovh-least-privilege.md): why the bootstrap credential
-  is broad, and what replaces it.
+- [Writing rules](writing.md): prose policy, checks, and sources.
+- [SOPS and age procedures](sops.md): encryption, editing, and key recovery.
+- [SSH key and host-key practices](ssh.md): key allocation and rotation.
+- [OVH object storage conventions](object-storage.md): bucket classes and access boundaries.
+- [OVH least privilege](ovh-least-privilege.md): bootstrap credentials and scoped alternatives.
 
 ## Runbooks
 
-[Runbooks](runbooks/README.md) hold the operational procedures: onboard a PVE
-node, bootstrap the state backend, build a golden image, provision a container.
+[Operational procedures](runbooks/README.md) cover servers, images, workloads,
+and credentials, including [local Packer plugin overrides](runbooks/override-packer-plugin.md).
 
-## Where the rest lives
+## Other documentation
 
-- [Terraform state design](../terraform/BACKEND.md): backend layout, keys,
-  recovery.
+- [Terraform state design](../terraform/BACKEND.md)
 - [Repository layout and commands](../README.md)
-- [Agent instructions](../AGENTS.md): hard rules, gotchas, project structure.
+- [Agent instructions](../AGENTS.md)

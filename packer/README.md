@@ -1,59 +1,53 @@
 # packer/
 
-Native Packer templates and recipes for Debian 13 LXC images on Proxmox VE.
+Packer templates and recipes for Debian 13 LXC images on Proxmox VE.
 
 ## Layout
 
-| Path | Holds |
-| ---- | ----- |
-| `templates/proxmox-lxc/` | Shared plugin pin, source, typed inputs, provisioner, and native manifest |
+| Path | Content |
+| --- | --- |
+| `templates/proxmox-lxc/` | Plugin pin, source, typed inputs, provisioner, and native manifest |
 | `images/<os>/lxc/<product>.pkrvars.hcl` | Product identity, exact parent, resources, and Ansible target |
-| `templates/proxmox-vm/.gitkeep` | Reserved VM backend directory, not executable |
-| `images/debian-13/vm/.gitkeep` | Reserved VM recipe directory, not executable |
+| `templates/proxmox-vm/.gitkeep`, `images/debian-13/vm/.gitkeep` | Reserved VM directories without runnable builders, variables, or tasks |
 | `hosts/jarvis.pkrvars.hcl` | Public storage and bridge facts |
 | `hosts/jarvis.local.pkrvars.hcl` | Ignored connection inputs, mode 600 |
-| `manifests/<build-id>/packer.json` | Ignored native manifest for one build |
+| `manifests/<build-id>/packer.json` | Ignored native build manifest |
 
-Packer loads one backend directory and explicit recipe and node variable files.
-A recipe selector omits `images/` and the `.pkrvars.hcl` suffix. For example,
-`debian-13/lxc/base` selects the base recipe.
-The VM directories reserve the layout only. They contain no builder, plugin,
-variables, or runnable task.
+Packer loads one backend directory with explicit recipe and node variable files.
+Recipe selectors omit `images/` and `.pkrvars.hcl`: `debian-13/lxc/base` selects
+the base recipe.
 
 ## Image contract
 
-The base recipe uses two cores, 2048 MiB, and an 8 GiB root filesystem.
-The Docker recipe uses two cores, 4096 MiB, and a 16 GiB root filesystem.
-Both recipes use unprivileged containers with nesting and keyctl.
-Container identifiers `900` and `901` remain compatibility inputs.
-They don't prove container ownership.
+| Recipe | Cores | Memory | Root filesystem | Compatibility container ID |
+| --- | ---: | ---: | ---: | ---: |
+| Base | 2 | 2048 MiB | 8 GiB | 900 |
+| Docker | 2 | 4096 MiB | 16 GiB | 901 |
 
-Every invocation gets one Coordinated Universal Time (UTC) timestamp and one
-version-4 Universally Unique Identifier (UUID) from Task.
-The archive name is:
+Both use unprivileged containers with nesting and keyctl.
+The compatibility IDs don't establish container ownership.
+Task combines a Coordinated Universal Time (UTC) timestamp with a version-4
+Universally Unique Identifier (UUID) for each build ID:
 
 ```text
 homelab-<image-id>-lxc_<build-id>_<arch>.tar.zst
 ```
 
-Each recipe pins an exact parent basename.
-The public node file supplies its storage.
+Recipes pin exact parent basenames. Storage comes from the public
+`hosts/<node>.pkrvars.hcl` file.
 Changing a parent doesn't change the child product identity.
 The native manifest records the image, parent, build ID, source revision,
-and declared plugin source/version.
-It doesn't record or verify the parent or output checksum.
+and declared plugin source/version. It doesn't record or verify archive checksums.
 
-Packer's native Ansible provisioner uses the builders inventory for LXC builds.
-It passes the same inventory directory as `task ansible:image`. Ansible owns
-parent, image, and service group membership.
-The provisioner disables Packer's SSH proxy and keeps
-`community.proxmox.proxmox_pct_remote`. That connection reaches PVE with Paramiko
-and runs commands through `pct exec`. Packer supplies the PVE address, SSH user,
-key path, container ID, and image facts. Each recipe selects its host alias.
-Docker inheritance comes from its Packer parent, not Ansible group membership.
+The native Ansible provisioner uses the same builders inventory as
+`task ansible:image`. It disables Packer's SSH proxy and uses
+`community.proxmox.proxmox_pct_remote` through Paramiko and PVE `pct exec`.
+Packer supplies the address, SSH user, key path, container ID, and image facts.
+Each recipe selects an inventory host alias. Ansible defines group membership,
+while Packer defines Docker's parent artifact.
 
-Adding an LXC product needs one recipe and one Ansible target. The shared HCL
-and Taskfile don't enumerate product names.
+A new LXC product needs one recipe and one Ansible target. The shared HCL and
+Taskfile don't enumerate products.
 
 ## Tasks
 
@@ -66,45 +60,38 @@ task packer:init
 task packer:validate
 ```
 
-The first `task packer:init` downloads the pinned plugin and needs network.
-`task packer:init -- -force` deliberately reinstalls that dependency.
+The first `task packer:init` needs network access to download the pinned plugin.
+`task packer:init -- -force` reinstalls it.
 
-Build tasks contact the selected PVE node and need owner approval:
+Builds require owner approval before contacting the selected PVE node:
 
 ```sh
 task packer:build RECIPE=debian-13/lxc/base HOST=jarvis
 task packer:build-all HOST=jarvis
 ```
 
-`build` runs exactly one selected recipe. `build-all` discovers every LXC
-recipe, sorts them by selector, and stops on the first failure. Each invocation
-gets its own immutable archive name and native manifest.
+`build` runs one recipe. `build-all` sorts discovered LXC recipes by selector
+and stops on failure. Each invocation creates a separate archive name and manifest.
+The batch doesn't change committed parents: update the Docker recipe explicitly
+to select a newer base.
 
-The batch command doesn't connect one output to the next recipe. Docker still
-uses the exact parent committed in its recipe. Update that recipe deliberately
-when Docker must consume a newer base.
-
-Extra arguments after `--` reach `packer build`.
-Use them only with the same owner approval as the build.
+Arguments after `--` pass to `packer build` and require the same approval.
 The public tasks run Ansible dependency setup before Packer.
 
 ## Current plugin limits
 
-The pinned `github.com/leoarry/proxmox-lxc` version `0.1.5` remains operational,
-but it hasn't passed the proposed release-safety qualification.
-It doesn't provide all required controls for:
+The pinned `github.com/leoarry/proxmox-lxc` version `0.1.5` is operational but
+hasn't passed release-safety qualification. It lacks qualified controls for:
 
 - Parent digest verification during consumption.
-- Ownership-safe fixed container identifiers and cleanup.
+- Container ownership checks and cleanup.
 - Invocation-specific dump selection.
-- Verified SSH host keys.
+- SSH host-key verification.
 - Atomic, no-overwrite publication on the NAS.
 
-Treat these as known risks, not implemented controls.
-Get owner approval before every build and inspect existing build identifiers
-and destination archives first.
-Plugin hardening belongs in the maintained plugin and its Go test suite.
-It doesn't belong in a repository-specific Python or shell release framework.
+Get approval for each build after reviewing these risks and existing container
+identifiers and destination archives. Maintain hardening controls and Go tests
+in the plugin project. Don't add a repository-specific Python or shell release framework.
 
-See [Build and qualify the golden images](../docs/runbooks/build-base-image.md)
-for the operating procedure and qualification boundary.
+Follow [Build and qualify the golden images](../docs/runbooks/build-base-image.md)
+for the operating procedure and qualification requirements.

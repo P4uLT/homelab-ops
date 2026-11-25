@@ -1,12 +1,11 @@
 # Provision an LXC workload with Terraform
 
-The `terraform/proxmox/jarvis/` root instantiates Packer golden images as LXC
-containers on the PVE node jarvis. The shared `terraform/proxmox/modules/lxc/`
-module wraps one container. The root holds one entry per workload in its
-`lxc_workloads` map, which lives in the git-ignored tfvars. Its `locals.tf` holds
-the node facts: the node name, the storages, and the bridge. The provider talks
-to the PVE API over HTTPS with an API token. One root covers one PVE server. The state lives in the shared OVH
-bucket. The design is in [Terraform state design](../../terraform/BACKEND.md).
+`terraform/proxmox/jarvis/` creates LXC containers from Packer images on jarvis,
+using the shared `terraform/proxmox/modules/lxc/` module.
+Define workloads in the git-ignored tfvars `lxc_workloads` map.
+`locals.tf` defines the node, storages, and bridge.
+Each PVE server has a separate root and encrypted OVH S3 state.
+See [Terraform state design](../../terraform/BACKEND.md).
 
 Prerequisites:
 
@@ -14,14 +13,13 @@ Prerequisites:
   [Build the golden images](build-base-image.md).
 - `.env.tf` holds `TF_VAR_state_passphrase`, the `AWS_*` state backend keys,
   and `TF_VAR_bucket_name`.
-- Owner approval for every run. A plan reads the node. An apply changes it.
+- Owner approval before each plan or apply. Plans read the node, and applies change it.
 
 ## PVE API access
 
-The role, the group, the user `terraform-prov@pve`, the ACL, and the API token
-are Terraform-managed by `terraform/bootstrap/pve/jarvis/`. Run that root once,
-following [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md),
-and copy its `token_value` output.
+Create the role, group, `terraform-prov@pve` user, ACL, and API token through
+`terraform/bootstrap/pve/jarvis/`. Follow [Bootstrap PVE access](bootstrap-pve-access.md).
+Copy its `token_value` output. The provider uses the HTTPS API.
 
 Then create `terraform/proxmox/jarvis/jarvis.local.auto.tfvars` from
 `jarvis.local.auto.tfvars.example`, mode 600:
@@ -29,77 +27,68 @@ Then create `terraform/proxmox/jarvis/jarvis.local.auto.tfvars` from
 - `pve_endpoint`: the node address on your LAN, port 8006.
 - `pve_api_token`: the full token value, `terraform-prov@pve!tf=<secret>`.
 
-The root sets `insecure = true` in code, because PVE ships a self-signed
-certificate.
+The root sets `insecure = true` for PVE's self-signed certificate.
 
 ## Apply the first container
 
-The two commands below read the node and then change it.
+Get owner approval before either command:
 
 ```sh
 task tf:jarvis-plan
 task tf:jarvis-apply -- -auto-approve
 ```
 
-The plan shows one container to add. The apply clones the archive its entry
-names as `template`, the Docker golden image here, starts the container, and
-writes the state to the bucket.
-
-Two checks on this first run:
+Expect one container to add. The apply clones the configured `template`,
+starts it, and saves state to the bucket. This example uses the Docker image.
+Check locking and image initialization:
 
 - The apply takes the state lock with `use_lockfile`. OVH S3 supports conditional writes.
   If lock acquisition stalls, check for an active writer or a stale lock.
   Don't disable locking to bypass the failure. Get owner approval before clearing a confirmed stale lock.
-- The container boots with fresh SSH host keys, no machine-id, and no apt
-  package lists. That's the `image_finalize` role's contract for the golden
-  image.
+- `image_finalize` requires an empty `/etc/machine-id` and no SSH host keys or
+  apt lists in the sealed archive. At first boot, verify fresh machine IDs
+  and host keys through [image qualification](build-base-image.md#6-qualify-the-candidate-archive).
 
 ## Check the container
 
-Read the workload list in a private terminal, then prove the chain end to end on the node.
-`lxcs` contains addresses and is sensitive. Ordinary plan and apply output masks it.
-Default output without a name masks it too, after an apply records the sensitivity metadata.
-This doesn't mask network attributes in resource diffs.
-Explicit named output and `-json` or `-raw` can print sensitive values in plaintext.
-Don't send them to shared logs or tracked files.
+Read `lxcs` in a private terminal. It contains sensitive addresses.
+Plan and apply mask this output, as does unnamed output after sensitivity
+metadata is saved. Network attributes in resource diffs aren't masked.
+Named output, `-json`, and `-raw` can print plaintext. Keep them out of shared
+logs and tracked files.
 
 ```sh
 task tf:jarvis-output -- -json lxcs
 ```
 
-The `lxcs` output is keyed by workload name, and each entry carries its
-`ct_id` and its `ct_ipv4`.
-
-Then, on the node, the full chain proof. The container reaches Docker Hub over
-its DHCP address, so the pull needs outbound HTTPS. The clone runs Docker from
-the golden image with no manual step:
+Each workload entry provides `ct_id` and `ct_ipv4`.
+On the node, check Docker and image metadata. Pulling `hello-world` requires
+outbound HTTPS from the container:
 
 ```sh
 pct exec <ct_id> -- docker run --rm hello-world
 pct exec <ct_id> -- cat /etc/image-build-info
 ```
 
-The marker records the image name, its version, and its parent.
-The baseline layer checks that the marker is a regular file, not its contents.
+The marker records the image name, version, and parent.
+Review it explicitly because Ansible's preflight checks only file type, without
+checking contents or provenance.
 
 ## The container joins the fleet
 
-The image carries the fleet account, so the container answers SSH from birth,
-for Ansible and for you. A new device means a new public key in both
-inventories, added with `task sops:edit`. The builders copy feeds the image,
-and the servers copy feeds the hosts built by hand. Then rebuild the image
-chain: the old key stays trusted in every archive built before.
+The image includes the fleet account for SSH access.
+Add new device keys to both inventories with `task sops:edit`, then rebuild
+the image chain. Builders supply image keys, while servers supply manually
+provisioned hosts. Previously built archives still trust their original keys.
 
-The workloads root writes the group its apply creates, one fragment per node
-at `ansible/inventory/servers/iac.tf.<node>.yml`. The fragment carries the
-group, the host, and the container id, and no address, so it stays cleartext
-and committed. A workload named `tf-test` lands in
-`grp_servers_immutable_tf_test` under `grp_servers_immutable`. The leaf repeats
-its parent's name and replaces hyphens with underscores. `ansible/playbooks/servers/system/workload_preflight.yml` requires an
-explicit, nonblank address before connecting. It then checks for a regular
-image marker file before system configuration.
+The root generates `ansible/inventory/servers/iac.tf.<node>.yml` with the group,
+hostname, and container ID, without an address. Commit this cleartext fragment.
+For `tf-test`, the leaf is `grp_servers_immutable_tf_test` under
+`grp_servers_immutable`: repeat the parent name and replace hyphens with underscores.
 
-Then the container is a fleet host in two steps:
+`ansible/playbooks/servers/system/workload_preflight.yml` requires a nonblank
+address before connecting and a regular image marker before system configuration.
+Add the container to inventory:
 
 1. Apply the root and commit the fragment it writes. The plan shows the file
    before the apply.
@@ -111,25 +100,22 @@ Then the container is a fleet host in two steps:
    A rename means editing that file and the account in both inventories'
    secrets.
 
-**Reaching a container.** The image carries no password, on purpose: a shared
-one would leak into every clone. The workloads ask for none either: their
-console runs in shell mode, where PVE invokes a shell without a login. From the
-node:
+**Node console access.** Images don't include a shared password.
+PVE shell mode doesn't require one. From the node:
 
 ```sh
 pct enter <ct_id>
 pct console --cmode shell <ct_id>
 ```
 
-The node's `Shell` tab in the PVE interface reaches both. For a log, `pct exec
-<ct_id> -- journalctl -u <unit> -f`. A real login prompt wants a password, and
-that's a per-clone choice: `pct set <ct_id> --password`.
+Run these from the PVE node's `Shell` tab.
+Follow logs with `pct exec <ct_id> -- journalctl -u <unit> -f`.
+A real login prompt requires a per-clone password, set with `pct set <ct_id> --password`.
 
 Whether the container's Console tab honours the shell mode is untested here.
 
-**Set the address.** The module defaults to DHCP, so `ansible_host` can move
-on a reboot and the SSH habit with it. A workload you reach often takes a
-static address instead, in its entry in the git-ignored tfvars:
+**Set the address.** DHCP leases can change on reboot.
+For a stable `ansible_host`, set an address in the workload's git-ignored tfvars:
 
 ```hcl
 lxc_workloads = {
@@ -144,15 +130,12 @@ lxc_workloads = {
 Replace the address, prefix, and gateway placeholders with your network values.
 Omit `ipv4`, or set it to `null`, to use DHCP.
 
-A static address has a second effect. The provider reads the interface's
-address right after creation, so the `ct_ipv4` output is true at apply time.
-DHCP leaves it null until the container reports a lease, and the Docker bridge
-answers the provider's wait before that.
+A static address also makes `ct_ipv4` available at apply time.
+With DHCP, it can remain null until the lease is reported, while the Docker
+bridge can satisfy the provider's wait first.
 
-**A DHCP workload drifts.** The provider reads the container's address after
-creation, so a workload left on DHCP can show `dhcp` turning into the leased
-address. Applying that pins the address without anyone deciding it. Declare the
-address here when you want it fixed.
+**Review DHCP drift.** Refresh can show `dhcp` changing to the leased address.
+Applying that diff pins the address. Declare a static address explicitly when intended.
 
 Then converge the one host, with owner approval:
 
@@ -160,23 +143,19 @@ Then converge the one host, with owner approval:
 task ansible:site -- -l <host>
 ```
 
-The `workload_preflight` play requires a regular `/etc/image-build-info` file on each workload.
-It doesn't verify image version or provenance.
-A clone joins `grp_servers_immutable`, outside `grp_servers_mutable` and its
-Debian LXC branch. Mutable system plays don't target it. Service groups remain
-independent of the maintenance populations.
+Clones join `grp_servers_immutable`, outside the mutable Debian LXC branch.
+Mutable system plays don't target them. Service groups remain independent.
+The required marker path is `/etc/image-build-info`.
 
-**Without SSH.** An image built before the keys, or a container you want to
-reach with no key at all, still answers on the node:
+**Without SSH.** Use node access for containers without usable keys:
 
 ```sh
 pct enter <ct_id>
 pct exec <ct_id> -- journalctl -u <unit>
 ```
 
-See [the Ansible shell](../../ansible/README.md) for the workload model, and
-[Add a Proxmox VE node](onboard-pve.md) for the same inventory mechanics on a
-PVE host.
+See [the Ansible shell](../../ansible/README.md) for workload policy and
+[Add a Proxmox VE node](onboard-pve.md) for PVE inventory.
 
 ## Add a storage mount point
 
@@ -201,10 +180,19 @@ Review the plan for replacement before applying a size change, with owner approv
 
 ## Destroy
 
-If protection is enabled, disable it and apply that change with owner approval before removing the entry.
-To remove one workload, delete its entry from `lxc_workloads` in the local tfvars.
-With owner approval, save a plan with `task tf:jarvis-plan -- -out=delete.tfplan`.
-Review the resource and disk deletions before applying `task tf:jarvis-apply -- delete.tfplan`.
+Get owner approval before changing protection or deleting the workload.
+
+If protection is enabled, complete these steps first:
+
+1. Disable protection.
+2. Apply the protection change.
+
+With protection disabled, complete the deletion:
+
+1. Delete the workload's entry from `lxc_workloads` in the local tfvars.
+2. Save a plan with `task tf:jarvis-plan -- -out=delete.tfplan`.
+3. Review the resource and disk deletions.
+4. Apply the approved plan with `task tf:jarvis-apply -- delete.tfplan`.
 
 The state defines resource ownership. A `terraform` tag alone doesn't import or delete a container.
 
@@ -215,16 +203,18 @@ See [Workload deletion protection](../../terraform/README.md#workload-deletion-p
 Removing a workload leaves its source image in place.
 Removing a `vm_image_downloads` pin deletes that downloaded image from Proxmox.
 
-To move an LXC workload to a newer image, rebuild the image with a bumped build number.
-Then change the workload's `template` in the git-ignored tfvars.
-Review the replacement and disk deletions before applying, with owner approval.
+## Select a newer image
+
+1. Rebuild the image with a new build number.
+2. Change the workload's `template` in the git-ignored tfvars.
+3. Review the replacement and disk deletions.
+4. Get owner approval before applying.
 
 ## A second PVE server
 
-Copy the pattern, not the code. A new root named after the new server, with
-its own state key, its own access root under `terraform/bootstrap/pve/`, and
-its own git-ignored tfvars. The root consumes the same `proxmox/modules/lxc/`
-and declares the new node's facts in its `locals.tf`.
+Create a root named after the server with a separate state key, access root
+under `terraform/bootstrap/pve/`, and git-ignored tfvars.
+Reuse `proxmox/modules/lxc/` and declare the new node's facts in `locals.tf`.
 
 ## Next steps
 

@@ -1,10 +1,7 @@
 # Pin a host key
 
-Pin a node's SSH host key before Ansible or a manual login contacts it.
-Without the pin, the first connection trusts whatever answers, and nothing
-verifies the host key.
-
-The pin is per node, and it survives reboots.
+Pin the node's SSH host key after checking its fingerprint. First-contact enrollment
+alone can accept the wrong host. The per-node pin persists across reboots.
 
 ## Steps
 
@@ -22,20 +19,18 @@ verifies against this file on every run.
 ## Image-build risk
 
 The pinned Proxmox LXC plugin disables host-key verification.
-Build tasks remain operational, so owner approval must account for this known
-risk. A network assumed to be trusted isn't a substitute for verification.
+Owner approval for a build must account for that risk, even on a trusted network.
 
 The image Ansible connection uses paramiko through the PVE node.
 Its pinned collection reads `~/.ssh/known_hosts`, not the project trust file.
 The current `[paramiko_connection] host_key_auto_add = true` setting permits
 first-contact enrollment.
 
-Install the independently verified node key in both required trust stores
-before an approved live build. Verify each stored fingerprint against
-the node console. Don't enroll an unverified replacement key.
-The plugin's own trust input depends on the separately approved dependency.
-Test unknown and changed keys on both connections, with no automatic enrollment
-or insecure fallback.
+Before an approved build, install the console-verified key in both required
+trust stores. Don't enroll an unverified replacement.
+The plugin's trust input depends on the approved dependency.
+Qualify both connections against unknown and changed keys, without automatic
+enrollment or insecure fallback.
 See [Build and qualify the golden images](build-base-image.md).
 
 ## Next steps

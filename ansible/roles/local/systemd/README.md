@@ -6,7 +6,7 @@ Request validation runs through `tasks/validate.yml` before service discovery an
 
 ## Inputs
 
-`systemd_services` defaults to `[]`. An empty list collects no facts and changes no services.
+`systemd_services` defaults to `[]`, which skips fact gathering and service changes.
 Each entry uses these fields:
 
 | Field | Contract |
@@ -63,11 +63,12 @@ The role doesn't install packages, create unit files, configure drop-ins, or mas
 Privilege escalation belongs to the caller.
 The server play uses `become: true`. The image connection already executes as root, without `sudo`.
 
-The contract follows the local `apt` role's conventions: prefixed inputs, typed metadata, conservative defaults, and inventory-owned populations.
-The compared tumf, cimon, and O1labs roles render unit files for their configured services.
-That concrete mismatch justifies using the native module here, without an upstream copy or an interface adapter.
+Inputs use the local `apt` conventions for names, types, defaults, and inventory policy.
+The tumf, cimon, and O1labs roles also render unit files. This role uses the
+native module because it only manages existing services.
 
 ## Verification limits
 
 Local argument checks, syntax, and lint don't prove live service behavior.
-Managed-host apply, enablement checks, and repeat-run proof need owner approval.
+Get owner approval before applying or verifying service settings on managed hosts,
+including repeated applies.
