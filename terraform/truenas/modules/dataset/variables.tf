@@ -114,6 +114,11 @@ variable "dataset" {
   nullable = false
 
   validation {
+    condition     = can(regex("^tank/[^/]+$", var.dataset.name))
+    error_message = "Declare a dataset directly under tank/. A nested path needs its own module call and an explicit dependency on its parent."
+  }
+
+  validation {
     condition     = var.dataset.share_type == null || contains(["GENERIC", "SMB", "MULTIPROTOCOL", "NFS", "APPS"], upper(var.dataset.share_type))
     error_message = "Use a TrueNAS dataset preset: GENERIC, SMB, MULTIPROTOCOL, NFS, or APPS."
   }

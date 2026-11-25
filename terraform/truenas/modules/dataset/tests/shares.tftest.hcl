@@ -460,6 +460,16 @@ run "rejects_two_identities_on_one_entry" {
   expect_failures = [var.dataset]
 }
 
+run "rejects_a_nested_dataset_path" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/a/b" }
+  }
+
+  expect_failures = [var.dataset]
+}
+
 run "rejects_an_unknown_dataset_preset" {
   command = plan
 
