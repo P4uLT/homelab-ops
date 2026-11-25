@@ -9,7 +9,8 @@ Check these conditions before you change the configuration:
 
 - The pool and the provisioning access exist. See
   [Bootstrap TrueNAS](bootstrap-truenas.md).
-- The NFS service runs. The bootstrap root sets `services.nfs = true`.
+- The NFS service runs. The bootstrap root sets `services.nfs = true`, and the
+  plan stops if the service is stopped.
 - The bootstrap access key is in the storage tfvars.
 
 ## Declare the dataset

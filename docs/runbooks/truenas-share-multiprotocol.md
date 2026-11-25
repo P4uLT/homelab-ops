@@ -17,6 +17,7 @@ Check these conditions before you change the configuration:
   - `provision_smb_shares = true` for the SMB share.
   - `provision_dataset_acls = true` for the dataset ACL.
   - `provision_group_lookup = true` when the ACL names a group.
+- The NFS and SMB services run. The plan stops if either is stopped.
 
 ## Declare the dataset
 

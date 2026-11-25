@@ -1,6 +1,7 @@
 # Copy this file to gen8.local.auto.tfvars and restrict it to your user.
 # Replace NAS_HOST, BOOTSTRAP_API_KEY, NFS_CLIENT, and SMB_GROUP.
 # The provisioning key goes in terraform/truenas/gen8/gen8.local.auto.tfvars.
+# The NFS and SMB services must run: a share plan checks them.
 
 truenas_host    = "NAS_HOST"
 truenas_api_key = "BOOTSTRAP_API_KEY"

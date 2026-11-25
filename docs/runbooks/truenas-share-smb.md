@@ -10,6 +10,7 @@ Check these conditions before you change the configuration:
 - The pool, the provisioning access, and the SMB group and user exist. See
   [Bootstrap TrueNAS](bootstrap-truenas.md).
 - `provision_smb_shares = true` is applied in the bootstrap root.
+- The SMB service runs. The plan stops if the service is stopped.
 
 ## Declare the dataset
 
