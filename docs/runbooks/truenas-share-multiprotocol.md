@@ -6,6 +6,8 @@ image library that Windows fills and Proxmox reads.
 TrueNAS documents a multiprotocol preset for this case. The preset gives the
 dataset an NFSv4 ACL in `PASSTHROUGH` mode. See the
 [dataset preset table](https://www.truenas.com/docs/scale/25.10/scaletutorials/datasets/datasetsscale/#creating-a-dataset).
+That table is the 25.10 version, the release this page was checked against.
+Unversioned TrueNAS pages can describe a different preset.
 
 ## Before you start
 
