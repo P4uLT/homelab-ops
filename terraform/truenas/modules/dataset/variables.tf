@@ -174,8 +174,8 @@ variable "dataset" {
     error_message = "The NFSv4 preset needs a dataset created with the MULTIPROTOCOL or SMB preset, or acltype = nfsv4."
   }
 
-  # Keep identity and shape apart. One condition joined with || would skip
-  # every shape check as soon as an entry names an identity.
+  # Keep identity and shape apart. One condition joined with || skips every
+  # shape check whenever an entry names an identity.
   validation {
     condition = var.dataset.filesystem_acl == null ? true : var.dataset.filesystem_acl.preset != null ? true : try(
       alltrue([
