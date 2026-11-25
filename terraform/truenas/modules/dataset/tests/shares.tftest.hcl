@@ -335,6 +335,19 @@ run "allows_a_reviewed_replacement" {
   }
 }
 
+run "keeps_guest_access_closed_on_a_legacy_share" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", smb = { name = "example", purpose = "LEGACY_SHARE" } }
+  }
+
+  assert {
+    condition     = truenas_smb_share.this["share"].guestok == false
+    error_message = "An omitted guestok must stay closed on a legacy share."
+  }
+}
+
 run "maps_dataset_acl_types_to_entry_types" {
   command = plan
 
