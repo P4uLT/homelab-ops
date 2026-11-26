@@ -106,7 +106,6 @@ dataset uses `GENERIC`. Changing it recreates the dataset.
 | `MULTIPROTOCOL` | Datasets shared over SMB and NFS | NFSv4, `PASSTHROUGH` |
 | `APPS` | Application data with no share | NFSv4, `PASSTHROUGH`, extra entry for the apps group |
 
-
 Set quota and reservation values in bytes. Supply any dataset key or passphrase
 in `dataset_encryption_secrets`, keyed by the dataset's map key. These inputs
 are local, ephemeral, and passed to write-only attributes. Store a recovery copy
@@ -115,6 +114,42 @@ settings such as the encryption mode before apply.
 
 Keep `protect = true` on every dataset that holds data. The module rejects
 replacements that would destroy a dataset while its resource stays configured.
+
+## Install the RustFS application
+
+To install RustFS as the one application on the NAS:
+
+1. Add a `rustfs` entry to `datasets` with `share_type = "APPS"`.
+2. Mint the admin key pair outside OpenTofu and store it in a password
+   manager. Use an access key of 3 to 20 characters and a secret key of 8 to
+   40.
+3. Enter the pair in both Gen8 tfvars files. The storage root and the RustFS
+   root read the same values.
+4. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
+   chart `1.1.46`, which packages RustFS `1.0.6`. Confirm the catalog still
+   offers that version.
+5. Set `rustfs_app_certificate_id` to an existing TrueNAS certificate. The
+   endpoint name must match it. Without a certificate the chart serves HTTP.
+6. Set `rustfs_app_api_bind_ip` to one approved interface address. Open the
+   API port only to the operator and Talos networks.
+7. Run `task tf:truenas-gen8-plan`, review it, and apply.
+8. Run `task tf:rustfs-gen8-plan`, review it, and apply.
+
+Turning the gate off after install plans removal. That's a teardown, not a
+way to stop the application.
+
+Get owner approval for every live step: plan, apply, and check. Mock tests
+don't prove the application's behavior. Check the result after each apply:
+
+- The installed chart version matches the pin, and the application is healthy.
+- The API answers over verified HTTPS on the approved address and port.
+- The console port isn't published.
+- User `568` can write to `/mnt/tank/rustfs`.
+- Each key performs its required actions on its own bucket.
+- Each key fails to reach the other two buckets.
+- No key can administer its own bucket.
+- Every quota is positive and leaves headroom on `tank` for snapshots and the
+  other datasets.
 
 ## Next
 

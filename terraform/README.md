@@ -18,8 +18,13 @@ OpenTofu roots and modules, grouped by provider and target.
   node's Terraform access chain.
 - `bootstrap/truenas/gen8/` owns the Gen8 pool, provisioning identity, local
   users and groups, and NFS and `cifs` services. `truenas/gen8/` owns
-  datasets, permissions, and shares. See the [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
+  datasets, permissions, shares, and the optional RustFS application. See the
+  [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
   Neither root manages dynamically provisioned Kubernetes volumes.
+- `rustfs/gen8/` owns the RustFS buckets, one user and policy per bucket, and
+  their quotas. It applies after the TrueNAS root installed the application.
+  Its endpoint and keys live in the root's git-ignored `gen8.local.auto.tfvars`.
+  The admin key pair matches the TrueNAS root's copy.
 - `truenas/modules/dataset/`: one protected filesystem dataset with optional
   permissions and file shares. The Gen8 root calls it once per entry in `datasets`.
 - `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
@@ -172,6 +177,7 @@ Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
 Run `task tf:test-pve-bootstrap` to check the clean-node access path.
 Run `task tf:test-truenas` for the Gen8 pool, identity, and export contracts.
+Run `task tf:test-rustfs` for the bucket, user, and policy contracts.
 These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't
