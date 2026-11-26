@@ -11,6 +11,7 @@ variables {
   pool                 = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
   services             = { nfs = true, cifs = true }
   provision_smb_shares = false
+  provision_apps       = false
 }
 
 run "plans_a_single_raidz2_vdev_by_default" {

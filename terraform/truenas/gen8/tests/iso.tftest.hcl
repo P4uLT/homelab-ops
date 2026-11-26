@@ -82,6 +82,19 @@ run "plans_iso_with_acl_users" {
   }
 }
 
+run "plans_nothing_when_the_app_gate_is_off" {
+  command = plan
+
+  assert {
+    condition = (
+      length(truenas_app.rustfs) == 0 &&
+      length(truenas_docker_config.gen8) == 0 &&
+      length(truenas_catalog_config.gen8) == 0
+    )
+    error_message = "The disabled gate must leave the app, Docker, and catalog unmanaged."
+  }
+}
+
 run "rejects_unrestricted_nfs" {
   command = plan
 
