@@ -58,11 +58,11 @@ run "rejects_a_missing_version" {
   expect_failures = [var.rustfs_app_enabled]
 }
 
-run "rejects_a_floating_latest_version" {
+run "rejects_a_floating_version_tag" {
   command = plan
 
   variables {
-    rustfs_app_version = "latest"
+    rustfs_app_version = "1.x"
   }
 
   expect_failures = [var.rustfs_app_enabled]

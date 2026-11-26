@@ -198,10 +198,10 @@ variable "rustfs_app_enabled" {
       var.rustfs_app_version != null &&
       length(var.rustfs_app_version) > 0 &&
       trimspace(var.rustfs_app_version) == var.rustfs_app_version &&
-      var.rustfs_app_version != "latest",
+      can(regex("^[0-9]+(\\.[0-9]+)+$", var.rustfs_app_version)),
       false
     )
-    error_message = "Set rustfs_app_version to a pinned catalog version. \"latest\" isn't allowed."
+    error_message = "Set rustfs_app_version to a pinned catalog version such as 1.1.46."
   }
 
   validation {
