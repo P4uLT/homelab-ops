@@ -9,19 +9,29 @@ buckets, the users, and the policies.
 Get owner approval before the plan, the apply, and every live check. Mock
 tests don't prove the application's behavior.
 
-1. Add a `rustfs` entry to `datasets` with `share_type = "APPS"`.
-2. Mint the admin key pair outside OpenTofu and store it in a password
+1. Set `provision_apps = true` in
+   `terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars`.
+2. Run `task tf:truenas-gen8-bootstrap-plan`, review it, and apply. The
+   provisioner needs the apps roles before the storage root plans the
+   application.
+3. Add a `rustfs` entry to `datasets` with `share_type = "APPS"`.
+4. Mint the admin key pair outside OpenTofu and store it in a password
    manager. Use an access key of 3 to 20 characters and a secret key of 8 to
    40.
-3. Enter the pair in both Gen8 tfvars files. The storage root and the RustFS
+5. Enter the pair in both Gen8 tfvars files. The storage root and the RustFS
    root read the same values.
-4. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
+6. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
    chart `1.1.46`, which packages RustFS `1.0.6`. Confirm the catalog still
    offers that version.
-5. Set `rustfs_app_certificate_id` to an existing TrueNAS certificate. The
+7. Set `rustfs_app_certificate_id` to an existing TrueNAS certificate. The
    endpoint name must match it. Without a certificate the chart serves HTTP.
-6. Set `rustfs_app_api_bind_ip` to one approved interface address. Open the
+8. Set `rustfs_app_api_bind_ip` to one approved interface address. Open the
    API port only to the operator and Talos networks.
+9. Copy `terraform/rustfs/gen8/gen8.local.auto.tfvars.example` to
+   `gen8.local.auto.tfvars` in that root, and fill it. Set `rustfs_endpoint`
+   to the certificate's host name and port, then enter one key pair per
+   bucket.
+10. Run `task tf:init` once. It downloads the RustFS provider.
 
 ## Install the application
 
@@ -31,7 +41,8 @@ task tf:truenas-gen8-apply
 ```
 
 Review the plan before the apply. Expect the Docker configuration, the catalog
-configuration, and the application. Stop on any deletion or replacement.
+configuration, and the application. Stop on any deletion or replacement. The
+plan masks the application `values` on purpose: both keys travel inside it.
 
 Turning the gate off after install plans removal. That's a teardown, not a way
 to stop the application.
@@ -46,6 +57,9 @@ task tf:rustfs-gen8-apply
 Each bucket gets one user, one policy, and one quota. The policy allows only
 the actions its client needs. The backup tool for `k8s-backups` is still open,
 so its policy is provisional.
+
+Stop on any deletion. Removing or renaming a bucket entry plans the bucket's
+destruction.
 
 ## Check the result
 

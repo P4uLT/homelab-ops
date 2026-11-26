@@ -54,3 +54,7 @@ provision_smb_shares = false
 
 # Account read access for named identities in dataset ACLs and NFS mappings.
 # provision_group_lookup = true
+
+# The apps-subsystem roles for the RustFS application. Apply this root after
+# enabling the gate, before the storage root plans the application.
+# provision_apps = true
