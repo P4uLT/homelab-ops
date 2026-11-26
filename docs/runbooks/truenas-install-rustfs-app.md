@@ -30,8 +30,10 @@ tests don't prove the application's behavior.
    a wildcard bind address.
 9. Copy `terraform/rustfs/gen8/gen8.local.auto.tfvars.example` to
    `gen8.local.auto.tfvars` in that root, and fill it. Set `rustfs_endpoint`
-   to the certificate's host name and port, then enter one key pair per
-   bucket.
+   to the host name the certificate covers and the API port, then enter one
+   key pair per bucket. An endpoint on a bare address fails with
+   `doesn't contain any IP SANs`. Add that name to the resolver, in DNS or
+   `/etc/hosts`, for OpenTofu and for every client.
 10. Run `task tf:init` once. It downloads the RustFS provider.
 
 The provider has no data source for the catalog version, so it stays a pinned
