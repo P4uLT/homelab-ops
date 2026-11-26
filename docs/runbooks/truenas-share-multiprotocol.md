@@ -9,6 +9,9 @@ dataset an NFSv4 ACL in `PASSTHROUGH` mode. See the
 That table is the 25.10 version, the release this page was checked against.
 Unversioned TrueNAS pages can describe a different preset.
 
+See the [TrueNAS access diagram](../truenas-access.md#follow-a-request-to-the-file)
+for how the client account, share, and filesystem permissions fit together.
+
 ## Before you start
 
 Check these conditions before you change the configuration:
@@ -18,28 +21,40 @@ Check these conditions before you change the configuration:
 - These bootstrap flags are applied:
   - `provision_smb_shares = true` for the SMB share.
   - `provision_dataset_acls = true` for the dataset ACL.
-  - `provision_group_lookup = true` when the ACL names a group.
-- The NFS and SMB services run. The plan stops if either is stopped.
+  - `provision_group_lookup = true` to resolve names in ACLs and NFS mappings.
+- The accounts and groups in the
+  [bootstrap example](../../terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars.example)
+  exist. The `iso-publisher` SMB account belongs to `iso-publishers`.
+  The non-root `iso-reader` account has `iso-readers` as its primary group.
+- The NFS and SMB services run. A plan for an enabled share stops if its
+  service is stopped.
 
 ## Declare the dataset
 
-Add an entry to `datasets` in `terraform/truenas/gen8/gen8.local.auto.tfvars`:
+Copy the
+[storage example](../../terraform/truenas/gen8/gen8.local.auto.tfvars.example)
+to `terraform/truenas/gen8/gen8.local.auto.tfvars` if that file doesn't exist.
+Otherwise, add this entry to its `datasets` map:
 
 ```hcl
 iso = {
   name        = "tank/iso"
-  acltype     = "nfsv4"
   share_type  = "MULTIPROTOCOL"
   recordsize  = "1M"
   compression = "lz4"
   filesystem_acl = {
-    preset      = "nfs4_group_rw"
-    group_names = ["SMB_GROUP"]
+    preset = "nfs4_access"
+    groups = {
+      "iso-readers"    = "READ"
+      "iso-publishers" = "MODIFY"
+    }
   }
   nfs = {
-    hosts   = ["NFS_CLIENT"]
-    comment = "Proxmox VE image library"
-    ro      = false
+    hosts         = ["NFS_CLIENT"]
+    comment       = "Proxmox VE image library"
+    maproot_user  = "iso-reader"
+    maproot_group = "iso-readers"
+    ro            = true
   }
   smb = {
     name      = "iso"
@@ -52,16 +67,16 @@ iso = {
 
 Replace the following:
 
-- `SMB_GROUP`: the group that publishes files, such as `smb-users`.
-- `NFS_CLIENT`: the NFS client host name or address. TrueNAS must resolve it.
-- `NAS_HOST`: the NAS address, used in the Explorer path.
+- `NAS_HOST`: the NAS management hostname or address. Also use it in Explorer.
+- `PROVISIONING_API_KEY`: the `terraform-prov` key from the bootstrap output.
+- `NFS_CLIENT`: the Proxmox client hostname or address. TrueNAS must resolve it.
 
-The preset grants the owner full control and each listed group modify access.
-Every entry inherits to new children. For different rights, declare
-`filesystem_acl.type` and `filesystem_acl.entries` instead.
+If you use other identity names, update both the ACL groups and the NFS
+mapping to match the accounts and groups on TrueNAS.
 
-`acltype = "nfsv4"` is required when the existing dataset reports `inherit`.
-A new multiprotocol dataset already receives NFSv4, and the line is harmless.
+A new multiprotocol dataset receives an NFSv4 ACL. For an existing dataset,
+check its effective ACL type and keep its current `acltype` setting. Changing
+that setting can trigger replacement.
 
 ## Apply the shares
 
@@ -69,16 +84,29 @@ A new multiprotocol dataset already receives NFSv4, and the line is harmless.
 2. Review the plan. It creates the dataset, the ACL, and both shares. Stop if
    it replaces an existing dataset that holds data.
 3. Run `task tf:truenas-gen8-apply` after approval.
-4. In Windows Explorer, open `\\NAS_HOST\iso` with the file user, then create
-   and delete a test file.
-5. In Proxmox, mount the export, write and delete a test file, and register the
-   storage with type `iso` only.
+4. Open `\\NAS_HOST\iso` in Windows Explorer with the SMB user.
+5. Create `template/iso/` through SMB before adding the read-only export to
+   Proxmox. Copy a test `.iso` file there.
+6. In Proxmox, add the export with content type `iso` only. Check that
+   Proxmox can list `template/iso/` and open the test file. Confirm that
+   writing through NFS is denied.
 
-## Permissions
+## How Proxmox gets read access
 
-An NFS client that maps to `root` writes as the dataset owner. Any other
-identity needs its own entry in the ACL. If the identity mapping changes,
-review the ACL before relying on the share.
+| Setting | What it controls |
+| --- | --- |
+| `maproot_user` | Maps client `root` to the TrueNAS user `iso-reader`. |
+| `maproot_group` | Sets the group for the same mapping to `iso-readers`. |
+| `filesystem_acl.groups` | Grants `iso-readers` permission to list, traverse, and read files. Grants `iso-publishers` permission to modify them. |
+| `nfs.ro` | Blocks writes through the NFS export, even if the filesystem ACL permits them. |
+
+This example sets `maproot_group` because the ACL grants `READ` to the group
+`iso-readers`. If an explicit ACL grants `READ` directly to `iso-reader`,
+`maproot_user` is enough for that grant.
+
+For a dataset whose ACL OpenTofu doesn't already manage, you can omit
+`filesystem_acl` and use its existing permissions. Check that the mapped
+user can read the files. See [how TrueNAS checks access](../truenas-access.md#follow-a-request-to-the-file).
 
 ## Known limits
 

@@ -18,27 +18,28 @@ The pinned provider replaces a dataset when its ACL type or share preset
 changes. Replacing a dataset that holds data needs a migration, not an edit.
 Use this procedure only when the dataset holds no data you need.
 
-1. Change the dataset entry to the new preset and ACL, and set `protect = false`
-   on that entry. Add `acltype = "nfsv4"` when the dataset reports
-   `acltype = "inherit"`.
-2. Delete the empty dataset in TrueNAS with the administrator account. Its ACL
-   goes with it.
-3. Plan the replacement. Confirm that it replaces only that dataset and its
-   shares. Stop if it also replaces or changes other datasets.
-4. Apply after approval, then set `protect = true` again.
-5. Plan again and confirm that it reports no changes.
+1. Get owner approval before planning or contacting TrueNAS.
+2. Verify the exact dataset path, its shares, and any other consumers in TrueNAS.
+   Stop if the dataset contains files, snapshots, child datasets, or volumes.
+   Back up the OpenTofu state before proceeding.
+3. Change the dataset entry to the new preset and ACL. Set `protect = false`
+   only for this dataset. Set `acltype = "nfsv4"` if the new ACL requires it.
+4. Plan the replacement. Review the dataset, ACL, and any affected shares.
+   Stop if the plan changes another dataset or an unrelated resource.
+5. Get approval for the exact deletion. In TrueNAS, delete only the empty
+   dataset with the administrator account. Don't select recursive deletion.
+6. Set `protect = true` again and plan recreation. If refresh fails on the
+   deleted dataset, follow [Recover a deleted dataset](#recover-a-deleted-dataset-from-the-state).
+7. Confirm the new plan recreates only the intended resources, with no
+   deletions or replacements. Apply after approval and check for drift.
 
-The replacement deletes the dataset and everything under it. Snapshots and child
-datasets go with it.
-
-The storage identity has no delete role, and TrueNAS doesn't scope one to a
-single dataset. Keep the deletion with the administrator account.
+The storage identity can't delete datasets. The provider also refuses
+non-recursive deletion when snapshots, child datasets, or volumes exist.
 
 ## Recover a deleted dataset from the state
 
-If the dataset disappears outside OpenTofu, a plan stops with
-`Missing Resource Identity After Read`. The provider fails instead of dropping
-the deleted dataset from the state.
+If a dataset disappears outside OpenTofu, refresh can fail with
+`Missing Resource Identity After Read`.
 
 1. Back up the state.
 2. Remove only that entry with `tofu state rm`.

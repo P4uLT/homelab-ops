@@ -1,7 +1,9 @@
 # Set dataset permissions
 
 Use this page to manage a TrueNAS dataset ACL from OpenTofu, for example to
-grant a group write access to a share.
+grant a group write access to a share. Before setting rights, see
+[who owns the dataset](../truenas-access.md#choose-who-owns-the-dataset).
+This module sets ACL entries, not the owning user or group.
 
 ## Enable ACL management
 
@@ -10,29 +12,47 @@ approved role change. This grants filesystem attribute read and write roles to
 the storage identity. TrueNAS doesn't scope these roles to one dataset. The
 storage identity still can't manage users or groups.
 
-To name a group instead of passing its numeric ID, also set
+To use named users or groups in the ACL, also set
 `provision_group_lookup = true`. This grants account and group read access
 through `ACCOUNT_READ`, not write access.
 
 ## Use the NFSv4 preset
 
-For a share with one or more publishing groups, declare the preset:
+Declare one right per existing account or group. Use `users`, `groups`, or both:
 
 ```hcl
 filesystem_acl = {
-  preset      = "nfs4_group_rw"
-  group_names = ["SMB_GROUP"]
+  preset = "nfs4_access"
+  groups = {
+    "iso-publishers" = "MODIFY"
+  }
+  users = {
+    "pve-iso-smb" = "READ"
+  }
 }
 ```
 
-Replace `SMB_GROUP` with the group that publishes files, such as `smb-users`.
+Replace the example names with your TrueNAS accounts and groups. The module
+resolves them to numeric IDs. The owner keeps full control. Entries inherit to new
+files and directories.
 
-The preset grants the owner full control and each group modify access. Other
-identities get nothing, and every entry inherits to new children. The dataset needs an NFSv4 ACL: create it with
+| Right | What the user or group can do |
+| --- | --- |
+| `READ` | List and traverse directories and read files. |
+| `MODIFY` | Read, create, change, and delete files without managing ACLs. |
+
+A user can gain access through multiple groups. Keep reader accounts out of
+publisher groups if those accounts must not write. Share settings such as
+NFS read-only access apply separately.
+
+Use the preset on a dataset with an NFSv4 ACL. For a new dataset, use
 `share_type = "SMB"` or `"MULTIPROTOCOL"`, or set `acltype = "nfsv4"`.
+Changing the ACL type of an existing dataset can require replacement.
 
-Name one group with `group_gid`, `group_name`, or `group_names`. Use only one of
-them. The module resolves names and sends only numeric IDs to the ACL.
+If you used `nfs4_group_access`, change only the preset name to `nfs4_access`.
+If you used `nfs4_group_rw`, move each named group into `groups` with
+`"MODIFY"`. For a numeric group ID, use a custom ACL with an explicit `id`
+and include the owner entry.
 
 ## Declare a custom ACL
 
@@ -57,13 +77,16 @@ default entry, so new children inherit the same rights.
 
 ## Apply the ACL
 
-1. Run `task tf:truenas-gen8-plan`.
-2. Review the current permissions in TrueNAS. The resource replaces the full ACL
-   on that path.
-3. Review the planned ACL. By default it doesn't change existing child files
-   or directories. Set `recursive = true` to replace their ACLs too, and
-   `traverse = true` to cross child datasets.
+1. Get owner approval before contacting TrueNAS or running a plan.
+2. For an existing dataset, check its owner, owning group, and ACL in
+   **Datasets > Permissions**. The resource replaces the full ACL on that path.
+3. Run `task tf:truenas-gen8-plan` and review the planned ACL. By default, it
+   doesn't change existing files or directories below the dataset root.
+   Set `recursive = true` to replace their ACLs too. With recursion enabled,
+   `traverse = true` also crosses child datasets.
 4. Run `task tf:truenas-gen8-apply` after approval.
+5. Check the owner, owning group, and ACL in **Datasets > Permissions**.
+6. Test allowed and denied access with the actual client accounts.
 
 Don't bypass deletion protection to stop managing an ACL. Destroying the
 resource removes the extended ACL entries on the NAS. To keep the ACL without
