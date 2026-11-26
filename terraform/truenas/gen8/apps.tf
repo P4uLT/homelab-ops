@@ -28,7 +28,7 @@ resource "truenas_app" "rustfs" {
       api_port = {
         bind_mode   = "published"
         port_number = var.rustfs_app_api_port
-        host_ips    = [{ host_ip = "0.0.0.0" }]
+        host_ips    = ["0.0.0.0"]
       }
       web_port = { bind_mode = "exposed", port_number = var.rustfs_app_web_port }
     }

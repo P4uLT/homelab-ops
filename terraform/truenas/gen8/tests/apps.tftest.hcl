@@ -49,7 +49,7 @@ run "plans_the_gated_application" {
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.web_port.port_number == 30293 &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.certificate_id == 1 &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.bind_mode == "published" &&
-      jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.host_ips[0].host_ip == "0.0.0.0" &&
+      jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.host_ips[0] == "0.0.0.0" &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.web_port.bind_mode == "exposed" &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).run_as.user == 568
     )
