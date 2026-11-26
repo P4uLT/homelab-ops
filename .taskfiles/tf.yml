@@ -37,6 +37,7 @@ vars:
     - bootstrap/truenas/gen8
     - truenas/gen8
   TF_TRUENAS_ROOTS: [bootstrap/truenas/gen8, truenas/gen8]
+  TF_TRUENAS_DATASET_MODULE: terraform/truenas/modules/dataset
   TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
@@ -101,19 +102,18 @@ tasks:
         msg: "Run task tf:init before testing the bootstrap root."
       - sh: test -d terraform/truenas/gen8/.terraform/providers
         msg: "Run task tf:init before testing the storage root."
-      - sh: test -d terraform/truenas/modules/dataset/.terraform/providers
-        msg: "Install the module provider once with network access before running this task."
+      - sh: test -d {{.TF_TRUENAS_DATASET_MODULE}}/.terraform/providers
+        msg: "Run task tf:init before testing the dataset module."
     cmds:
-      - >-
-        uv run python terraform/truenas/modules/dataset/tests/check_catalog_type.py
-      - tofu -chdir=terraform/truenas/modules/dataset test {{.CLI_ARGS}}
+      - uv run python {{.TF_TRUENAS_DATASET_MODULE}}/tests/check_catalog_type.py
+      - tofu -chdir="{{.TF_TRUENAS_DATASET_MODULE}}" test {{.CLI_ARGS}}
       - for:
           var: TF_TRUENAS_ROOTS
           as: ROOT
         cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
 
   init:
-    desc: Initialize every OpenTofu root. Contacts a remote backend when one exists.
+    desc: Initialize OpenTofu roots and test modules. Contacts remote backends.
     dotenv: [".env.tf"]
     preconditions:
       - sh: test -s .env.tf
@@ -121,6 +121,9 @@ tasks:
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
+      - >-
+        tofu -chdir="{{.TF_TRUENAS_DATASET_MODULE}}"
+        init -backend=false -input=false
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
