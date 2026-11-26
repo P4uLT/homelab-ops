@@ -204,6 +204,26 @@ tasks:
         msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
     cmd: tofu -chdir=terraform/truenas/gen8 apply -input=false {{.CLI_ARGS}}
 
+  rustfs-gen8-plan:
+    desc: Preview the Gen8 RustFS layer. Owner approval required.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/rustfs/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: tofu -chdir=terraform/rustfs/gen8 plan -input=false {{.CLI_ARGS}}
+
+  rustfs-gen8-apply:
+    desc: Apply the Gen8 RustFS layer after the TrueNAS root. Needs approval.
+    dotenv: [".env.tf"]
+    preconditions:
+      - sh: test -s .env.tf
+        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - sh: test -s terraform/rustfs/gen8/gen8.local.auto.tfvars
+        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
+    cmd: tofu -chdir=terraform/rustfs/gen8 apply -input=false {{.CLI_ARGS}}
+
   bootstrap-plan:
     desc: Plan the state backend.
     dotenv: [".env.tf", ".env.account.ovh.tf"]
