@@ -82,34 +82,6 @@ run "mirrors_posix_access_entries_for_inheritance" {
   }
 }
 
-run "plans_the_nfs4_group_preset" {
-  command = plan
-
-  override_data {
-    target = data.truenas_group.acl
-    values = { gid = 12345 }
-  }
-
-  variables {
-    dataset = {
-      name       = "tank/example"
-      share_type = "MULTIPROTOCOL"
-      filesystem_acl = {
-        preset      = "nfs4_group_rw"
-        group_names = ["smb-users"]
-      }
-    }
-  }
-
-  assert {
-    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode([
-      { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = { BASIC = "INHERIT" } },
-      { tag = "GROUP", type = "ALLOW", id = 12345, perms = { BASIC = "MODIFY" }, flags = { BASIC = "INHERIT" } },
-    ])
-    error_message = "The NFSv4 preset must grant the owner full control and each group modify access."
-  }
-}
-
 run "allows_an_acl_conversion_in_the_same_apply" {
   command = plan
 
@@ -118,14 +90,19 @@ run "allows_an_acl_conversion_in_the_same_apply" {
     values = { acltype = "POSIX1E" }
   }
 
+  override_data {
+    target = data.truenas_group.modifier
+    values = { gid = 12345 }
+  }
+
   variables {
     dataset = {
       name       = "tank/example"
       acltype    = "nfsv4"
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset    = "nfs4_group_rw"
-        group_gid = 12345
+        preset = "nfs4_access"
+        groups = { smb-users = "MODIFY" }
       }
     }
   }
@@ -143,102 +120,7 @@ run "rejects_the_nfs4_preset_on_a_posix_dataset" {
     dataset = {
       name           = "tank/example"
       share_type     = "GENERIC"
-      filesystem_acl = { preset = "nfs4_group_rw", group_gid = 12345 }
-    }
-  }
-
-  expect_failures = [var.dataset]
-}
-
-run "resolves_acl_group_name_to_gid" {
-  command = plan
-
-  override_data {
-    target = data.truenas_group.acl
-    values = { gid = 12345 }
-  }
-
-  variables {
-    dataset = {
-      name       = "tank/example"
-      share_type = "MULTIPROTOCOL"
-      filesystem_acl = {
-        preset     = "nfs4_group_rw"
-        group_name = "smb-users"
-      }
-    }
-  }
-
-  assert {
-    condition = (
-      data.truenas_group.acl["managed"].name == "smb-users" &&
-      [for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : ace.id if ace.tag == "GROUP"] == [12345] &&
-      alltrue([for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : !can(ace.who)])
-    )
-    error_message = "Resolve the group by name but send its numeric GID in both ACEs."
-  }
-}
-
-run "looks_up_each_group_in_a_preset" {
-  command = plan
-
-  override_data {
-    target = data.truenas_group.acl
-    values = { gid = 12345 }
-  }
-
-  variables {
-    dataset = {
-      name       = "tank/example"
-      share_type = "MULTIPROTOCOL"
-      filesystem_acl = {
-        preset      = "nfs4_group_rw"
-        group_names = ["smb-users", "iso-editors"]
-      }
-    }
-  }
-
-  assert {
-    condition = (
-      toset(keys(data.truenas_group.acl)) == toset(["smb-users", "iso-editors"]) &&
-      data.truenas_group.acl["smb-users"].name == "smb-users" &&
-      data.truenas_group.acl["iso-editors"].name == "iso-editors" &&
-      [for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : ace.id if ace.tag == "GROUP"] == [12345]
-    )
-    error_message = "Resolve every group name and emit one GROUP entry per distinct group ID."
-  }
-}
-
-run "rejects_mixing_singular_and_plural_group_names" {
-  command = plan
-
-  variables {
-    dataset = {
-      name       = "tank/example"
-      share_type = "MULTIPROTOCOL"
-      filesystem_acl = {
-        preset      = "nfs4_group_rw"
-        group_name  = "smb-users"
-        group_names = ["iso-editors"]
-      }
-    }
-  }
-
-  expect_failures = [var.dataset]
-}
-
-run "rejects_both_group_name_and_gid" {
-  command = plan
-
-  variables {
-    dataset = {
-      name       = "tank/example"
-      share_type = "MULTIPROTOCOL"
-      filesystem_acl = {
-        preset     = "nfs4_group_rw"
-        group_name = "smb-users"
-        group_gid  = 12345
-      }
+      filesystem_acl = { preset = "nfs4_access", groups = { smb-users = "MODIFY" } }
     }
   }
 
@@ -251,7 +133,7 @@ run "rejects_an_unknown_acl_preset" {
   variables {
     dataset = {
       name           = "tank/example"
-      filesystem_acl = { preset = "unknown", group_gid = 12345 }
+      filesystem_acl = { preset = "unknown", groups = { smb-users = "MODIFY" } }
     }
   }
 
@@ -263,8 +145,13 @@ run "rejects_mixing_a_preset_with_custom_acl_settings" {
 
   variables {
     dataset = {
-      name           = "tank/example"
-      filesystem_acl = { preset = "nfs4_group_rw", group_gid = 12345, type = "NFS4" }
+      name       = "tank/example"
+      share_type = "SMB"
+      filesystem_acl = {
+        preset  = "nfs4_access"
+        groups  = { smb-users = "MODIFY" }
+        entries = [{ tag = "owner@", type = "ALLOW", basic_perms = "FULL_CONTROL" }]
+      }
     }
   }
 
@@ -314,7 +201,7 @@ run "allows_a_reviewed_replacement" {
   command = plan
 
   override_data {
-    target = data.truenas_group.acl
+    target = data.truenas_group.modifier
     values = { gid = 12345 }
   }
 
@@ -324,8 +211,8 @@ run "allows_a_reviewed_replacement" {
       protect    = false
       share_type = "MULTIPROTOCOL"
       filesystem_acl = {
-        preset      = "nfs4_group_rw"
-        group_names = ["smb-users"]
+        preset = "nfs4_access"
+        groups = { smb-users = "MODIFY" }
       }
     }
   }

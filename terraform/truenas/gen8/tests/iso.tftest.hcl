@@ -1,4 +1,16 @@
 mock_provider "truenas" {
+  mock_data "truenas_user" {
+    defaults = { uid = 1201 }
+  }
+
+  mock_data "truenas_filesystem_acl" {
+    defaults = { acltype = "NFS4", path = "/mnt/tank/iso" }
+  }
+
+  mock_resource "truenas_dataset" {
+    defaults = { mountpoint = "/mnt/tank/iso" }
+  }
+
   mock_data "truenas_service" {
     defaults = { running = true, enabled = true }
   }
@@ -43,6 +55,30 @@ run "plans_independent_datasets_and_optional_exports" {
       module.dataset["perso"].smb.name == "Personal"
     )
     error_message = "Each dataset must get only its requested exports and settings."
+  }
+}
+
+run "plans_iso_with_acl_users" {
+  command = plan
+
+  variables {
+    datasets = {
+      iso = {
+        name       = "tank/iso"
+        share_type = "MULTIPROTOCOL"
+        filesystem_acl = {
+          preset = "nfs4_access"
+          users  = { iso-reader = "READ" }
+        }
+        nfs = { hosts = ["pve.example.invalid"], ro = true }
+        smb = { name = "iso", purpose = "MULTIPROTOCOL_SHARE" }
+      }
+    }
+  }
+
+  assert {
+    condition     = module.dataset["iso"].nfs.ro && module.dataset["iso"].smb.enabled
+    error_message = "The catalog must pass the ACL grants to a dataset with both shares."
   }
 }
 

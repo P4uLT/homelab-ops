@@ -40,9 +40,8 @@ variable "datasets" {
     protect = optional(bool, true)
     filesystem_acl = optional(object({
       preset         = optional(string)
-      group_gid      = optional(number)
-      group_name     = optional(string)
-      group_names    = optional(set(string), [])
+      groups         = optional(map(string), {})
+      users          = optional(map(string), {})
       type           = optional(string)
       inherit_access = optional(bool, false)
       recursive      = optional(bool, false)

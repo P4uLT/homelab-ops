@@ -10,14 +10,22 @@ data "truenas_user" "entry" {
   username = each.value
 }
 
-data "truenas_group" "acl" {
-  for_each = local.acl == null ? {} : (
-    local.acl.group_name != null ? { managed = local.acl.group_name } : {
-      for name in local.acl.group_names : name => name
-    }
-  )
+data "truenas_group" "reader" {
+  for_each = toset([for name, right in local.preset_groups : name if right == "READ"])
 
-  name = each.value
+  name = each.key
+}
+
+data "truenas_group" "modifier" {
+  for_each = toset([for name, right in local.preset_groups : name if right == "MODIFY"])
+
+  name = each.key
+}
+
+data "truenas_user" "preset" {
+  for_each = local.preset_users
+
+  username = each.key
 }
 
 locals {
@@ -29,30 +37,54 @@ locals {
     nfsv4 = "NFS4"
   }
 
-  # Sort by GID so the entry order stays stable.
-  acl_group_gids = try(local.acl.group_gid, null) != null ? [local.acl.group_gid] : [
-    for gid in sort(distinct([for group in data.truenas_group.acl : format("%020d", group.gid)])) : tonumber(gid)
-  ]
+  preset_enabled = try(local.acl.preset, null) == "nfs4_access"
+  preset_groups  = local.preset_enabled ? local.acl.groups : {}
+  preset_users   = local.preset_enabled ? local.acl.users : {}
 
-  # SMB needs an NFSv4 ACL, so the preset emits one inherited entry per right.
-  preset_entries = local.acl == null || local.acl.preset == null ? null : [
-    for ace in concat(
-      [{ group_id = tonumber(null) }],
-      [for gid in local.acl_group_gids : { group_id = gid }],
-      ) : merge(
-      {
-        tag   = ace.group_id == null ? "owner@" : "GROUP"
-        type  = "ALLOW"
-        perms = { BASIC = ace.group_id == null ? "FULL_CONTROL" : "MODIFY" }
-        flags = { BASIC = "INHERIT" }
-      },
-      ace.group_id == null ? {} : { id = ace.group_id }
-    )
-  ]
+  # Pad GIDs for numeric ordering. Keep aliases so the precondition can reject them.
+  grants_by_gid = {
+    for grant in concat(
+      [for group in data.truenas_group.reader : { gid = group.gid, right = "READ" }],
+      [for group in data.truenas_group.modifier : { gid = group.gid, right = "MODIFY" }],
+    ) : format("%020d", grant.gid) => grant...
+  }
+
+  grants_by_uid = {
+    for name, user in data.truenas_user.preset : format("%020d", user.uid) => {
+      uid   = user.uid
+      right = local.preset_users[name]
+    }...
+  }
+
+  # TrueNAS basic READ includes directory traversal.
+  preset_entries = local.preset_enabled ? concat(
+    [{ tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = { BASIC = "INHERIT" } }],
+    flatten([
+      for grants in values(local.grants_by_gid) : [
+        for grant in grants : {
+          tag   = "GROUP"
+          id    = grant.gid
+          type  = "ALLOW"
+          perms = { BASIC = grant.right }
+          flags = { BASIC = "INHERIT" }
+        }
+      ]
+    ]),
+    flatten([
+      for grants in values(local.grants_by_uid) : [
+        for grant in grants : {
+          tag   = "USER"
+          id    = grant.uid
+          type  = "ALLOW"
+          perms = { BASIC = grant.right }
+          flags = { BASIC = "INHERIT" }
+        }
+      ]
+    ]),
+  ) : null
 
   filesystem_acl = local.acl == null ? null : merge(local.acl, {
-    type           = local.acl.preset == "nfs4_group_rw" ? "NFS4" : local.acl.type
-    inherit_access = local.acl.inherit_access
+    type = local.preset_enabled ? "NFS4" : local.acl.type
   })
 
   acl_managed = local.filesystem_acl == null ? {} : { managed = local.filesystem_acl }
@@ -112,8 +144,17 @@ resource "truenas_filesystem_acl" "this" {
     }
 
     precondition {
-      condition     = alltrue([for gid in local.acl_group_gids : gid > 0])
-      error_message = "The ACL preset refuses a group whose ID is 0."
+      condition = alltrue([
+        for grants in values(local.grants_by_gid) : length(grants) == 1 && grants[0].gid > 0
+      ])
+      error_message = "Each ACL preset group must resolve to a distinct positive GID."
+    }
+
+    precondition {
+      condition = alltrue([
+        for grants in values(local.grants_by_uid) : length(grants) == 1 && grants[0].uid > 0
+      ])
+      error_message = "Each ACL preset user must resolve to a distinct positive UID."
     }
   }
 }

@@ -5,9 +5,8 @@ variable "dataset" {
     protect = optional(bool, true)
     filesystem_acl = optional(object({
       preset         = optional(string)
-      group_gid      = optional(number)
-      group_name     = optional(string)
-      group_names    = optional(set(string), [])
+      groups         = optional(map(string), {})
+      users          = optional(map(string), {})
       type           = optional(string)
       inherit_access = optional(bool, false)
       recursive      = optional(bool, false)
@@ -140,36 +139,30 @@ variable "dataset" {
   validation {
     condition = var.dataset.filesystem_acl == null ? true : (
       var.dataset.filesystem_acl.preset == null
-      ? var.dataset.filesystem_acl.group_gid == null && var.dataset.filesystem_acl.group_name == null && length(var.dataset.filesystem_acl.group_names) == 0
+      ? length(var.dataset.filesystem_acl.groups) + length(var.dataset.filesystem_acl.users) == 0
       : try(
-        var.dataset.filesystem_acl.preset == "nfs4_group_rw" &&
-        length(compact([
-          var.dataset.filesystem_acl.group_gid == null ? "" : "group_gid",
-          var.dataset.filesystem_acl.group_name == null ? "" : "group_name",
-          length(var.dataset.filesystem_acl.group_names) == 0 ? "" : "group_names",
-        ])) == 1 &&
-        (var.dataset.filesystem_acl.group_gid == null ? true :
-          var.dataset.filesystem_acl.group_gid > 0 && floor(var.dataset.filesystem_acl.group_gid) == var.dataset.filesystem_acl.group_gid
-        ) &&
-        alltrue([
-          for name in concat(var.dataset.filesystem_acl.group_name == null ? [] : [var.dataset.filesystem_acl.group_name], tolist(var.dataset.filesystem_acl.group_names)) :
-          trimspace(name) != "" && trimspace(name) == name
-        ]) &&
+        var.dataset.filesystem_acl.preset == "nfs4_access" &&
+        length(var.dataset.filesystem_acl.groups) + length(var.dataset.filesystem_acl.users) > 0 &&
+        alltrue(flatten([
+          for principals in [var.dataset.filesystem_acl.groups, var.dataset.filesystem_acl.users] : [
+            for name, right in principals :
+            trimspace(name) != "" && trimspace(name) == name && contains(["READ", "MODIFY"], right)
+          ]
+        ])) &&
         var.dataset.filesystem_acl.type == null &&
         !var.dataset.filesystem_acl.inherit_access &&
         length(var.dataset.filesystem_acl.entries) == 0,
         false
       )
     )
-    error_message = "Use a known ACL preset with exactly one of group_gid, group_name, or group_names, and no custom ACL settings."
+    error_message = "Use nfs4_access with named users or groups and READ or MODIFY rights, or declare an explicit ACL without preset grants."
   }
 
   validation {
-    condition = var.dataset.filesystem_acl == null ? true : try(
-      var.dataset.filesystem_acl.preset != "nfs4_group_rw" ||
-      contains(["MULTIPROTOCOL", "SMB"], coalesce(var.dataset.share_type, "")) ||
-      lower(coalesce(var.dataset.acltype, "")) == "nfsv4",
-      false
+    condition = try(var.dataset.filesystem_acl.preset, null) != "nfs4_access" ? true : (
+      lower(var.dataset.acltype == null ? "inherit" : var.dataset.acltype) == "inherit"
+      ? contains(["MULTIPROTOCOL", "SMB"], upper(var.dataset.share_type == null ? "GENERIC" : var.dataset.share_type))
+      : lower(var.dataset.acltype) == "nfsv4"
     )
     error_message = "The NFSv4 preset needs a dataset created with the MULTIPROTOCOL or SMB preset, or acltype = nfsv4."
   }
