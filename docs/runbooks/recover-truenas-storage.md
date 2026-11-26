@@ -5,9 +5,29 @@ replacement.
 
 ## Adopt an existing pool
 
-If `tank` survived a reinstall, import it in TrueNAS by its pool identifier.
-OpenTofu adopts it at `truenas_pool.tank`, with `tank` as the import ID, only if
-it's missing from the bootstrap state. These are separate operations.
+The pinned provider can't adopt a pool that TrueNAS created outside OpenTofu.
+TrueNAS names the members of such a pool by their partition identifier. The
+provider matches members by serial number or kernel device name instead, so it
+reads every member as a different disk. The plan then fails with
+`Pool topology cannot be changed in place`.
+
+Check the member names before you plan:
+
+```sh
+zpool status tank -v
+```
+
+An identifier such as `b4f9b71d-d7a5-4071-94f0-84dfa204772e` confirms the pool
+came from TrueNAS, not from OpenTofu.
+
+- **Pool with no data you need:** delete it in TrueNAS. Open **Storage**, open
+the pool menu, select **Export/Disconnect**, and enable **Destroy data**. Run
+the bootstrap plan again. OpenTofu creates the pool.
+- **Pool that holds data:** keep it outside OpenTofu. Don't import it, and
+don't add it to the configuration.
+
+A pool the bootstrap creates stays manageable. Run one plan after the first
+apply and confirm it reports no topology change.
 
 Stop if the plan would create a pool on disks that still hold data. Restore
 lost data from backup, not from the OpenTofu state.
