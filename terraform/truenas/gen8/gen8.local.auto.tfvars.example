@@ -1,40 +1,51 @@
 # Copy this file to gen8.local.auto.tfvars and restrict it to your user.
-# Replace NAS_HOST, PROVISIONING_API_KEY, and NFS_CLIENT.
-# Use the terraform-prov key, not the administrator key.
-# For the image library, follow docs/runbooks/truenas-share-multiprotocol.md.
-# Create the matching identities from the bootstrap example. Enable SMB shares,
-# dataset ACLs, and group lookup there. Start NFS and SMB before planning.
+# Replace NAS_HOST and PROVISIONING_API_KEY. Use the terraform-prov key,
+# not the administrator key. Create the matching identities from the
+# bootstrap example. Enable SMB shares, dataset ACLs, and group lookup
+# there. Start SMB before planning.
+# Follow docs/runbooks/truenas-proxmox-iso-library.md and
+# docs/runbooks/truenas-home-assistant-backups.md for the two shares.
+# For an NFS export, see docs/runbooks/truenas-share-nfs.md or
+# docs/runbooks/truenas-share-multiprotocol.md.
 
 truenas_host    = "NAS_HOST"
 truenas_api_key = "PROVISIONING_API_KEY"
 # truenas_ca_cert = "/path/to/management-ca.pem"
 
 datasets = {
-  # SMB publishers write. NFS maps client root to iso-reader and iso-readers.
-  # The filesystem ACL grants that group read access. The export blocks writes.
+  # People publish images over SMB. The Proxmox reader account reads.
   iso = {
     name        = "tank/iso"
-    share_type  = "MULTIPROTOCOL"
+    share_type  = "SMB"
     recordsize  = "1M"
     compression = "lz4"
     filesystem_acl = {
       preset = "nfs4_access"
-      groups = {
-        "iso-readers"    = "READ"
-        "iso-publishers" = "MODIFY"
-      }
-    }
-    nfs = {
-      hosts         = ["NFS_CLIENT"]
-      comment       = "Proxmox VE image library"
-      maproot_user  = "iso-reader"
-      maproot_group = "iso-readers"
-      ro            = true
+      groups = { "iso-publishers" = "MODIFY" }
+      users  = { "pve-iso-reader" = "READ" }
     }
     smb = {
       name      = "iso"
-      purpose   = "MULTIPROTOCOL_SHARE"
+      purpose   = "DEFAULT_SHARE"
       browsable = true
+      ro        = false
+    }
+  }
+
+  # Home Assistant writes and prunes its own backups over SMB.
+  ha_backups = {
+    name        = "tank/ha-backups"
+    share_type  = "SMB"
+    recordsize  = "1M"
+    compression = "lz4"
+    filesystem_acl = {
+      preset = "nfs4_access"
+      users  = { "ha-backup-writer" = "MODIFY" }
+    }
+    smb = {
+      name      = "ha-backups"
+      purpose   = "DEFAULT_SHARE"
+      browsable = false
       ro        = false
     }
   }

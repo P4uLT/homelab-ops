@@ -10,13 +10,12 @@ services = {
 
 provision_smb_shares = false
 
-# For the multiprotocol image library, set provision_smb_shares to true.
-# Enable the two ACL flags below. Uncomment the accounts and groups, and
-# set a password for iso_publisher. Grant file rights in the storage root.
+# For the image library and the backup share, set provision_smb_shares
+# to true. Enable the two ACL flags below. Uncomment the accounts and
+# groups, and set a password for each SMB account.
 # groups = {
 #   smb_users      = { name = "smb-users", smb = true } # No dataset grants.
 #   iso_publishers = { name = "iso-publishers", smb = true }
-#   iso_readers    = { name = "iso-readers" }
 # }
 # users = {
 #   iso_publisher = {
@@ -26,13 +25,24 @@ provision_smb_shares = false
 #     additional_groups = ["iso_publishers"]
 #     smb               = true
 #   }
-#   iso_reader = {
-#     username      = "iso-reader"
-#     full_name     = "Image library NFS reader"
-#     primary_group = "iso_readers"
+#   pve_iso_reader = {
+#     username      = "pve-iso-reader"
+#     full_name     = "Proxmox ISO storage reader"
+#     primary_group = "smb_users"
+#     smb           = true
+#   }
+#   ha_backup_writer = {
+#     username      = "ha-backup-writer"
+#     full_name     = "Home Assistant backup writer"
+#     primary_group = "smb_users"
+#     smb           = true
 #   }
 # }
-# user_passwords = { iso_publisher = "replace-locally" }
+# user_passwords = {
+#   iso_publisher    = "replace-locally"
+#   pve_iso_reader    = "replace-locally"
+#   ha_backup_writer  = "replace-locally"
+# }
 
 # Enables filesystem ACL management from the storage root. Not scoped to a dataset.
 # provision_dataset_acls = true
