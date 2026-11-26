@@ -26,6 +26,7 @@ run "plans_a_single_raidz2_vdev_by_default" {
       truenas_user.provisioner.password_disabled &&
       !truenas_user.provisioner.smb &&
       !contains(truenas_privilege.provisioner.roles, "SHARING_SMB_WRITE") &&
+      !contains(truenas_privilege.provisioner.roles, "APPS_WRITE") &&
       truenas_service.files["nfs"].running &&
       truenas_service.files["cifs"].running
     )
