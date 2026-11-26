@@ -17,6 +17,8 @@ Check mode can change a node.
 - [Share over SMB and NFS](truenas-share-multiprotocol.md): serve one dataset to both.
 - [Set dataset permissions](truenas-dataset-permissions.md): grant access through OpenTofu.
 - [Diagnose TrueNAS share access](diagnose-truenas-share-access.md): check the identity, export, and ACL.
+- [Serve an ISO library to Proxmox](truenas-proxmox-iso-library.md): read-only CIFS storage for VM images.
+- [Store Home Assistant backups](truenas-home-assistant-backups.md): send backups over SMB.
 - [Recover TrueNAS storage](recover-truenas-storage.md): adopt a pool or recreate a dataset.
 - [Bootstrap the state backend](bootstrap-tf-backend.md): create the OVH S3 bucket and credentials.
 - [Rotate the S3 credential](rotate-s3-credential.md): replace the backend key pair.

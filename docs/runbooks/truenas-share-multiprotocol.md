@@ -22,10 +22,11 @@ Check these conditions before you change the configuration:
   - `provision_smb_shares = true` for the SMB share.
   - `provision_dataset_acls = true` for the dataset ACL.
   - `provision_group_lookup = true` to resolve names in ACLs and NFS mappings.
-- The accounts and groups in the
+- These accounts and groups exist on TrueNAS. The
   [bootstrap example](../../terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars.example)
-  exist. The `iso-publisher` SMB account belongs to `iso-publishers`.
-  The non-root `iso-reader` account has `iso-readers` as its primary group.
+  shows the SMB-only accounts. For NFS, also create an `iso-publisher` SMB
+  account in `iso-publishers`, and a non-root `iso-reader` account whose
+  primary group is `iso-readers`.
 - The NFS and SMB services run. A plan for an enabled share stops if its
   service is stopped.
 

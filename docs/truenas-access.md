@@ -87,7 +87,7 @@ existing files.
 | Documents and media | Reuse `household-editors` if both datasets have the same editors. Add `documents-readers` only if needed. | A documents-only reader can't edit documents or open media. |
 | Private files | Keep the same SMB accounts. Grant access through a separate group if it must change independently. | A user with household access alone can't open a file in the private share. |
 | Backups | Restrict NFS to the backup client. Use `mapall` if all requests should use its service account. Split datasets and accounts for isolated repositories. | The job can write and read back a file, but can't open other repositories. |
-| Image library | SMB publishers get `MODIFY`. If the NFS client reads as `root`, map it to a service account with `READ`. Keep the export read-only. | The publisher can write. The NFS client can open a nested image but can't write. |
+| Image library | SMB publishers get `MODIFY`. The reader account gets `READ`, over SMB or through a read-only NFS export. | The publisher can write. The reader can open a nested image but can't write. |
 | Application data | Give the app's non-root account only the rights it needs. Omit shares for local-only storage. | The app can use its data without access to unrelated datasets. |
 
 ## Verify access
@@ -99,6 +99,9 @@ account. A successful plan doesn't prove file access.
 
 Use the [SMB](runbooks/truenas-share-smb.md), [NFS](runbooks/truenas-share-nfs.md),
 or [multiprotocol](runbooks/truenas-share-multiprotocol.md) runbook to deploy.
+For Proxmox image storage and Home Assistant backups, see
+[ISO library](runbooks/truenas-proxmox-iso-library.md) and
+[Home Assistant backups](runbooks/truenas-home-assistant-backups.md).
 See [Set dataset permissions](runbooks/truenas-dataset-permissions.md) or
 [Diagnose TrueNAS share access](runbooks/diagnose-truenas-share-access.md)
 when the ACL or effective identity needs review.
