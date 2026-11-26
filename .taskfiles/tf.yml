@@ -36,7 +36,9 @@ vars:
     - proxmox/jarvis
     - bootstrap/truenas/gen8
     - truenas/gen8
+    - rustfs/gen8
   TF_TRUENAS_ROOTS: [bootstrap/truenas/gen8, truenas/gen8]
+  TF_RUSTFS_ROOTS: [rustfs/gen8]
   TF_TRUENAS_DATASET_MODULE: terraform/truenas/modules/dataset
   TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
@@ -53,6 +55,9 @@ vars:
         -backend-config=../../../backend.s3.ovh.hcl
         -backend-config="bucket=$TF_VAR_bucket_name"
       truenas/gen8: >-
+        -backend-config=../../backend.s3.ovh.hcl
+        -backend-config="bucket=$TF_VAR_bucket_name"
+      rustfs/gen8: >-
         -backend-config=../../backend.s3.ovh.hcl
         -backend-config="bucket=$TF_VAR_bucket_name"
 
@@ -109,6 +114,17 @@ tasks:
       - tofu -chdir="{{.TF_TRUENAS_DATASET_MODULE}}" test {{.CLI_ARGS}}
       - for:
           var: TF_TRUENAS_ROOTS
+          as: ROOT
+        cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
+
+  test-rustfs:
+    desc: Test the RustFS root with a mock provider. No host contact.
+    preconditions:
+      - sh: test -d terraform/rustfs/gen8/.terraform/providers
+        msg: "Run task tf:init before testing the RustFS root."
+    cmds:
+      - for:
+          var: TF_RUSTFS_ROOTS
           as: ROOT
         cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
 
