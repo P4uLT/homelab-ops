@@ -13,12 +13,14 @@ management endpoint and trust its TLS certificate. For a private CA, set
 certificate verification.
 
 1. Create a bootstrap API key for the initial TrueNAS administrator.
-2. Check the four WD Red serial numbers against the TrueNAS disk inventory.
-   Exclude the boot disk. Creating a pool erases the selected disks.
+2. Check the data disk serial numbers against the TrueNAS disk inventory.
+   Exclude the boot disk. Creating a pool erases the selected disks. The
+   `pool` object defaults build `tank` as one RAIDZ2 vdev. Set `pool.layout`
+   to `MIRROR` or `RAIDZ` for a different vdev.
 3. Copy the example in `terraform/bootstrap/truenas/gen8/` to
    `gen8.local.auto.tfvars` in that root. Restrict the file to its owner.
    Set `truenas_host` to the management hostname or address, without a scheme
-   or path. Enter the bootstrap key and the four serials.
+   or path. Enter the bootstrap key and the disk serials.
 4. Configure the [state backend](../../terraform/BACKEND.md), then run
    `task tf:init`. The roots store separate encrypted states in S3.
 
@@ -29,8 +31,8 @@ task tf:truenas-gen8-bootstrap-plan
 ```
 
 Review the plan before apply. Apply presents a fresh plan. For a new NAS,
-expect the `tank` RAIDZ2 pool, provisioning group, user, privilege, and service
-API key. Also expect the NFS and `cifs` services. The `cifs` service handles
+expect the `tank` pool with one RAIDZ2 vdev, provisioning group, user,
+privilege, and service API key. Also expect the NFS and `cifs` services. The `cifs` service handles
 Server Message Block shares. This step doesn't create a share or grant file
 access to `terraform-prov`. Stop if the plan deletes or replaces anything.
 

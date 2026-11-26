@@ -1,7 +1,12 @@
 truenas_host    = "nas.example.invalid"
 truenas_api_key = "replace-locally"
 # truenas_ca_cert = "/path/to/management-ca.pem"
-disk_serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"]
+
+  pool = {
+    # Defaults: name "tank", layout "RAIDZ2" over all listed serials.
+    # layout = "MIRROR" # Or RAIDZ. Two or three disks minimum.
+    serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"]
+  }
 
 services = {
   nfs  = true

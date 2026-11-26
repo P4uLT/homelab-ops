@@ -1,8 +1,8 @@
-resource "truenas_pool" "tank" {
-  name          = "tank"
+resource "truenas_pool" "main" {
+  name          = var.pool.name
   force_destroy = false
   topology = {
-    data = [{ type = "RAIDZ2", disks = var.disk_serials }]
+    data = [{ type = var.pool.layout, disks = var.pool.serials }]
   }
 
   lifecycle {
