@@ -15,6 +15,7 @@ Check mode can change a node.
 - [Share over NFS](truenas-share-nfs.md): serve a dataset to NFS clients.
 - [Share over SMB](truenas-share-smb.md): serve a dataset to Windows clients.
 - [Share over SMB and NFS](truenas-share-multiprotocol.md): serve one dataset to both.
+- [Install the RustFS application](truenas-install-rustfs-app.md): run the NAS application and create its buckets.
 - [Set dataset permissions](truenas-dataset-permissions.md): grant access through OpenTofu.
 - [Diagnose TrueNAS share access](diagnose-truenas-share-access.md): check the identity, export, and ACL.
 - [Serve an ISO library to Proxmox](truenas-proxmox-iso-library.md): read-only CIFS storage for VM images.
