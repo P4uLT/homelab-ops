@@ -1,28 +1,35 @@
 # Copy this file to gen8.local.auto.tfvars and restrict it to your user.
-# Replace NAS_HOST, BOOTSTRAP_API_KEY, NFS_CLIENT, and SMB_GROUP.
-# The provisioning key goes in terraform/truenas/gen8/gen8.local.auto.tfvars.
-# The NFS and SMB services must run: a share plan checks them.
+# Replace NAS_HOST, PROVISIONING_API_KEY, and NFS_CLIENT.
+# Use the terraform-prov key, not the administrator key.
+# For the image library, follow docs/runbooks/truenas-share-multiprotocol.md.
+# Create the matching identities from the bootstrap example. Enable SMB shares,
+# dataset ACLs, and group lookup there. Start NFS and SMB before planning.
 
 truenas_host    = "NAS_HOST"
-truenas_api_key = "BOOTSTRAP_API_KEY"
+truenas_api_key = "PROVISIONING_API_KEY"
 # truenas_ca_cert = "/path/to/management-ca.pem"
 
 datasets = {
-  # Windows and Proxmox share this image library.
+  # SMB publishers write. NFS maps client root to iso-reader and iso-readers.
+  # The filesystem ACL grants that group read access. The export blocks writes.
   iso = {
     name        = "tank/iso"
     share_type  = "MULTIPROTOCOL"
-    acltype     = "nfsv4" # Only needed when an existing dataset reports "inherit".
     recordsize  = "1M"
     compression = "lz4"
     filesystem_acl = {
-      preset      = "nfs4_group_rw"
-      group_names = ["SMB_GROUP"] # Needs provision_group_lookup.
+      preset = "nfs4_access"
+      groups = {
+        "iso-readers"    = "READ"
+        "iso-publishers" = "MODIFY"
+      }
     }
     nfs = {
-      hosts   = ["NFS_CLIENT"]
-      comment = "Proxmox VE image library"
-      ro      = false
+      hosts         = ["NFS_CLIENT"]
+      comment       = "Proxmox VE image library"
+      maproot_user  = "iso-reader"
+      maproot_group = "iso-readers"
+      ro            = true
     }
     smb = {
       name      = "iso"
@@ -32,22 +39,35 @@ datasets = {
     }
   }
 
-  # Windows only. Grant SMB_GROUP access in the dataset ACL.
+  # SMB only. Create the reader and editor groups and add the SMB users.
   # documents = {
   #   name       = "tank/documents"
   #   share_type = "SMB"
+  #   filesystem_acl = {
+  #     preset = "nfs4_access"
+  #     groups = {
+  #       "documents-readers" = "READ"
+  #       "documents-editors" = "MODIFY"
+  #     }
+  #   }
   #   smb = {
   #     name      = "documents"
   #     purpose   = "DEFAULT_SHARE"
   #     browsable = true
-  #     ro        = true
+  #     ro        = false
   #   }
   # }
 
-  # NFS only. Replace hosts with networks to authorize a subnet.
+  # NFS only. Create BACKUP_USER and BACKUP_GROUP. Grant the backup identity
+  # write and traverse access. See docs/runbooks/truenas-share-nfs.md.
   # backups = {
   #   name = "tank/backups"
-  #   nfs  = { hosts = ["NFS_CLIENT"] }
+  #   nfs = {
+  #     hosts        = ["NFS_CLIENT"]
+  #     mapall_user  = "BACKUP_USER"
+  #     mapall_group = "BACKUP_GROUP"
+  #     ro           = false
+  #   }
   # }
 
   # Application data with no share.

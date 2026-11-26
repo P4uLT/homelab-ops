@@ -131,7 +131,7 @@ variable "users" {
 }
 
 variable "provision_group_lookup" {
-  description = "Grant account and group read access to resolve ACL group names from the storage root."
+  description = "Grant account read access for named identities in dataset ACLs and NFS mappings."
   type        = bool
   default     = false
   nullable    = false

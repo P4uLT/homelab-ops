@@ -10,23 +10,32 @@ services = {
 
 provision_smb_shares = false
 
-# Optional SMB login. Add more users with primary_group = "smb" to share access.
-# Grant the group permissions on each dataset. Use matching keys in user_passwords.
+# For the multiprotocol image library, set provision_smb_shares to true.
+# Enable the two ACL flags below. Uncomment the accounts and groups, and
+# set a password for iso_publisher. Grant file rights in the storage root.
 # groups = {
-#   smb = { name = "smb-users", smb = true }
+#   smb_users      = { name = "smb-users", smb = true } # No dataset grants.
+#   iso_publishers = { name = "iso-publishers", smb = true }
+#   iso_readers    = { name = "iso-readers" }
 # }
 # users = {
-#   smb = {
-#     username      = "smb-user"
-#     full_name     = "SMB user"
-#     primary_group = "smb"
-#     smb           = true
+#   iso_publisher = {
+#     username          = "iso-publisher"
+#     full_name         = "Image library publisher"
+#     primary_group     = "smb_users"
+#     additional_groups = ["iso_publishers"]
+#     smb               = true
+#   }
+#   iso_reader = {
+#     username      = "iso-reader"
+#     full_name     = "Image library NFS reader"
+#     primary_group = "iso_readers"
 #   }
 # }
-# user_passwords = { smb = "replace-locally" }
+# user_passwords = { iso_publisher = "replace-locally" }
 
 # Enables filesystem ACL management from the storage root. Not scoped to a dataset.
 # provision_dataset_acls = true
 
-# Optional account read access for ACL presets that use group_name or group_names.
+# Account read access for named identities in dataset ACLs and NFS mappings.
 # provision_group_lookup = true
