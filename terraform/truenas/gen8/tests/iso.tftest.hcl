@@ -17,9 +17,10 @@ mock_provider "truenas" {
 }
 
 variables {
-  truenas_host     = "nas.example.invalid"
-  truenas_api_key  = "mock-only"
-  state_passphrase = "mock-only-passphrase"
+  truenas_host       = "nas.example.invalid"
+  truenas_api_key    = "mock-only"
+  state_passphrase   = "mock-only-passphrase"
+  rustfs_app_enabled = false
   datasets = {
     iso = {
       name       = "tank/iso"
