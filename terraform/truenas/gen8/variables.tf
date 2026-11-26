@@ -187,10 +187,11 @@ variable "rustfs_app_enabled" {
     condition = !var.rustfs_app_enabled || try(
       contains(keys(var.datasets), "rustfs") &&
       var.datasets["rustfs"].name == var.rustfs_app_dataset &&
+      var.datasets["rustfs"].share_type == "APPS" &&
       length(trimspace(var.rustfs_app_dataset)) > 0,
       false
     )
-    error_message = "Enable the app only with a \"rustfs\" datasets entry named by rustfs_app_dataset."
+    error_message = "Enable the app only with a \"rustfs\" datasets entry named by rustfs_app_dataset with share_type = \"APPS\"."
   }
 
   validation {
@@ -226,7 +227,10 @@ variable "rustfs_app_enabled" {
 
   validation {
     condition = !var.rustfs_app_enabled || try(
-      can(regex("^([0-9]{1,3}\\.){3}[0-9]{1,3}$|^[0-9A-Fa-f:]+$", var.rustfs_app_api_bind_ip)) &&
+      (
+        can(cidrhost("${var.rustfs_app_api_bind_ip}/32", 0)) ||
+        can(regex("^[0-9A-Fa-f:]+$", var.rustfs_app_api_bind_ip))
+      ) &&
       !contains(["0.0.0.0", "::", "0:0:0:0:0:0:0:0"], var.rustfs_app_api_bind_ip),
       false
     )

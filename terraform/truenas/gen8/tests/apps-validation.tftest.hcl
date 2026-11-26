@@ -137,3 +137,25 @@ run "rejects_an_out_of_range_api_port" {
 
   expect_failures = [var.rustfs_app_api_port]
 }
+
+run "rejects_a_dataset_without_the_apps_preset" {
+  command = plan
+
+  variables {
+    datasets = {
+      rustfs = { name = "tank/rustfs" }
+    }
+  }
+
+  expect_failures = [var.rustfs_app_enabled]
+}
+
+run "rejects_an_impossible_ipv4_address" {
+  command = plan
+
+  variables {
+    rustfs_app_api_bind_ip = "999.999.999.999"
+  }
+
+  expect_failures = [var.rustfs_app_enabled]
+}
