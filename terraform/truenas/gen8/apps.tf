@@ -28,7 +28,7 @@ resource "truenas_app" "rustfs" {
       api_port = {
         bind_mode   = "published"
         port_number = var.rustfs_app_api_port
-        host_ips    = [{ host_ip = var.rustfs_app_api_bind_ip }]
+        host_ips    = [{ host_ip = "0.0.0.0" }]
       }
       web_port = { bind_mode = "exposed", port_number = var.rustfs_app_web_port }
     }
@@ -36,7 +36,7 @@ resource "truenas_app" "rustfs" {
     storage = {
       data_disks = [{
         type             = "host_path"
-        host_path_config = { host_path = "/mnt/${var.rustfs_app_dataset}" }
+        host_path_config = { path = "/mnt/${var.rustfs_app_dataset}" }
       }]
     }
   })

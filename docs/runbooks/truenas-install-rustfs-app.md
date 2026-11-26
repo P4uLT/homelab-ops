@@ -21,17 +21,21 @@ tests don't prove the application's behavior.
 5. Enter the pair in both Gen8 tfvars files. The storage root and the RustFS
    root read the same values.
 6. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
-   chart `1.1.46`, which packages RustFS `1.0.6`. Confirm the catalog still
-   offers that version.
+   the one the catalog offers, `1.1.47` at the last check. A missing version
+   fails the apply with `Version ... not found`.
 7. Set `rustfs_app_certificate_id` to an existing TrueNAS certificate. The
    endpoint name must match it. Without a certificate the chart serves HTTP.
-8. Set `rustfs_app_api_bind_ip` to one approved interface address. Open the
-   API port only to the operator and Talos networks.
+8. Allow the API port only from the operator and Talos networks in the NAS
+   firewall. The chart publishes the port on every interface and accepts only
+   a wildcard bind address.
 9. Copy `terraform/rustfs/gen8/gen8.local.auto.tfvars.example` to
    `gen8.local.auto.tfvars` in that root, and fill it. Set `rustfs_endpoint`
    to the certificate's host name and port, then enter one key pair per
    bucket.
 10. Run `task tf:init` once. It downloads the RustFS provider.
+
+The provider has no data source for the catalog version, so it stays a pinned
+input. Read it from the TrueNAS Apps catalog before the first apply.
 
 ## Install the application
 
@@ -66,7 +70,7 @@ destruction.
 After the TrueNAS apply:
 
 - The installed chart version matches the pin, and the application is healthy.
-- The API answers over verified HTTPS on the approved address and port.
+- The API answers over verified HTTPS on the NAS address and port.
 - The console port isn't published.
 - User `568` can write to `/mnt/tank/rustfs`.
 

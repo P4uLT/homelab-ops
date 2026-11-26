@@ -95,17 +95,19 @@ datasets = {
   # }
 }
 
-# The one application on this NAS. Chart 1.1.46 packages RustFS 1.0.6.
-# Keep the version pinned. An upgrade changes it on purpose.
+# The one application on this NAS. Read the offered chart version from the
+# TrueNAS catalog before the first apply. Keep it pinned: an upgrade is a
+# deliberate change.
 # The text plan masks the application values. This file still holds the
 # access key and the secret key, so restrict it to your user.
 # Turning the gate off after install plans the application's removal.
 # rustfs_app_enabled        = true
-# rustfs_app_version        = "1.1.46"
+# rustfs_app_version        = "1.1.47"
 # rustfs_app_dataset        = "tank/rustfs"
 # rustfs_app_api_port       = 30292
 # rustfs_app_web_port       = 30293
 # rustfs_app_certificate_id = 1
-# rustfs_app_api_bind_ip    = "NAS_ADDRESS"
+# TrueNAS publishes the API on every interface. Restrict the port in the
+# NAS firewall to the operator and Talos networks.
 # rustfs_app_access_key     = "RUSTFS_ACCESS_KEY"
 # rustfs_app_secret_key     = "RUSTFS_SECRET_KEY"

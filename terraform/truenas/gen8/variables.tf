@@ -202,7 +202,7 @@ variable "rustfs_app_enabled" {
       can(regex("^[0-9]+(\\.[0-9]+)+$", var.rustfs_app_version)),
       false
     )
-    error_message = "Set rustfs_app_version to a pinned catalog version such as 1.1.46."
+    error_message = "Set rustfs_app_version to a pinned catalog version such as 1.1.47."
   }
 
   validation {
@@ -224,22 +224,10 @@ variable "rustfs_app_enabled" {
     )
     error_message = "Set rustfs_app_certificate_id to the positive ID of an existing TrueNAS certificate."
   }
-
-  validation {
-    condition = !var.rustfs_app_enabled || try(
-      (
-        can(cidrhost("${var.rustfs_app_api_bind_ip}/32", 0)) ||
-        can(regex("^[0-9A-Fa-f:]+$", var.rustfs_app_api_bind_ip))
-      ) &&
-      !contains(["0.0.0.0", "::", "0:0:0:0:0:0:0:0"], var.rustfs_app_api_bind_ip),
-      false
-    )
-    error_message = "Set rustfs_app_api_bind_ip to one interface address. A wildcard bind isn't allowed."
-  }
 }
 
 variable "rustfs_app_version" {
-  description = "Catalog chart version to install. The chart for RustFS 1.0.6 is 1.1.46."
+  description = "Catalog chart version to install. Read the offered version from the TrueNAS catalog."
   type        = string
   default     = null
 }
@@ -294,11 +282,6 @@ variable "rustfs_app_certificate_id" {
   default     = null
 }
 
-variable "rustfs_app_api_bind_ip" {
-  description = "Interface address the RustFS API publishes on."
-  type        = string
-  default     = null
-}
 
 variable "rustfs_app_access_key" {
   description = "RustFS admin access key, minted outside Terraform."

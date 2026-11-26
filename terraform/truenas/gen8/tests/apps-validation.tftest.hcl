@@ -17,9 +17,8 @@ variables {
   }
 
   rustfs_app_enabled        = true
-  rustfs_app_version        = "1.1.46"
+  rustfs_app_version        = "1.1.47"
   rustfs_app_certificate_id = 1
-  rustfs_app_api_bind_ip    = "192.0.2.10"
   rustfs_app_access_key     = "mockadmin"
   rustfs_app_secret_key     = "mocksecret"
 }
@@ -98,25 +97,7 @@ run "rejects_a_missing_certificate" {
   expect_failures = [var.rustfs_app_enabled]
 }
 
-run "rejects_a_missing_api_bind_address" {
-  command = plan
 
-  variables {
-    rustfs_app_api_bind_ip = null
-  }
-
-  expect_failures = [var.rustfs_app_enabled]
-}
-
-run "rejects_a_wildcard_api_bind_address" {
-  command = plan
-
-  variables {
-    rustfs_app_api_bind_ip = "0.0.0.0"
-  }
-
-  expect_failures = [var.rustfs_app_enabled]
-}
 
 run "rejects_equal_app_ports" {
   command = plan
@@ -150,12 +131,3 @@ run "rejects_a_dataset_without_the_apps_preset" {
   expect_failures = [var.rustfs_app_enabled]
 }
 
-run "rejects_an_impossible_ipv4_address" {
-  command = plan
-
-  variables {
-    rustfs_app_api_bind_ip = "999.999.999.999"
-  }
-
-  expect_failures = [var.rustfs_app_enabled]
-}
