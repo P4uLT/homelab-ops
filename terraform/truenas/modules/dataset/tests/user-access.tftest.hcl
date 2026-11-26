@@ -31,7 +31,7 @@ run "grants_access_to_one_user_without_a_group" {
   command = plan
 
   assert {
-    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode([
+    condition = truenas_filesystem_acl.this[0].entries == jsonencode([
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = { BASIC = "INHERIT" } },
       { tag = "USER", id = 1201, type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = { BASIC = "INHERIT" } },
     ])
@@ -55,7 +55,7 @@ run "keeps_user_and_group_with_the_same_numeric_id_distinct" {
   }
 
   assert {
-    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode([
+    condition = truenas_filesystem_acl.this[0].entries == jsonencode([
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = { BASIC = "INHERIT" } },
       { tag = "GROUP", id = 1201, type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = { BASIC = "INHERIT" } },
       { tag = "USER", id = 1201, type = "ALLOW", perms = { BASIC = "READ" }, flags = { BASIC = "INHERIT" } },
@@ -72,7 +72,7 @@ run "refuses_a_user_resolved_to_root" {
     values = { uid = 0 }
   }
 
-  expect_failures = [truenas_filesystem_acl.this["managed"]]
+  expect_failures = [truenas_filesystem_acl.this[0]]
 }
 
 run "rejects_duplicate_resolved_user_ids" {
@@ -89,5 +89,5 @@ run "rejects_duplicate_resolved_user_ids" {
     }
   }
 
-  expect_failures = [truenas_filesystem_acl.this["managed"]]
+  expect_failures = [truenas_filesystem_acl.this[0]]
 }

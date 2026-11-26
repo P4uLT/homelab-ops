@@ -33,7 +33,7 @@ run "plans_mixed_group_access" {
   }
 
   assert {
-    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode([
+    condition = truenas_filesystem_acl.this[0].entries == jsonencode([
       { tag = "owner@", type = "ALLOW", perms = { BASIC = "FULL_CONTROL" }, flags = { BASIC = "INHERIT" } },
       { tag = "GROUP", id = 1201, type = "ALLOW", perms = { BASIC = "MODIFY" }, flags = { BASIC = "INHERIT" } },
       { tag = "GROUP", id = 1202, type = "ALLOW", perms = { BASIC = "READ" }, flags = { BASIC = "INHERIT" } },
@@ -55,7 +55,7 @@ run "rejects_duplicate_resolved_gids" {
     values = { gid = 1201 }
   }
 
-  expect_failures = [truenas_filesystem_acl.this["managed"]]
+  expect_failures = [truenas_filesystem_acl.this[0]]
 }
 
 run "rejects_gid_zero" {
@@ -71,7 +71,7 @@ run "rejects_gid_zero" {
     values = { gid = 1202 }
   }
 
-  expect_failures = [truenas_filesystem_acl.this["managed"]]
+  expect_failures = [truenas_filesystem_acl.this[0]]
 }
 
 run "rejects_empty_grants" {

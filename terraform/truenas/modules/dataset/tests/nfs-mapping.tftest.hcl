@@ -29,8 +29,8 @@ run "looks_up_maproot_user_and_group" {
     condition = (
       toset(keys(data.truenas_user.nfs_mapping)) == toset(["image-reader"]) &&
       toset(keys(data.truenas_group.nfs_mapping)) == toset(["image-readers"]) &&
-      truenas_nfs_share.this["share"].maproot_user == "image-reader" &&
-      truenas_nfs_share.this["share"].maproot_group == "image-readers"
+      truenas_nfs_share.this[0].maproot_user == "image-reader" &&
+      truenas_nfs_share.this[0].maproot_group == "image-readers"
     )
     error_message = "Resolve the configured Maproot identities and pass them to the export."
   }
@@ -53,7 +53,7 @@ run "looks_up_mapall_user_without_a_group" {
     condition = (
       toset(keys(data.truenas_user.nfs_mapping)) == toset(["backup-writer"]) &&
       length(data.truenas_group.nfs_mapping) == 0 &&
-      truenas_nfs_share.this["share"].mapall_user == "backup-writer"
+      truenas_nfs_share.this[0].mapall_user == "backup-writer"
     )
     error_message = "Resolve only the configured Mapall identity."
   }
@@ -76,7 +76,7 @@ run "looks_up_mapall_group" {
   assert {
     condition = (
       toset(keys(data.truenas_group.nfs_mapping)) == toset(["backup-writers"]) &&
-      truenas_nfs_share.this["share"].mapall_group == "backup-writers"
+      truenas_nfs_share.this[0].mapall_group == "backup-writers"
     )
     error_message = "Resolve the configured Mapall group and pass it to the export."
   }

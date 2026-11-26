@@ -11,17 +11,17 @@ output "mountpoint" {
 output "nfs" {
   description = "NFS share settings, or null if no share is managed."
   value = var.dataset.nfs == null ? null : {
-    enabled = truenas_nfs_share.this["share"].enabled
-    hosts   = truenas_nfs_share.this["share"].hosts
-    id      = truenas_nfs_share.this["share"].id
-    ro      = truenas_nfs_share.this["share"].ro
+    enabled = truenas_nfs_share.this[0].enabled
+    hosts   = truenas_nfs_share.this[0].hosts
+    id      = truenas_nfs_share.this[0].id
+    ro      = truenas_nfs_share.this[0].ro
   }
 }
 
 output "smb" {
   description = "SMB share settings, or null if no share is managed."
   value = var.dataset.smb == null ? null : {
-    enabled = truenas_smb_share.this["share"].enabled
-    name    = truenas_smb_share.this["share"].name
+    enabled = truenas_smb_share.this[0].enabled
+    name    = truenas_smb_share.this[0].name
   }
 }

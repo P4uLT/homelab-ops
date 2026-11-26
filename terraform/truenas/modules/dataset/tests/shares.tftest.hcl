@@ -19,7 +19,7 @@ run "creates_nfs_share_on_the_dataset_mountpoint" {
   command = plan
 
   assert {
-    condition     = truenas_nfs_share.this["share"].path == truenas_dataset.this.mountpoint
+    condition     = truenas_nfs_share.this[0].path == truenas_dataset.this.mountpoint
     error_message = "The share must use the mountpoint returned by TrueNAS."
   }
 }
@@ -41,7 +41,7 @@ run "plans_an_opt_in_acl" {
   }
 
   assert {
-    condition = jsondecode(truenas_filesystem_acl.this["managed"].entries)[0] == {
+    condition = jsondecode(truenas_filesystem_acl.this[0].entries)[0] == {
       tag     = "GROUP"
       who     = "smb-users"
       default = false
@@ -72,7 +72,7 @@ run "mirrors_posix_access_entries_for_inheritance" {
   }
 
   assert {
-    condition = truenas_filesystem_acl.this["managed"].entries == jsonencode(flatten([
+    condition = truenas_filesystem_acl.this[0].entries == jsonencode(flatten([
       for inherited in [false, true] : [
         for ace in var.dataset.filesystem_acl.entries :
         merge(ace, { default = inherited })
@@ -186,13 +186,13 @@ run "resolves_nfs4_group_and_user_names" {
 
   assert {
     condition = [
-      for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : ace.id
+      for ace in jsondecode(truenas_filesystem_acl.this[0].entries) : ace.id
     ] == [12345, 0]
     error_message = "Send numeric IDs, not names, for group and user entries."
   }
 
   assert {
-    condition     = alltrue([for ace in jsondecode(truenas_filesystem_acl.this["managed"].entries) : !can(ace.who)])
+    condition     = alltrue([for ace in jsondecode(truenas_filesystem_acl.this[0].entries) : !can(ace.who)])
     error_message = "Never store a name in who, which needs a lookup on every refresh."
   }
 }
@@ -235,7 +235,7 @@ run "keeps_guest_access_closed_on_a_legacy_share" {
   }
 
   assert {
-    condition     = truenas_smb_share.this["share"].guestok == false
+    condition     = truenas_smb_share.this[0].guestok == false
     error_message = "An omitted guestok must stay closed on a legacy share."
   }
 }
@@ -404,7 +404,7 @@ run "retains_disabled_shares_when_services_are_stopped" {
   }
 
   assert {
-    condition     = !truenas_nfs_share.this["share"].enabled && !truenas_smb_share.this["share"].enabled
+    condition     = !truenas_nfs_share.this[0].enabled && !truenas_smb_share.this[0].enabled
     error_message = "Disabled shares must retain their resource addresses."
   }
 }
@@ -424,7 +424,7 @@ run "rejects_enabled_nfs_when_service_is_stopped" {
     values = { running = false }
   }
 
-  expect_failures = [truenas_nfs_share.this["share"]]
+  expect_failures = [truenas_nfs_share.this[0]]
 }
 
 run "rejects_enabled_smb_when_service_is_stopped" {
@@ -439,7 +439,7 @@ run "rejects_enabled_smb_when_service_is_stopped" {
     values = { running = false }
   }
 
-  expect_failures = [truenas_smb_share.this["share"]]
+  expect_failures = [truenas_smb_share.this[0]]
 }
 
 run "rejects_conflicting_nfs_mappings" {

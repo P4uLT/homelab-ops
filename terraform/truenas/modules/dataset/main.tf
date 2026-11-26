@@ -44,10 +44,6 @@ data "truenas_service" "files" {
 }
 
 locals {
-  nfs_share = var.dataset.nfs == null ? {} : { share = var.dataset.nfs }
-
-  smb_share = var.dataset.smb == null ? {} : { share = var.dataset.smb }
-
   # An omitted guestok is false for a legacy share. Other presets keep it unset,
   # so the provider doesn't send a legacy-only option.
   smb_guestok = var.dataset.smb != null && var.dataset.smb.options == null && coalesce(var.dataset.smb.purpose, "LEGACY_SHARE") == "LEGACY_SHARE" ? coalesce(var.dataset.smb.guestok, false) : try(var.dataset.smb.guestok, null)
@@ -66,60 +62,60 @@ data "truenas_group" "nfs_mapping" {
 }
 
 resource "truenas_nfs_share" "this" {
-  for_each = local.nfs_share
+  count = var.dataset.nfs == null ? 0 : 1
 
   path             = truenas_dataset.this.mountpoint
-  comment          = each.value.comment
-  enabled          = each.value.enabled
-  expose_snapshots = each.value.expose_snapshots
-  hosts            = each.value.hosts
-  mapall_group     = each.value.mapall_group == null || each.value.mapall_group == "" ? null : data.truenas_group.nfs_mapping[each.value.mapall_group].name
-  mapall_user      = each.value.mapall_user == null || each.value.mapall_user == "" ? null : data.truenas_user.nfs_mapping[each.value.mapall_user].username
-  maproot_group    = each.value.maproot_group == null || each.value.maproot_group == "" ? null : data.truenas_group.nfs_mapping[each.value.maproot_group].name
-  maproot_user     = each.value.maproot_user == null || each.value.maproot_user == "" ? null : data.truenas_user.nfs_mapping[each.value.maproot_user].username
-  networks         = each.value.networks
-  ro               = each.value.ro
-  security         = each.value.security
+  comment          = var.dataset.nfs.comment
+  enabled          = var.dataset.nfs.enabled
+  expose_snapshots = var.dataset.nfs.expose_snapshots
+  hosts            = var.dataset.nfs.hosts
+  mapall_group     = var.dataset.nfs.mapall_group == null || var.dataset.nfs.mapall_group == "" ? null : data.truenas_group.nfs_mapping[var.dataset.nfs.mapall_group].name
+  mapall_user      = var.dataset.nfs.mapall_user == null || var.dataset.nfs.mapall_user == "" ? null : data.truenas_user.nfs_mapping[var.dataset.nfs.mapall_user].username
+  maproot_group    = var.dataset.nfs.maproot_group == null || var.dataset.nfs.maproot_group == "" ? null : data.truenas_group.nfs_mapping[var.dataset.nfs.maproot_group].name
+  maproot_user     = var.dataset.nfs.maproot_user == null || var.dataset.nfs.maproot_user == "" ? null : data.truenas_user.nfs_mapping[var.dataset.nfs.maproot_user].username
+  networks         = var.dataset.nfs.networks
+  ro               = var.dataset.nfs.ro
+  security         = var.dataset.nfs.security
 
   depends_on = [truenas_filesystem_acl.this]
 
   lifecycle {
     precondition {
-      condition     = !each.value.enabled || data.truenas_service.files["nfs"].running
+      condition     = !var.dataset.nfs.enabled || data.truenas_service.files["nfs"].running
       error_message = "Start the NFS service on TrueNAS before managing an enabled export."
     }
   }
 }
 
 resource "truenas_smb_share" "this" {
-  for_each = local.smb_share
+  count = var.dataset.smb == null ? 0 : 1
 
   path              = truenas_dataset.this.mountpoint
-  name              = each.value.name
-  abe               = each.value.abe
-  acl               = each.value.acl
-  audit             = each.value.audit
-  browsable         = each.value.browsable
-  comment           = each.value.comment
-  durablehandle     = each.value.durablehandle
-  enabled           = each.value.enabled
+  name              = var.dataset.smb.name
+  abe               = var.dataset.smb.abe
+  acl               = var.dataset.smb.acl
+  audit             = var.dataset.smb.audit
+  browsable         = var.dataset.smb.browsable
+  comment           = var.dataset.smb.comment
+  durablehandle     = var.dataset.smb.durablehandle
+  enabled           = var.dataset.smb.enabled
   guestok           = local.smb_guestok
-  home              = each.value.home
-  hostsallow        = each.value.hostsallow
-  hostsdeny         = each.value.hostsdeny
-  options           = each.value.options
-  purpose           = each.value.purpose
-  recyclebin        = each.value.recyclebin
-  ro                = each.value.ro
-  streams           = each.value.streams
-  timemachine       = each.value.timemachine
-  timemachine_quota = each.value.timemachine_quota
+  home              = var.dataset.smb.home
+  hostsallow        = var.dataset.smb.hostsallow
+  hostsdeny         = var.dataset.smb.hostsdeny
+  options           = var.dataset.smb.options
+  purpose           = var.dataset.smb.purpose
+  recyclebin        = var.dataset.smb.recyclebin
+  ro                = var.dataset.smb.ro
+  streams           = var.dataset.smb.streams
+  timemachine       = var.dataset.smb.timemachine
+  timemachine_quota = var.dataset.smb.timemachine_quota
 
   depends_on = [truenas_filesystem_acl.this]
 
   lifecycle {
     precondition {
-      condition     = !each.value.enabled || data.truenas_service.files["cifs"].running
+      condition     = !var.dataset.smb.enabled || data.truenas_service.files["cifs"].running
       error_message = "Start the SMB service on TrueNAS before managing an enabled share."
     }
   }

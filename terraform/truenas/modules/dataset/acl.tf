@@ -87,7 +87,7 @@ locals {
     type = local.preset_enabled ? "NFS4" : local.acl.type
   })
 
-  acl_managed = local.filesystem_acl == null ? {} : { managed = local.filesystem_acl }
+  acl_managed = local.filesystem_acl != null
 
   acl_entries = try(local.acl.entries, [])
   acl_inherit = try(local.acl.inherit_access, false)
@@ -117,17 +117,17 @@ locals {
 }
 
 data "truenas_filesystem_acl" "this" {
-  for_each = local.acl_managed
+  count = local.acl_managed ? 1 : 0
 
   path = truenas_dataset.this.mountpoint
 }
 
 resource "truenas_filesystem_acl" "this" {
-  for_each = local.acl_managed
+  count = local.acl_managed ? 1 : 0
 
-  path      = data.truenas_filesystem_acl.this[each.key].path
-  recursive = each.value.recursive
-  traverse  = each.value.traverse
+  path      = data.truenas_filesystem_acl.this[0].path
+  recursive = local.filesystem_acl.recursive
+  traverse  = local.filesystem_acl.traverse
   entries   = coalesce(local.preset_entries_json, jsonencode(local.ace_payload))
 
   lifecycle {
@@ -137,8 +137,8 @@ resource "truenas_filesystem_acl" "this" {
     precondition {
       # A converted dataset reports its old ACL type until setacl runs.
       condition = (
-        data.truenas_filesystem_acl.this[each.key].acltype == each.value.type ||
-        try(local.acl_type_from_dataset[lower(coalesce(truenas_dataset.this.acltype, ""))] == each.value.type, false)
+        data.truenas_filesystem_acl.this[0].acltype == local.filesystem_acl.type ||
+        try(local.acl_type_from_dataset[lower(coalesce(truenas_dataset.this.acltype, ""))] == local.filesystem_acl.type, false)
       )
       error_message = "The dataset's ACL type must match the declared filesystem ACL, or be set to it in the same apply."
     }
