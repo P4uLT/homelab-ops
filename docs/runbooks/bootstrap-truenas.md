@@ -61,7 +61,8 @@ The bootstrap `services` object uses the native names `nfs` and `cifs`. Set a
 value to `false` to stop the service and disable it at boot without removing
 its shares. Both services default to `true` on the Gen8.
 
-A share plan stops with a clear message when its service isn't running.
+A plan for an enabled share stops if its service isn't running. You can
+still plan to disable a share while its service is stopped.
 
 ## Manage file accounts
 

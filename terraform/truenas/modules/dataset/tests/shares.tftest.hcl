@@ -500,20 +500,59 @@ run "rejects_an_unknown_smb_purpose" {
   expect_failures = [var.dataset]
 }
 
-run "retains_the_disabled_share_address" {
+run "retains_disabled_shares_when_services_are_stopped" {
   command = plan
 
   variables {
     dataset = {
       name = "tank/example"
       nfs  = { hosts = ["pve.example.invalid"], ro = true, enabled = false }
+      smb  = { name = "example", enabled = false }
     }
   }
 
-  assert {
-    condition     = length(truenas_nfs_share.this) == 1 && !truenas_nfs_share.this["share"].enabled
-    error_message = "A disabled export must retain its resource address."
+  override_data {
+    target = data.truenas_service.files
+    values = { running = false }
   }
+
+  assert {
+    condition     = !truenas_nfs_share.this["share"].enabled && !truenas_smb_share.this["share"].enabled
+    error_message = "Disabled shares must retain their resource addresses."
+  }
+}
+
+run "rejects_enabled_nfs_when_service_is_stopped" {
+  command = plan
+
+  variables {
+    dataset = {
+      name = "tank/example"
+      nfs  = { hosts = ["pve.example.invalid"], enabled = true }
+    }
+  }
+
+  override_data {
+    target = data.truenas_service.files
+    values = { running = false }
+  }
+
+  expect_failures = [truenas_nfs_share.this["share"]]
+}
+
+run "rejects_enabled_smb_when_service_is_stopped" {
+  command = plan
+
+  variables {
+    dataset = { name = "tank/example", smb = { name = "example" } }
+  }
+
+  override_data {
+    target = data.truenas_service.files
+    values = { running = false }
+  }
+
+  expect_failures = [truenas_smb_share.this["share"]]
 }
 
 run "rejects_conflicting_nfs_mappings" {

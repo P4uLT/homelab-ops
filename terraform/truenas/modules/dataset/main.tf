@@ -73,8 +73,8 @@ resource "truenas_nfs_share" "this" {
 
   lifecycle {
     precondition {
-      condition     = data.truenas_service.files["nfs"].running
-      error_message = "Start the NFS service on TrueNAS before creating this export."
+      condition     = !each.value.enabled || data.truenas_service.files["nfs"].running
+      error_message = "Start the NFS service on TrueNAS before managing an enabled export."
     }
   }
 }
@@ -107,8 +107,8 @@ resource "truenas_smb_share" "this" {
 
   lifecycle {
     precondition {
-      condition     = data.truenas_service.files["cifs"].running
-      error_message = "Start the SMB service on TrueNAS before creating this share."
+      condition     = !each.value.enabled || data.truenas_service.files["cifs"].running
+      error_message = "Start the SMB service on TrueNAS before managing an enabled share."
     }
   }
 }
