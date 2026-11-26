@@ -1,0 +1,106 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TrueNAS file access",
+    "quality_profile": "showcase",
+    "animation": "none",
+    "output": "truenas-access.html",
+    "locale": "en"
+  },
+  "lanes": [
+    {
+      "id": "access",
+      "label": "File access"
+    }
+  ],
+  "mainPath": [
+    "share",
+    "identity",
+    "acl",
+    "result"
+  ],
+  "nodes": [
+    {
+      "id": "share",
+      "lane": "access",
+      "col": 0,
+      "type": "frontend",
+      "label": "SMB or NFS share",
+      "sublabel": "Makes the path reachable",
+      "width": 176
+    },
+    {
+      "id": "identity",
+      "lane": "access",
+      "col": 1,
+      "type": "backend",
+      "label": "Account used",
+      "sublabel": "SMB login or NFS identity",
+      "width": 176
+    },
+    {
+      "id": "acl",
+      "lane": "access",
+      "col": 2,
+      "type": "security",
+      "label": "Filesystem ACL",
+      "sublabel": "User, group, or owner@",
+      "width": 176
+    },
+    {
+      "id": "result",
+      "lane": "access",
+      "col": 3,
+      "type": "database",
+      "label": "File access",
+      "sublabel": "Allowed or denied",
+      "width": 176
+    }
+  ],
+  "edges": [
+    {
+      "from": "share",
+      "to": "identity",
+      "label": "Who is asking?"
+    },
+    {
+      "from": "identity",
+      "to": "acl",
+      "label": "What can they do?"
+    },
+    {
+      "from": "acl",
+      "to": "result",
+      "label": "Decision"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "NFS mapping: optional",
+      "items": [
+        "SMB uses the signed-in account.",
+        "Map root only or map everyone. Choose one.",
+        "When mapping: user required, group optional."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Owner: no change needed",
+      "items": [
+        "owner@ refers to the owner of the file or directory.",
+        "That owner can differ from the dataset owner."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "File rights: required",
+      "items": [
+        "Grant rights to the account or group.",
+        "The filesystem_acl block is optional if existing rights suffice.",
+        "A share can block access that the filesystem permits."
+      ]
+    }
+  ]
+}

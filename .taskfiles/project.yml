@@ -21,6 +21,7 @@ tasks:
       - task: tf:validate
       - task: tf:test-root-inputs
       - task: tf:test-pve-bootstrap
+      - task: tf:test-truenas
       - task: packer:fmt-check
       - task: packer:validate
 

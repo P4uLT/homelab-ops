@@ -1,7 +1,7 @@
 # homelab-ops
 
-Infrastructure as code for Proxmox VE, using versioned golden images,
-OpenTofu, and Ansible.
+Infrastructure as code for Proxmox VE and a TrueNAS NAS, using versioned
+golden images, OpenTofu, and Ansible.
 
 Use this repository to build images, provision workloads, and configure hosts.
 
@@ -46,7 +46,7 @@ change it.
 | Path | Purpose |
 | --- | --- |
 | [`packer/`](packer/README.md) | Golden LXC images per PVE node. Each image pins its parent and stores its archive in the template cache |
-| [`terraform/`](terraform/README.md) | LXC clones and imported-image VMs, one root per server. OVH S3 state with AES-GCM encryption and a lockfile. Includes the state and PVE access bootstrap roots |
+| [`terraform/`](terraform/README.md) | LXC clones and imported-image VMs, one root per server, plus the TrueNAS datasets and shares. OVH S3 state with AES-GCM encryption and a lockfile. Includes the state, PVE access, and NAS bootstrap roots |
 | [`ansible/`](ansible/README.md) | Image provisioning and host configuration from shared roles. Inventory runs load a SOPS canary and fail without the age key |
 | [`kubernetes/`](kubernetes/README.md) | Placeholder for the Talos and Flux lab on bare-metal nodes |
 | [`lab/`](lab/README.md) | Experiments outside production |

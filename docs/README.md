@@ -13,6 +13,11 @@
 [Operational procedures](runbooks/README.md) cover servers, images, workloads,
 and credentials, including [local Packer plugin overrides](runbooks/override-packer-plugin.md).
 
+## Design
+
+- [TrueNAS dataset and share access](truenas-access.md): choose datasets,
+  identities, and permissions before creating shares.
+
 ## Other documentation
 
 - [Terraform state design](../terraform/BACKEND.md)
