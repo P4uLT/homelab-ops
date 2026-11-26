@@ -53,6 +53,18 @@ locals {
   smb_guestok = var.dataset.smb != null && var.dataset.smb.options == null && coalesce(var.dataset.smb.purpose, "LEGACY_SHARE") == "LEGACY_SHARE" ? coalesce(var.dataset.smb.guestok, false) : try(var.dataset.smb.guestok, null)
 }
 
+data "truenas_user" "nfs_mapping" {
+  for_each = toset(compact([try(var.dataset.nfs.maproot_user, null), try(var.dataset.nfs.mapall_user, null)]))
+
+  username = each.key
+}
+
+data "truenas_group" "nfs_mapping" {
+  for_each = toset(compact([try(var.dataset.nfs.maproot_group, null), try(var.dataset.nfs.mapall_group, null)]))
+
+  name = each.key
+}
+
 resource "truenas_nfs_share" "this" {
   for_each = local.nfs_share
 
@@ -61,10 +73,10 @@ resource "truenas_nfs_share" "this" {
   enabled          = each.value.enabled
   expose_snapshots = each.value.expose_snapshots
   hosts            = each.value.hosts
-  mapall_group     = each.value.mapall_group
-  mapall_user      = each.value.mapall_user
-  maproot_group    = each.value.maproot_group
-  maproot_user     = each.value.maproot_user
+  mapall_group     = each.value.mapall_group == null || each.value.mapall_group == "" ? null : data.truenas_group.nfs_mapping[each.value.mapall_group].name
+  mapall_user      = each.value.mapall_user == null || each.value.mapall_user == "" ? null : data.truenas_user.nfs_mapping[each.value.mapall_user].username
+  maproot_group    = each.value.maproot_group == null || each.value.maproot_group == "" ? null : data.truenas_group.nfs_mapping[each.value.maproot_group].name
+  maproot_user     = each.value.maproot_user == null || each.value.maproot_user == "" ? null : data.truenas_user.nfs_mapping[each.value.maproot_user].username
   networks         = each.value.networks
   ro               = each.value.ro
   security         = each.value.security

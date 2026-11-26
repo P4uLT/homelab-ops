@@ -242,6 +242,18 @@ variable "dataset" {
     )
     error_message = "Use either maproot or mapall for an NFS export, not both."
   }
+
+  validation {
+    condition = var.dataset.nfs == null ? true : (
+      alltrue([
+        for mapping in [
+          { user = var.dataset.nfs.maproot_user, group = var.dataset.nfs.maproot_group },
+          { user = var.dataset.nfs.mapall_user, group = var.dataset.nfs.mapall_group },
+        ] : mapping.group == null || mapping.group == "" || try(trimspace(mapping.user) != "", false)
+      ])
+    )
+    error_message = "Set maproot_user with maproot_group, and mapall_user with mapall_group."
+  }
 }
 
 variable "encryption_secrets" {
