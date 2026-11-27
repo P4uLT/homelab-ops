@@ -4,6 +4,13 @@ resource "rustfs_user" "this" {
   secret_key = var.bucket_credentials[each.key].secret_key
   name       = coalesce(each.value.user_name, "${each.key} writer")
   status     = each.value.user_status
+
+  # The attachment resource below owns the policy link, but refresh reads the
+  # attached policy name back into this attribute. Without the ignore, that
+  # read-back plans a user replacement on every run.
+  lifecycle {
+    ignore_changes = [policy]
+  }
 }
 
 resource "rustfs_policy" "this" {
