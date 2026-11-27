@@ -25,6 +25,9 @@ OpenTofu roots and modules, grouped by provider and target.
   their quotas. It applies after the TrueNAS root installed the application.
   Its endpoint and keys live in the root's git-ignored `gen8.local.auto.tfvars`.
   The admin key pair matches the TrueNAS root's copy.
+- `rustfs/modules/buckets/`: reusable bucket catalog with quotas, optional
+  versioning, and a scoped user and policy per bucket. The caller configures
+  the RustFS provider.
 - `truenas/modules/dataset/`: one protected filesystem dataset with optional
   permissions and file shares. The Gen8 root calls it once per entry in `datasets`.
 - `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
@@ -177,7 +180,7 @@ Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
 Run `task tf:test-pve-bootstrap` to check the clean-node access path.
 Run `task tf:test-truenas` for the Gen8 pool, identity, and export contracts.
-Run `task tf:test-rustfs` for the bucket, user, and policy contracts.
+Run `task tf:test-rustfs` for the catalog and Gen8 connection contracts.
 These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't

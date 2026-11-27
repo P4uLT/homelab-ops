@@ -10,14 +10,32 @@ variable "state_passphrase" {
 }
 
 variable "rustfs_endpoint" {
-  description = "RustFS S3 API endpoint over HTTPS. No credentials, path, query, or fragment."
+  description = "RustFS S3 API endpoint as host[:port] or an origin URL. No credentials, path, query, or fragment."
   type        = string
   nullable    = false
 
   validation {
-    condition     = can(regex("^https://[^/?#@]+$", var.rustfs_endpoint))
-    error_message = "Use an https:// endpoint with a host and an optional port. Credentials, path, query, and fragment aren't allowed."
+    condition = (
+      can(regex("^(https?://)?([[:alnum:].-]+|\\[[[:xdigit:]:.]+\\])(:[0-9]+)?$", var.rustfs_endpoint)) &&
+      (!startswith(var.rustfs_endpoint, "http://") || !var.rustfs_ssl) &&
+      (!startswith(var.rustfs_endpoint, "https://") || var.rustfs_ssl)
+    )
+    error_message = "Use a host with an optional port. If supplied, the URL scheme must match rustfs_ssl. Omit credentials, path, query, and fragment."
   }
+}
+
+variable "rustfs_ssl" {
+  description = "Use TLS for the RustFS connection. The endpoint scheme, if present, must agree."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
+variable "rustfs_insecure" {
+  description = "Skip verification of the RustFS server certificate. For isolated tests only."
+  type        = bool
+  default     = false
+  nullable    = false
 }
 
 variable "rustfs_access_key" {
@@ -33,65 +51,16 @@ variable "rustfs_secret_key" {
   sensitive   = true
 }
 
+# The catalog module owns the schema so new fields need no root changes.
 variable "buckets" {
-  description = "S3 buckets keyed by name, each with its quota in bytes and optional versioning."
-  type = map(object({
-    quota_bytes = number
-    versioning  = optional(bool)
-  }))
-  nullable = false
-
-  validation {
-    condition = try(
-      alltrue([
-        for name in ["k8s-backups", "wal-g", "loki"] : contains(keys(var.buckets), name)
-      ]) &&
-      alltrue([
-        for bucket in values(var.buckets) :
-        bucket.quota_bytes > 0 && floor(bucket.quota_bytes) == bucket.quota_bytes
-      ]),
-      false
-    )
-    error_message = "Declare the k8s-backups, wal-g, and loki buckets, each with a positive whole-byte quota."
-  }
+  description = "Bucket settings passed to the RustFS catalog module."
+  type        = any
+  nullable    = false
 }
 
 variable "bucket_credentials" {
-  description = "IAM keys per bucket, keyed by the same bucket names."
-  type = map(object({
-    access_key = string
-    secret_key = string
-  }))
-  nullable  = false
-  sensitive = true
-
-  validation {
-    condition = try(
-      length(setsubtract(keys(var.buckets), keys(var.bucket_credentials))) == 0 &&
-      length(setsubtract(keys(var.bucket_credentials), keys(var.buckets))) == 0,
-      false
-    )
-    error_message = "Give every bucket exactly one bucket_credentials entry, and no entry without a bucket."
-  }
-
-  validation {
-    condition = try(alltrue([
-      for credential in values(var.bucket_credentials) :
-      length(credential.access_key) >= 3 &&
-      length(credential.access_key) <= 20 &&
-      trimspace(credential.access_key) == credential.access_key &&
-      length(credential.secret_key) >= 8 &&
-      length(credential.secret_key) <= 40
-    ]), false)
-    error_message = "Give every bucket user an access key of 3 to 20 characters and a secret key of 8 to 40 characters."
-  }
-
-  validation {
-    condition = try(
-      length(distinct([for credential in values(var.bucket_credentials) : credential.access_key])) == length(var.bucket_credentials) &&
-      !contains([for credential in values(var.bucket_credentials) : credential.access_key], var.rustfs_access_key),
-      false
-    )
-    error_message = "Use a distinct access key per bucket user. The admin access key is reserved."
-  }
+  description = "Per-bucket credentials passed to the RustFS catalog module."
+  type        = any
+  nullable    = false
+  sensitive   = true
 }

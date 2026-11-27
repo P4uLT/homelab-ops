@@ -11,6 +11,8 @@ terraform {
 
 provider "rustfs" {
   endpoint   = var.rustfs_endpoint
+  ssl        = var.rustfs_ssl
+  insecure   = var.rustfs_insecure
   access_key = var.rustfs_access_key
   secret_key = var.rustfs_secret_key
 }

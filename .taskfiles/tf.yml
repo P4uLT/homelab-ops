@@ -38,8 +38,11 @@ vars:
     - truenas/gen8
     - rustfs/gen8
   TF_TRUENAS_ROOTS: [bootstrap/truenas/gen8, truenas/gen8]
-  TF_RUSTFS_ROOTS: [rustfs/gen8]
+  TF_LOCAL_TEST_MODULES:
+    - terraform/truenas/modules/dataset
+    - terraform/rustfs/modules/buckets
   TF_TRUENAS_DATASET_MODULE: terraform/truenas/modules/dataset
+  TF_RUSTFS_BUCKETS_MODULE: terraform/rustfs/modules/buckets
   TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
@@ -118,15 +121,15 @@ tasks:
         cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
 
   test-rustfs:
-    desc: Test the RustFS root with a mock provider. No host contact.
+    desc: Test the RustFS module and root with a mock provider. No host contact.
     preconditions:
-      - sh: test -d terraform/rustfs/gen8/.terraform/providers
+      - sh: test -f terraform/rustfs/gen8/.terraform/modules/modules.json
         msg: "Run task tf:init before testing the RustFS root."
+      - sh: test -d {{.TF_RUSTFS_BUCKETS_MODULE}}/.terraform/providers
+        msg: "Run task tf:init before testing the RustFS module."
     cmds:
-      - for:
-          var: TF_RUSTFS_ROOTS
-          as: ROOT
-        cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
+      - tofu -chdir="{{.TF_RUSTFS_BUCKETS_MODULE}}" test {{.CLI_ARGS}}
+      - tofu -chdir="terraform/rustfs/gen8" test {{.CLI_ARGS}}
 
   init:
     desc: Initialize OpenTofu roots and test modules. Contacts remote backends.
@@ -137,9 +140,10 @@ tasks:
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
-      - >-
-        tofu -chdir="{{.TF_TRUENAS_DATASET_MODULE}}"
-        init -backend=false -input=false
+      - for:
+          var: TF_LOCAL_TEST_MODULES
+          as: MODULE
+        cmd: tofu -chdir="{{.MODULE}}" init -backend=false -input=false
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
@@ -212,7 +216,10 @@ tasks:
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
       - sh: test -s terraform/rustfs/gen8/gen8.local.auto.tfvars
         msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: tofu -chdir=terraform/rustfs/gen8 plan -input=false {{.CLI_ARGS}}
+    # The provider gives these environment variables priority over tfvars.
+    cmd: |
+      unset RUSTFS_ENDPOINT RUSTFS_USER RUSTFS_SECRET
+      tofu -chdir=terraform/rustfs/gen8 plan -input=false {{.CLI_ARGS}}
 
   rustfs-gen8-apply:
     desc: Apply the Gen8 RustFS layer after the TrueNAS root. Needs approval.
@@ -222,7 +229,9 @@ tasks:
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
       - sh: test -s terraform/rustfs/gen8/gen8.local.auto.tfvars
         msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: tofu -chdir=terraform/rustfs/gen8 apply -input=false {{.CLI_ARGS}}
+    cmd: |
+      unset RUSTFS_ENDPOINT RUSTFS_USER RUSTFS_SECRET
+      tofu -chdir=terraform/rustfs/gen8 apply -input=false {{.CLI_ARGS}}
 
   bootstrap-plan:
     desc: Plan the state backend.

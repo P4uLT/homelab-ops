@@ -23,17 +23,17 @@ tests don't prove the application's behavior.
 6. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
    the one the catalog offers, `1.1.47` at the last check. A missing version
    fails the apply with `Version ... not found`.
-7. Set `rustfs_app_certificate_id` to an existing TrueNAS certificate. The
-   endpoint name must match it. Without a certificate the chart serves HTTP.
+7. In TrueNAS, select or issue a certificate for the RustFS DNS name.
+   Use a certificate that includes that name as a subject alternative name.
+   Set `rustfs_app_certificate_id` to its TrueNAS ID.
 8. Allow the API port only from the operator and Talos networks in the NAS
    firewall. The chart publishes the port on every interface and accepts only
    a wildcard bind address.
 9. Copy `terraform/rustfs/gen8/gen8.local.auto.tfvars.example` to
-   `gen8.local.auto.tfvars` in that root, and fill it. Set `rustfs_endpoint`
-   to the host name the certificate covers and the API port, then enter one
-   key pair per bucket. An endpoint on a bare address fails with
-   `doesn't contain any IP SANs`. Add that name to the resolver, in DNS or
-   `/etc/hosts`, for OpenTofu and for every client.
+   `gen8.local.auto.tfvars` in that root. Set `rustfs_endpoint` to the
+   HTTPS URL for the certificate's DNS name and the API port.
+   Set quotas and enter a separate key pair per bucket.
+   Make the name resolve to the NAS for OpenTofu and every client.
 10. Run `task tf:init` once. It downloads the RustFS provider.
 
 The provider has no data source for the catalog version, so it stays a pinned
@@ -55,31 +55,68 @@ to stop the application.
 
 ## Create the buckets and users
 
+Trust the issuing certificate authority on the OpenTofu machine and each
+client. For a private authority, install its public CA certificate or set
+`SSL_CERT_FILE` to the `PEM` bundle for the RustFS task. Keep `rustfs_ssl = true`
+and `rustfs_insecure = false`.
+
+Before planning the buckets, set `RUSTFS_URL` to the configured endpoint and
+check the health route without credentials:
+
+```sh
+curl --fail --silent --show-error "$RUSTFS_URL/health"
+```
+
+If the issuing authority isn't in the system trust store, add `--cacert`
+with the public CA bundle to the `curl` command.
+
+If your local tfvars use `quota_bytes`, replace it with `quota_gib` and divide
+the old value by `1073741824`. Keep the bucket names and access keys unchanged.
+For `wal-g` and `loki`, carry over `s3:DeleteObject` in
+`additional_object_actions` to keep their existing permissions.
+
 ```sh
 task tf:rustfs-gen8-plan
 task tf:rustfs-gen8-apply
 ```
 
-Each bucket gets one user, one policy, and one quota. The policy allows only
-the actions its client needs. The backup tool for `k8s-backups` is still open,
-so its policy is provisional.
+Each bucket gets one user, one policy, and one quota. The default policy allows
+bucket listing and object reads, writes, and multipart uploads. Add actions
+only when the client needs them. The backup tool for `k8s-backups` is still
+open, so its policy is provisional.
 
-Stop on any deletion. Removing or renaming a bucket entry plans the bucket's
-destruction.
+For an existing deployment, expect the plan to move state addresses under
+`module.buckets`. These moves don't recreate buckets or users.
+
+Stop on any deletion or replacement. Removing or renaming a bucket entry
+plans its destruction. Changes to Object Lock, the namespace, or creation
+options such as tags plan replacement. Keep `force_destroy` off to prevent
+deletion of non-empty buckets. Removing a configured `versioning` value
+suspends versioning.
 
 ## Check the result
 
 After the TrueNAS apply:
 
 - The installed chart version matches the pin, and the application is healthy.
-- The API answers over verified HTTPS on the NAS address and port.
+- The API answers over verified HTTPS at the configured DNS name and port.
 - The console port isn't published.
 - User `568` can write to `/mnt/tank/rustfs`.
 
 After the RustFS apply, test each key with throwaway objects:
 
 - Each key performs its required actions on its own bucket.
-- Each key fails to reach the other two buckets.
+- Each key fails to reach the other buckets.
 - No key can administer its own bucket.
 - Every quota is positive and leaves headroom on `tank` for snapshots and the
   other datasets.
+
+## Check certificate renewal
+
+If TrueNAS manages renewal, check the certificate that RustFS serves after
+each renewal. TrueNAS redeploys apps that use the renewed certificate.
+If RustFS still serves the old one, check the redeploy job before retrying.
+
+If you import a replacement certificate, set `rustfs_app_certificate_id` to
+its new ID. Apply the TrueNAS root after owner approval. Verify HTTPS with
+the configured DNS name before removing the old certificate.
