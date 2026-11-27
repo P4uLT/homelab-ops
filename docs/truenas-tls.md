@@ -11,17 +11,17 @@ TrueNAS can serve publicly trusted certificates on a private network. Use public
 
 `example.net` is a reserved example domain. The wildcard covers one label, such as `s3.apps.example.net`. It doesn't cover `apps.example.net` or `bucket.s3.apps.example.net`.
 
-Keeping the administration certificate separate keeps its private key out of the application certificate. The applications trade narrower per-service key scope for a shared wildcard that can cover new names.
+Use one certificate with both names or issue separate certificates. A shared certificate uses the same private key and renews both names together. Separate certificates keep the administration key out of the applications.
 
 ## Issuance and access follow different paths
 
 For [DNS-01 validation](https://letsencrypt.org/docs/challenge-types/#dns-01-challenge), TrueNAS uses the DNS provider's API to publish temporary records. In this example, the challenge names are `_acme-challenge.nas.example.net` and `_acme-challenge.apps.example.net`. Let's Encrypt reads the records from public DNS. The NAS needs outbound access, but no public address record or inbound port. Certificate names appear in public certificate transparency logs.
 
-When a client connects, private DNS resolves the service name to the NAS. The client checks that the certificate covers that name and trusts the issuer. A certificate doesn't make a service reachable or replace authentication.
+For direct access, private DNS resolves the service name to the NAS. Clients still use the published port. For proxied access, use a name that resolves to the proxy. A proxy that terminates TLS needs its own certificate. A certificate doesn't make a service reachable or replace authentication.
 
 ## Bootstrap owns certificates, applications consume IDs
 
-This repository uses a privileged OpenTofu bootstrap for issuance and the optional administration binding. The application configuration receives only the wildcard's numeric ID. It doesn't need the OVH credential or access to the bootstrap state.
+The privileged OpenTofu bootstrap issues certificates from the named list and can bind one to the web interface. An application receives only its selected numeric certificate ID. It doesn't need the OVH credential or access to the bootstrap state.
 
 Names displayed in TrueNAS are separate from DNS names. The optional `acme.name_prefix` defaults to `truenas`. For example, `truenas-admin-csr` names a signing request in TrueNAS but isn't a hostname. Use a local override if you need a different label.
 

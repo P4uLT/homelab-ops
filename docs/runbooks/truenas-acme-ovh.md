@@ -8,9 +8,9 @@ Get owner approval before any live plan, apply, DNS operation, or endpoint check
 
 ## Prepare DNS and credentials
 
-1. Choose an administration name and an application domain in your OVH-managed public DNS zone. Set `acme.admin_hostname` and `acme.apps_domain` in the bootstrap's local input file.
-2. Resolve each service name through private DNS. Check that each application name fits the wildcard before switching it.
-3. Check the public authority for both challenges. Check certification authority authorization (`CAA`) records if present.
+1. Choose certificate names in your OVH-managed public DNS zone. Use an exact name for the administration interface.
+2. Resolve direct service names to the NAS through private DNS. Use separate names for clients that connect through a reverse proxy.
+3. Check the public authority for each challenge. Check certification authority authorization (`CAA`) records if present.
 
 ### Create the OVH credential manually
 
@@ -41,30 +41,48 @@ Keep `acme.name_prefix` at its neutral default or set a site label in the local 
 
 Leave `acme.dns_authenticator_id` unset for managed OVH. To change authenticators after issuance, plan a separate certificate migration. The provider treats certificate DNS mappings as immutable.
 
+## Choose certificate entries
+
+Each `acme_certificates` entry has a stable `name` and a DNS `common_name`. OpenTofu includes the common name in the certificate's Subject Alternative Names (SANs). Use `san` only for additional names. To share a certificate, use one entry:
+
+```hcl
+acme_certificates = [
+  { name = "shared", common_name = "nas.example.net", san = ["*.apps.example.net"] },
+]
+```
+
+To use separate keys, give the administration and application certificates separate entries:
+
+```hcl
+acme_certificates = [
+  { name = "admin", common_name = "nas.example.net" },
+  { name = "apps", common_name = "*.apps.example.net" },
+]
+```
+
 ## Issue before changing any bindings
 
 Use the existing bootstrap administrator key. Don't grant certificate or network management roles to `terraform-prov`. If you need to test DNS first, use separate temporary certificates against the [Let's Encrypt staging service](https://letsencrypt.org/docs/staging-environment/). Don't assign those certificates to consumers.
 
-1. Set `acme_enabled = true` and leave `acme_assign_admin = false`.
-2. Run `task tf:truenas-gen8-bootstrap-plan`. Expect one OVH authenticator, two signing requests, and two issued certificates. Stop if the plan changes the pool, accounts, services, or administration binding.
+1. Set `acme_enabled = true`. Leave the current administration selector unchanged or unset for a first install.
+2. Run `task tf:truenas-gen8-bootstrap-plan`. Expect one signing request and one certificate per new entry. Expect a new OVH authenticator only if the bootstrap needs to create it. Stop if the plan changes the pool, accounts, services, or administration binding.
 3. After approval, run `task tf:truenas-gen8-bootstrap-apply`. Review the fresh plan before confirming.
-4. In TrueNAS, verify both certificates, their names, and their expiry. Compare the public keys to confirm they differ. Check that the challenge records were cleaned up.
+4. In TrueNAS, verify each new certificate's names and expiry. Check that the challenge records were cleaned up.
 
-Read only the named numeric IDs. The bootstrap also has a sensitive provisioning key output.
+Read only the certificate ID map. The bootstrap also has a sensitive provisioning key output. For example, select the ID for `shared`:
 
 ```sh
-task tf:truenas-gen8-bootstrap-output -- -raw acme_admin_certificate_id
-task tf:truenas-gen8-bootstrap-output -- -raw acme_apps_certificate_id
+task tf:truenas-gen8-bootstrap-output -- -json acme_certificate_ids | jq -er '.shared'
 ```
 
 ## Switch RustFS
 
-If RustFS is enabled, switch it to the wildcard certificate.
+If RustFS is enabled, select a certificate that covers its HTTPS name.
 
 1. Record the previous certificate ID and HTTPS endpoint for RustFS.
-2. Set `rustfs_app_certificate_id` to the wildcard ID in the storage root's local input file.
+2. Set `rustfs_app_certificate_id` to the selected ID in the storage root's local input file.
 3. Run `task tf:truenas-gen8-plan`. Stop unless the plan only changes the intended RustFS configuration. After approval, run `task tf:truenas-gen8-apply`.
-4. Verify the certificate chain and name on the RustFS HTTPS port. If the name changes, update `rustfs_endpoint`. Keep TLS verification on.
+4. Verify the certificate chain and name on the RustFS HTTPS port. If you use a proxy, verify a signed S3 request through it as well. If the endpoint changes, update `rustfs_endpoint`. Keep TLS verification on.
 5. Verify RustFS health. If RustFS fails, restore its previous certificate ID and matching client endpoint. Preview and obtain approval before applying that rollback.
 
 The storage root needs only certificate IDs. Don't add a certificate data source or read the whole bootstrap state for this handoff.
@@ -74,10 +92,14 @@ The storage root needs only certificate IDs. Don't add a certificate data source
 1. Record the current administration certificate ID, hostname, and trust settings. Confirm local console access before the restart.
 2. Confirm that the same `truenas_host` hostname matches both the current and issued certificates. If the old name differs, arrange a separate operator-led cutover through the [TrueNAS interface](https://www.truenas.com/docs/scale/credentials/certificates/settingupletsencryptcertificates/#set-the-gui-ssl-certificate).
 3. If `truenas_ca_cert` is set, use a local bundle that trusts both chains. The provider uses this bundle **instead of** the system trust store. A trust bundle can't fix a hostname mismatch.
-4. Set `acme_assign_admin = true`. Run `task tf:truenas-gen8-bootstrap-plan` and verify that only the administration certificate assignment changes. After approval, apply the fresh plan. This restarts the web server and closes open sessions.
+4. Set `acme_admin_certificate_name` to the selected entry's name. The certificate must include the exact management hostname. Run `task tf:truenas-gen8-bootstrap-plan` and verify that only the administration certificate assignment changes. After approval, apply the fresh plan. This restarts the web server and closes open sessions.
 5. Verify the new chain and login over HTTPS. Check that both OpenTofu roots can connect with verified TLS before removing transitional trust settings.
 
-If the apply reports a reconnect failure, inspect the active certificate before retrying. The restart may have succeeded. Restore the old ID through the verified interface or the prepared console recovery path if access fails. Set `acme_assign_admin = false` to stop managing the binding before the next bootstrap apply. Turning the flag off by itself **doesn't** restore the old certificate.
+If the apply reports a reconnect failure, inspect the active certificate before retrying. The restart may have succeeded. Restore the old ID through the verified interface or the prepared console recovery path if access fails. Set `acme_admin_certificate_name` back to the old entry if the bootstrap manages it. Otherwise set the selector to `null` to leave the binding unmanaged. Clearing the selector by itself **doesn't** restore the old certificate.
+
+## Retire superseded certificates
+
+Keep the old entries until you verify the new certificate on every consumer. Removing an entry alone is blocked by destruction protection. Review a separate retirement plan for the unused signing requests and certificates. Keep the active entries and authenticator protected.
 
 ## Verify renewal and rotate credentials
 
