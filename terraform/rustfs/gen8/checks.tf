@@ -57,6 +57,6 @@ resource "terraform_data" "assertions" {
 check "unmanaged_buckets" {
   assert {
     condition     = length(local.unmanaged_bucket_names) == 0
-    error_message = "RustFS holds buckets that the catalog does not manage: ${join(", ", sort(local.unmanaged_bucket_names))}."
+    error_message = "RustFS holds buckets that the catalog doesn't manage: ${join(", ", sort(local.unmanaged_bucket_names))}."
   }
 }

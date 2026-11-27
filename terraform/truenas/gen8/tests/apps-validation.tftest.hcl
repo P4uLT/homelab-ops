@@ -97,8 +97,6 @@ run "rejects_a_missing_certificate" {
   expect_failures = [var.rustfs_app_enabled]
 }
 
-
-
 run "rejects_equal_app_ports" {
   command = plan
 
@@ -130,4 +128,3 @@ run "rejects_a_dataset_without_the_apps_preset" {
 
   expect_failures = [var.rustfs_app_enabled]
 }
-
