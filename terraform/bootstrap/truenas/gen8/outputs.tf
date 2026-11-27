@@ -4,12 +4,7 @@ output "api_key_value" {
   sensitive   = true
 }
 
-output "acme_admin_certificate_id" {
-  description = "ID of the managed administration certificate, if enabled."
-  value       = one(truenas_certificate.admin_acme[*].id)
-}
-
-output "acme_apps_certificate_id" {
-  description = "ID of the managed wildcard certificate for Gen8 applications, if enabled."
-  value       = one(truenas_certificate.apps_acme[*].id)
+output "acme_certificate_ids" {
+  description = "IDs of issued certificates by input name."
+  value       = tomap({ for name, certificate in truenas_certificate.issued : name => certificate.id })
 }

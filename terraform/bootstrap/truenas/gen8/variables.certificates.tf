@@ -1,26 +1,68 @@
+locals {
+  acme_dns_name_pattern = "^(\\*\\.)?[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\\.[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"
+}
+
 variable "acme_enabled" {
-  description = "Issue and renew the administration and application certificates on TrueNAS."
+  description = "Issue and renew the configured certificates on TrueNAS."
   type        = bool
   default     = false
   nullable    = false
 }
 
-variable "acme_assign_admin" {
-  description = "Bind the issued administration certificate to the TrueNAS web interface."
-  type        = bool
-  default     = false
-  nullable    = false
+variable "acme_certificates" {
+  description = "Named certificates to issue. Each common name also becomes a subject alternative name."
+  type = list(object({
+    name        = string
+    common_name = string
+    san         = optional(set(string), [])
+  }))
+  default  = []
+  nullable = false
 
   validation {
-    condition     = !var.acme_assign_admin || var.acme_enabled
-    error_message = "Set acme_enabled before assigning the administration certificate."
+    condition     = !var.acme_enabled || length(var.acme_certificates) > 0
+    error_message = "List at least one certificate when ACME is enabled."
   }
 
   validation {
-    condition = !var.acme_assign_admin || !var.acme_enabled || try(
-      lower(split(":", var.truenas_host)[0]) == var.acme.admin_hostname, false
+    condition = try(
+      length(distinct([for cert in var.acme_certificates : cert.name])) == length(var.acme_certificates) &&
+      alltrue([
+        for cert in var.acme_certificates :
+        can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$", cert.name)) &&
+        length("${try(var.acme.name_prefix, "truenas")}-${cert.name}-acme") <= 64
+      ]), false
     )
-    error_message = "Set truenas_host to the administration certificate hostname before enabling acme_assign_admin."
+    error_message = "Use unique lowercase certificate names with letters, digits, or dashes. Keep the generated TrueNAS object name within 64 characters."
+  }
+
+  validation {
+    condition = alltrue([
+      for cert in var.acme_certificates : try(
+        length(cert.common_name) <= 64 && can(regex(local.acme_dns_name_pattern, cert.common_name)) &&
+        alltrue([for name in cert.san : try(length(name) <= 253 && can(regex(local.acme_dns_name_pattern, name)), false)]),
+        false
+      )
+    ])
+    error_message = "Use bare lowercase DNS names or leftmost-label wildcards. Common names allow up to 64 characters and alternative names up to 253."
+  }
+}
+
+variable "acme_admin_certificate_name" {
+  description = "Name of the issued certificate to bind to the web interface. Null leaves the binding unmanaged."
+  type        = string
+  default     = null
+
+  validation {
+    condition = var.acme_admin_certificate_name == null || (
+      var.acme_enabled && anytrue([
+        for cert in var.acme_certificates : try(
+          cert.name == var.acme_admin_certificate_name &&
+          contains(concat([cert.common_name], tolist(cert.san)), lower(split(":", var.truenas_host)[0])), false
+        )
+      ])
+    )
+    error_message = "Enable ACME and select a listed certificate that includes the exact truenas_host hostname."
   }
 }
 
@@ -28,8 +70,6 @@ variable "acme" {
   description = "Names, DNS authenticator settings, and Let's Encrypt terms acceptance for native certificate issuance."
   type = object({
     name_prefix          = optional(string, "truenas")
-    admin_hostname       = string
-    apps_domain          = string
     dns_authenticator_id = optional(number)
     ovh_endpoint         = optional(string)
     accept_terms         = bool
@@ -63,24 +103,6 @@ variable "acme" {
     error_message = "Set either an OVH endpoint (ovh-eu or ovh-ca) or the positive integer ID of an existing DNS authenticator."
   }
 
-  validation {
-    condition = var.acme == null || try(
-      length(var.acme.admin_hostname) <= 64 && length(var.acme.apps_domain) <= 62 &&
-      alltrue([
-        for name in [var.acme.admin_hostname, var.acme.apps_domain] :
-        can(regex("^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\\.[a-z]([a-z0-9-]{0,61}[a-z0-9])?$", name))
-      ]), false
-    )
-    error_message = "Use lowercase DNS names without a scheme, port, wildcard, or trailing dot. Admin names allow up to 64 characters and app domains allow up to 62."
-  }
-
-  validation {
-    condition = var.acme == null || try(
-      var.acme.admin_hostname != var.acme.apps_domain &&
-      !endswith(var.acme.admin_hostname, ".${var.acme.apps_domain}"), false
-    )
-    error_message = "Keep the administration hostname outside the application domain."
-  }
 }
 
 variable "acme_ovh_credentials" {

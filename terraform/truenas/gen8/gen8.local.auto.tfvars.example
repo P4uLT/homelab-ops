@@ -106,7 +106,7 @@ datasets = {
 # rustfs_app_dataset        = "tank/rustfs"
 # rustfs_app_api_port       = 30292
 # rustfs_app_web_port       = 30293
-# Use the bootstrap acme_apps_certificate_id for the managed wildcard.
+# Use the ID for the selected certificate from acme_certificate_ids.
 # rustfs_app_certificate_id = 1
 # TrueNAS publishes the API on every interface. Restrict the port in the
 # NAS firewall to the operator and Talos networks.

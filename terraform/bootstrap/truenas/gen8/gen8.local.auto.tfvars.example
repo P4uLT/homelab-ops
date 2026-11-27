@@ -63,12 +63,18 @@ provision_smb_shares = false
 # The NAS keeps the TLS keys across renewals.
 # acme_enabled = true
 # acme = {
-#   name_prefix    = "truenas" # Label in TrueNAS, not a DNS name.
-#   admin_hostname = "nas.example.net"
-#   apps_domain    = "apps.example.net"
-#   ovh_endpoint   = "ovh-eu"
-#   accept_terms   = true
+#   name_prefix  = "truenas" # Label in TrueNAS, not a DNS name.
+#   ovh_endpoint = "ovh-eu"
+#   accept_terms = true
 # }
+# acme_certificates = [
+#   {
+#     name        = "shared"
+#     common_name = "nas.example.net"
+#     san         = ["*.apps.example.net"]
+#   },
+# ]
+# The common name also becomes a subject alternative name.
 # acme_ovh_credentials = {
 #   application_key    = "replace-locally"
 #   application_secret = "replace-locally"
@@ -82,4 +88,4 @@ provision_smb_shares = false
 
 # Bind the administration certificate only after checking both chains and the
 # endpoint hostname. The change restarts the web server.
-# acme_assign_admin = true
+# acme_admin_certificate_name = "shared"

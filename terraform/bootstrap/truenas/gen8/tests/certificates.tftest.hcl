@@ -5,57 +5,59 @@ mock_provider "truenas" {
 }
 
 variables {
-  acme_enabled      = false
-  acme_assign_admin = false
-  truenas_host      = "nas.example.net"
-  truenas_api_key   = "mock-only"
-  state_passphrase  = "mock-only-passphrase"
-  pool              = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
-  groups            = {}
-  users             = {}
-  user_passwords    = {}
+  acme_enabled                = true
+  acme_admin_certificate_name = null
+  truenas_host                = "nas.example.net:443"
+  truenas_api_key             = "mock-only"
+  state_passphrase            = "mock-only-passphrase"
+  pool                        = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
+  groups                      = {}
+  users                       = {}
+  user_passwords              = {}
 
   provision_smb_shares   = false
   provision_dataset_acls = false
   provision_group_lookup = false
   provision_apps         = false
+
+  acme = { ovh_endpoint = "ovh-eu", accept_terms = true }
+  acme_certificates = [
+    { name = "admin", common_name = "nas.example.net" },
+    { name = "apps", common_name = "*.apps.example.net" },
+    { name = "shared", common_name = "nas.example.net", san = ["*.apps.example.net", "nas.example.net"] },
+  ]
+  acme_ovh_credentials = {
+    application_key    = "mock-application-key"
+    application_secret = "mock-application-secret"
+    consumer_key       = "mock-consumer-key"
+  }
+  acme_ovh_credentials_version = 2
 }
 
 run "leaves_certificates_unmanaged_when_disabled" {
   command = plan
 
+  variables {
+    acme_enabled         = false
+    acme                 = null
+    acme_certificates    = []
+    acme_ovh_credentials = null
+  }
+
   assert {
     condition = (
       length(truenas_acme_dns_authenticator.ovh) == 0 &&
-      length(truenas_certificate.admin_request) == 0 &&
-      length(truenas_certificate.apps_request) == 0 &&
-      length(truenas_certificate.admin_acme) == 0 &&
-      length(truenas_certificate.apps_acme) == 0 &&
-      output.acme_admin_certificate_id == null &&
-      output.acme_apps_certificate_id == null
+      length(truenas_certificate.request) == 0 &&
+      length(truenas_certificate.issued) == 0 &&
+      length(truenas_system_general.acme_admin) == 0 &&
+      length(output.acme_certificate_ids) == 0
     )
-    error_message = "Certificate management must be off by default."
+    error_message = "Disabled certificate management must not require credentials or create resources."
   }
 }
 
-run "issues_two_separately_keyed_certificates" {
+run "issues_named_certificates" {
   command = plan
-
-  variables {
-    acme_enabled = true
-    acme = {
-      admin_hostname = "nas.example.net"
-      apps_domain    = "apps.example.net"
-      ovh_endpoint   = "ovh-eu"
-      accept_terms   = true
-    }
-    acme_ovh_credentials = {
-      application_key    = "mock-application-key"
-      application_secret = "mock-application-secret"
-      consumer_key       = "mock-consumer-key"
-    }
-    acme_ovh_credentials_version = 2
-  }
 
   override_resource {
     target = truenas_acme_dns_authenticator.ovh
@@ -63,23 +65,13 @@ run "issues_two_separately_keyed_certificates" {
   }
 
   override_resource {
-    target = truenas_certificate.admin_request
+    target = truenas_certificate.request
     values = { id = 51 }
   }
 
   override_resource {
-    target = truenas_certificate.apps_request
-    values = { id = 52 }
-  }
-
-  override_resource {
-    target = truenas_certificate.admin_acme
+    target = truenas_certificate.issued
     values = { id = 101 }
-  }
-
-  override_resource {
-    target = truenas_certificate.apps_acme
-    values = { id = 202 }
   }
 
   assert {
@@ -91,44 +83,45 @@ run "issues_two_separately_keyed_certificates" {
       } &&
       truenas_acme_dns_authenticator.ovh[0].attributes_secrets_wo_version == 2
     )
-    error_message = "Only the public settings belong in ordinary authenticator attributes."
+    error_message = "Keep the existing OVH authenticator and its write-only credential version."
   }
 
   assert {
     condition = (
-      length(truenas_certificate.admin_request) == 1 &&
-      length(truenas_certificate.apps_request) == 1 &&
-      truenas_certificate.admin_request[0].common == "nas.example.net" &&
-      tolist(truenas_certificate.admin_request[0].san) == tolist(["nas.example.net"]) &&
-      truenas_certificate.apps_request[0].common == "*.apps.example.net" &&
-      tolist(truenas_certificate.apps_request[0].san) == tolist(["*.apps.example.net"]) &&
+      toset(keys(truenas_certificate.request)) == toset(["admin", "apps", "shared"]) &&
+      tolist(truenas_certificate.request["admin"].san) == tolist(["nas.example.net"]) &&
+      tolist(truenas_certificate.request["apps"].san) == tolist(["*.apps.example.net"]) &&
+      tolist(truenas_certificate.request["shared"].san) == tolist(["nas.example.net", "*.apps.example.net"]) &&
       alltrue([
-        for request in concat(truenas_certificate.admin_request, truenas_certificate.apps_request) :
+        for cert in var.acme_certificates :
+        truenas_certificate.request[cert.name].common == cert.common_name
+      ]) &&
+      alltrue([
+        for name, request in truenas_certificate.request :
+        request.name == "truenas-${name}-csr" &&
         request.create_type == "CERTIFICATE_CREATE_CSR" &&
         request.key_type == "RSA" && request.key_length == 2048 &&
         request.digest_algorithm == "SHA256" && !request.store_privatekey
       ])
     )
-    error_message = "Each signing request must use its own key and one name."
+    error_message = "Each named request must include its CN, unique SANs, and its own on-box key."
   }
 
   assert {
     condition = (
-      length(truenas_certificate.admin_acme) == 1 &&
-      length(truenas_certificate.apps_acme) == 1 &&
-      truenas_certificate.admin_acme[0].csr_id == 51 &&
-      truenas_certificate.apps_acme[0].csr_id == 52 &&
-      truenas_certificate.admin_acme[0].dns_mapping["nas.example.net"] == 42 &&
-      truenas_certificate.apps_acme[0].dns_mapping["*.apps.example.net"] == 42 &&
+      toset(keys(truenas_certificate.issued)) == toset(["admin", "apps", "shared"]) &&
       alltrue([
-        for cert in concat(truenas_certificate.admin_acme, truenas_certificate.apps_acme) :
-        cert.create_type == "CERTIFICATE_CREATE_ACME" && length(cert.dns_mapping) == 1 &&
+        for name, cert in truenas_certificate.issued :
+        cert.name == "truenas-${name}-acme" &&
+        cert.csr_id == truenas_certificate.request[name].id &&
+        cert.create_type == "CERTIFICATE_CREATE_ACME" &&
+        cert.dns_mapping == tomap({ for dns_name in truenas_certificate.request[name].san : dns_name => 42 }) &&
         cert.acme_directory_uri == "https://acme-v02.api.letsencrypt.org/directory" &&
         cert.renew_days == 30 && cert.tos
       ]) &&
-      output.acme_admin_certificate_id == 101 && output.acme_apps_certificate_id == 202
+      output.acme_certificate_ids == tomap({ admin = 101, apps = 101, shared = 101 })
     )
-    error_message = "Each certificate must use its own request and the shared OVH authenticator."
+    error_message = "Issue each certificate from its own request, map every DNS name, and expose only numeric IDs."
   }
 
   assert {
@@ -142,64 +135,57 @@ run "issues_two_separately_keyed_certificates" {
     condition     = length(truenas_system_general.acme_admin) == 0
     error_message = "Issuance alone must not restart the administration service."
   }
-
-  assert {
-    condition = (
-      truenas_acme_dns_authenticator.ovh[0].name == "truenas-ovh-dns01" &&
-      truenas_certificate.admin_request[0].name == "truenas-admin-csr" &&
-      truenas_certificate.apps_request[0].name == "truenas-apps-csr" &&
-      truenas_certificate.admin_acme[0].name == "truenas-admin-acme" &&
-      truenas_certificate.apps_acme[0].name == "truenas-apps-acme"
-    )
-    error_message = "Object names must use the certificate name prefix."
-  }
 }
 
-run "binds_only_the_admin_certificate" {
+run "keeps_addresses_and_attributes_when_reordered" {
   command = plan
 
   variables {
-    truenas_host      = "nas.example.net:443"
-    acme_enabled      = true
-    acme_assign_admin = true
-    acme = {
-      name_prefix    = "storage-lab"
-      admin_hostname = "nas.example.net"
-      apps_domain    = "apps.example.net"
-      ovh_endpoint   = "ovh-ca"
-      accept_terms   = true
-    }
-    acme_ovh_credentials = {
-      application_key    = "mock-application-key"
-      application_secret = "mock-application-secret"
-      consumer_key       = "mock-consumer-key"
-    }
-  }
-
-  override_resource {
-    target = truenas_certificate.admin_acme
-    values = { id = 101 }
-  }
-
-  override_resource {
-    target = truenas_certificate.apps_acme
-    values = { id = 202 }
-  }
-
-  assert {
-    condition     = truenas_system_general.acme_admin[0].ui_certificate == 101
-    error_message = "Only the administration certificate may serve the management endpoint."
+    acme_certificates = [
+      { name = "shared", common_name = "nas.example.net", san = ["nas.example.net", "*.apps.example.net"] },
+      { name = "apps", common_name = "*.apps.example.net" },
+      { name = "admin", common_name = "nas.example.net" },
+    ]
   }
 
   assert {
     condition = (
-      truenas_acme_dns_authenticator.ovh[0].name == "storage-lab-ovh-dns01" &&
-      truenas_certificate.admin_request[0].name == "storage-lab-admin-csr" &&
-      truenas_certificate.apps_request[0].name == "storage-lab-apps-csr" &&
-      truenas_certificate.admin_acme[0].name == "storage-lab-admin-acme" &&
-      truenas_certificate.apps_acme[0].name == "storage-lab-apps-acme"
+      toset(keys(truenas_certificate.issued)) == toset(["admin", "apps", "shared"]) &&
+      { for name, request in truenas_certificate.request : name => tolist(request.san) } == {
+        admin  = tolist(["nas.example.net"])
+        apps   = tolist(["*.apps.example.net"])
+        shared = tolist(["nas.example.net", "*.apps.example.net"])
+      }
     )
-    error_message = "Object names must use the certificate name prefix."
+    error_message = "Reordering the list must preserve named resource keys and their SANs."
+  }
+}
+
+run "binds_the_selected_certificate_by_management_san" {
+  command = plan
+
+  variables {
+    acme_admin_certificate_name = "shared"
+    acme                        = { name_prefix = "storage-lab", ovh_endpoint = "ovh-ca", accept_terms = true }
+    acme_certificates = [
+      { name = "admin", common_name = "nas.example.net" },
+      { name = "shared", common_name = "*.apps.example.net", san = ["nas.example.net"] },
+    ]
+  }
+
+  override_resource {
+    target = truenas_certificate.issued
+    values = { id = 303 }
+  }
+
+  assert {
+    condition = (
+      truenas_system_general.acme_admin[0].ui_certificate == 303 &&
+      truenas_acme_dns_authenticator.ovh[0].name == "storage-lab-ovh-dns01" &&
+      truenas_certificate.request["shared"].name == "storage-lab-shared-csr" &&
+      truenas_certificate.issued["shared"].name == "storage-lab-shared-acme"
+    )
+    error_message = "Bind the selected certificate instead of assuming that the first entry or CN serves management."
   }
 }
 
@@ -207,22 +193,15 @@ run "uses_an_existing_dns_authenticator_without_ovh" {
   command = plan
 
   variables {
-    acme_enabled = true
-    acme = {
-      admin_hostname       = "nas.example.net"
-      apps_domain          = "apps.example.net"
-      dns_authenticator_id = 913
-      accept_terms         = true
-    }
+    acme                 = { dns_authenticator_id = 913, accept_terms = true }
     acme_ovh_credentials = null
   }
 
   assert {
     condition = (
       length(truenas_acme_dns_authenticator.ovh) == 0 &&
-      truenas_certificate.admin_acme[0].dns_mapping["nas.example.net"] == 913 &&
-      truenas_certificate.apps_acme[0].dns_mapping["*.apps.example.net"] == 913
+      truenas_certificate.issued["shared"].dns_mapping == tomap({ "nas.example.net" = 913, "*.apps.example.net" = 913 })
     )
-    error_message = "Both orders must use the supplied ID without creating an OVH authenticator."
+    error_message = "Use the supplied authenticator ID for every name without creating an OVH authenticator."
   }
 }
