@@ -19,7 +19,7 @@ the actual image label in the state address. Don't use the PVE access root.
    move the `haos` entry from `vm_image_downloads` to `vm_image_files`. Keep its
    label, filename, storage, and content type. Omitted `content_type` means
    `iso`. Keep the VM's `image` reference and all workload settings unchanged.
-4. Run `task tf:jarvis-plan`. Expect only the managed download to be planned for
+4. Run `task tf:proxmox-jarvis-plan`. Expect only the managed download to be planned for
    deletion. **Don't apply that plan.** Stop if it schedules any other action.
 
 ## Remove the state entry without deleting the file
@@ -44,7 +44,7 @@ Keep locking enabled. This removes the state binding without deleting the file.
 
 ## Confirm the result
 
-1. Run a new `task tf:jarvis-plan`. Expect no changes to Proxmox resources.
+1. Run a new `task tf:proxmox-jarvis-plan`. Expect no changes to Proxmox resources.
    If a VM references the image, confirm that the lookup succeeds and the VM
    isn't replaced. Otherwise, check the file directly in PVE storage. OpenTofu
    doesn't look up an unreferenced image. Don't apply the earlier plan.

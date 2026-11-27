@@ -161,6 +161,13 @@ variable "provision_dataset_acls" {
   nullable    = false
 }
 
+variable "provision_apps" {
+  description = "Grant the provisioning identity the apps-subsystem roles."
+  type        = bool
+  default     = false
+  nullable    = false
+}
+
 variable "user_passwords" {
   description = "Write-only passwords keyed by users labels."
   type        = map(string)

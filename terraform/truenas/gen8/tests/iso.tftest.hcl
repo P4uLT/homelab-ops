@@ -17,9 +17,10 @@ mock_provider "truenas" {
 }
 
 variables {
-  truenas_host     = "nas.example.invalid"
-  truenas_api_key  = "mock-only"
-  state_passphrase = "mock-only-passphrase"
+  truenas_host       = "nas.example.invalid"
+  truenas_api_key    = "mock-only"
+  state_passphrase   = "mock-only-passphrase"
+  rustfs_app_enabled = false
   datasets = {
     iso = {
       name       = "tank/iso"
@@ -79,6 +80,19 @@ run "plans_iso_with_acl_users" {
   assert {
     condition     = module.dataset["iso"].nfs.ro && module.dataset["iso"].smb.enabled
     error_message = "The catalog must pass the ACL grants to a dataset with both shares."
+  }
+}
+
+run "plans_nothing_when_the_app_gate_is_off" {
+  command = plan
+
+  assert {
+    condition = (
+      length(truenas_app.rustfs) == 0 &&
+      length(truenas_docker_config.gen8) == 0 &&
+      length(truenas_catalog_config.gen8) == 0
+    )
+    error_message = "The disabled gate must leave the app, Docker, and catalog unmanaged."
   }
 }
 

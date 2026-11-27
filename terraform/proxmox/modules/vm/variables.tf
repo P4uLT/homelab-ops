@@ -139,7 +139,7 @@ variable "memory" {
 }
 
 variable "disk" {
-  description = "Imported boot disk settings. Omitted tuning uses provider defaults."
+  description = "Imported boot disk settings, with size in GiB. Omitted tuning uses provider defaults."
   type = object({
     size         = optional(number, 64)
     interface    = optional(string, "scsi0")
@@ -309,7 +309,7 @@ variable "image_file_id" {
 }
 
 variable "additional_disks" {
-  description = "Optional data disks attached after the imported boot disk."
+  description = "Optional data disks attached after the imported boot disk, with size in GiB."
   type = list(object({
     interface    = string
     datastore_id = optional(string)

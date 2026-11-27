@@ -52,19 +52,19 @@ Get owner approval before any step that contacts the node.
    Don't overwrite the workload root's local file.
 2. Initialize the roots with `task tf:init`.
    This reads the remote state backend, not the PVE node.
-3. Plan with `task tf:pve-jarvis-plan`.
+3. Plan with `task tf:pve-jarvis-bootstrap-plan`.
    Leave `adopt_existing_access` at its default to import the existing role,
    group, user, and ACL. Set it to `false` only for a clean PVE node with a
    fresh access state. That plan creates the access objects instead of
    importing them. For existing state, review the [address mappings](#recovery).
-4. Apply: `task tf:pve-jarvis-apply -- -auto-approve`. Owner
+4. Apply: `task tf:pve-jarvis-bootstrap-apply -- -auto-approve`. Owner
    approval: the apply writes to the node.
-5. Read the workload token with `task tf:pve-jarvis-output -- -raw token_value`.
+5. Read the workload token with `task tf:pve-jarvis-bootstrap-output -- -raw token_value`.
    PVE returns the secret at creation. OpenTofu retains it in encrypted state.
    Copy it into `terraform/proxmox/jarvis/jarvis.local.auto.tfvars` as
    `pve_api_token = "terraform-prov@pve!tf=<secret>"`.
 6. Prove the Terraform token by planning the workload root:
-   `task tf:jarvis-plan`.
+   `task tf:proxmox-jarvis-plan`.
 7. Retire an existing provisioning user's password on the node with
    `pveum passwd terraform-prov@pve`, as root.
    Enter a long random value. Discard the value.

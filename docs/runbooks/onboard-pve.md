@@ -50,7 +50,7 @@ onboarding, storage changes, and builds. Check mode can also change the node.
    [Bootstrap the PVE access of the Terraform roots](bootstrap-pve-access.md).
 
 4. Prove the Terraform token by planning the node's workload root. Jarvis uses
-   `task tf:jarvis-plan`. Add a matching task for each new root.
+   `task tf:proxmox-jarvis-plan`. Add a matching task for each new root.
 
 ## Onboard the machine
 

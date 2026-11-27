@@ -59,7 +59,8 @@ include unrelated resources through dependency graphs.
 | `bootstrap/pve/jarvis/` | the Terraform access chain on jarvis: role, group, user, ACL, API token | once |
 | `proxmox/jarvis/` | the PVE server jarvis | often |
 | `bootstrap/truenas/gen8/` | the Gen8 data pool, identities, and file services | rarely |
-| `truenas/gen8/` | the Gen8 datasets, permissions, and shares | sometimes |
+| `truenas/gen8/` | the Gen8 datasets, permissions, shares, and the RustFS application | sometimes |
+| `rustfs/gen8/` | the Gen8 RustFS buckets, users, and policies | sometimes |
 | `dns/` (planned) | public DNS zone | sometimes |
 | `ovh-project/` (planned) | account-level users | rare |
 
@@ -123,6 +124,8 @@ Root-specific connection secrets use git-ignored `*.local.auto.tfvars` beside th
 | Bucket region | Chosen once | The root's `ovh.local.auto.tfvars`, git-ignored |
 | PVE access-management API token, per node | Issued outside OpenTofu | `bootstrap/pve/<node>/<node>.local.auto.tfvars`, git-ignored |
 | PVE workload API token, per node | Minted by the access root | `proxmox/<node>/<node>.local.auto.tfvars`, git-ignored |
+| RustFS admin key pair | Minted outside OpenTofu | The Gen8 tfvars files of `truenas/gen8/` and `rustfs/gen8/`, git-ignored |
+| RustFS bucket user keys | Chosen by the owner | `rustfs/gen8/gen8.local.auto.tfvars`, git-ignored |
 
 S3 keys also appear in the encrypted bootstrap state.
 Other roots use the copies in `.env.tf` through native `AWS_*` variables.
@@ -132,12 +135,12 @@ Keep credential values out of tracked files.
 
 ```sh
 task tf:init               # initialize every root; downloads the provider
-task tf:bootstrap-plan     # preview; safe to repeat
-task tf:bootstrap-apply    # create; idempotent
-task tf:bootstrap-output   # read the S3 keys after the apply
-task tf:bootstrap-state-list
-task tf:jarvis-plan        # preview the PVE workload; reads the node
-task tf:jarvis-apply       # change the node; owner approval
+task tf:ovh-bootstrap-plan     # preview; safe to repeat
+task tf:ovh-bootstrap-apply    # create; idempotent
+task tf:ovh-bootstrap-output   # read the S3 keys after the apply
+task tf:ovh-bootstrap-state-list
+task tf:proxmox-jarvis-plan        # preview the PVE workload; reads the node
+task tf:proxmox-jarvis-apply       # change the node; owner approval
 task tf:fmt-check          # offline format check, part of task verify
 task tf:validate           # init, then schema-check every root
 ```

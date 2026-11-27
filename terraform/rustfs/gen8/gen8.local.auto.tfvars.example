@@ -1,0 +1,36 @@
+# Copy this file to gen8.local.auto.tfvars and restrict it to your user.
+# Apply the TrueNAS root first: it installs RustFS and publishes the API.
+# Replace NAS_HOST with the host name the certificate covers.
+# Replace the admin key pair and every bucket user key.
+# The quota numbers are examples, not approved capacity. Size them within
+# the free space on tank and leave headroom for snapshots and other data.
+
+rustfs_endpoint   = "https://NAS_HOST:30292"
+rustfs_access_key = "RUSTFS_ACCESS_KEY"
+rustfs_secret_key = "RUSTFS_SECRET_KEY"
+
+# Keep TLS and certificate verification enabled on the NAS.
+# rustfs_ssl      = true
+# rustfs_insecure = false
+
+buckets = {
+  k8s-backups = { quota_gib = 50, versioning = true }
+  wal-g = {
+    quota_gib                 = 20
+    additional_object_actions = ["s3:DeleteObject"]
+  }
+  loki = {
+    quota_gib                 = 10
+    additional_object_actions = ["s3:DeleteObject"]
+  }
+  # Optional fields: bucket_namespace, object_ownership,
+  # object_lock_enabled_for_bucket, create_bucket_configuration
+  # (location_constraint and tags), force_destroy, user_name, user_status,
+  # and additional_bucket_actions.
+}
+
+bucket_credentials = {
+  k8s-backups = { access_key = "BACKUPS_USER_KEY", secret_key = "BACKUPS_USER_SECRET" }
+  wal-g       = { access_key = "WALG_USER_KEY", secret_key = "WALG_USER_SECRET" }
+  loki        = { access_key = "LOKI_USER_KEY", secret_key = "LOKI_USER_SECRET" }
+}

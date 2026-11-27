@@ -20,7 +20,7 @@ Workload roots use it for their S3 backend.
 2. Replace the credential:
 
    ```sh
-   task tf:bootstrap-apply -- \
+   task tf:ovh-bootstrap-apply -- \
      -replace=ovh_cloud_project_user_s3_credential.state -auto-approve
    ```
 
@@ -30,8 +30,8 @@ Workload roots use it for their S3 backend.
 3. Read the new pair:
 
    ```sh
-   task tf:bootstrap-output -- -raw s3_access_key
-   task tf:bootstrap-output -- -raw s3_secret_key
+   task tf:ovh-bootstrap-output -- -raw s3_access_key
+   task tf:ovh-bootstrap-output -- -raw s3_secret_key
    ```
 
 4. Update `.env.tf` and the off-site recovery kit with the new pair.

@@ -106,7 +106,6 @@ dataset uses `GENERIC`. Changing it recreates the dataset.
 | `MULTIPROTOCOL` | Datasets shared over SMB and NFS | NFSv4, `PASSTHROUGH` |
 | `APPS` | Application data with no share | NFSv4, `PASSTHROUGH`, extra entry for the apps group |
 
-
 Set quota and reservation values in bytes. Supply any dataset key or passphrase
 in `dataset_encryption_secrets`, keyed by the dataset's map key. These inputs
 are local, ephemeral, and passed to write-only attributes. Store a recovery copy
@@ -118,6 +117,8 @@ replacements that would destroy a dataset while its resource stays configured.
 
 ## Next
 
+- [Install the RustFS application](truenas-install-rustfs-app.md) to run
+  the one application on the NAS.
 - [Set dataset permissions](truenas-dataset-permissions.md) to grant group or
   user access through OpenTofu.
 - [Recover TrueNAS storage](recover-truenas-storage.md) after a reinstall, a

@@ -103,13 +103,13 @@ Get owner approval before creating billable resources in step 5.
    Enter its code in uppercase exactly as the project API reports it (`EU-WEST-PAR`,
    `EU-SOUTH-MIL`). Lowercase returns `Invalid region parameter`.
 3. Initialize the root: `task tf:init`. It downloads the OVH provider.
-4. Preview: `task tf:bootstrap-plan`. Expect five resources to add.
-5. Create: `task tf:bootstrap-apply`.
+4. Preview: `task tf:ovh-bootstrap-plan`. Expect five resources to add.
+5. Create: `task tf:ovh-bootstrap-apply`.
 6. Read the credentials. The apply masks both values, so read them explicitly:
 
    ```sh
-   task tf:bootstrap-output -- -raw s3_access_key
-   task tf:bootstrap-output -- -raw s3_secret_key
+   task tf:ovh-bootstrap-output -- -raw s3_access_key
+   task tf:ovh-bootstrap-output -- -raw s3_secret_key
    ```
 
    Copy them into `.env.tf` (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
@@ -126,7 +126,7 @@ Get owner approval before creating billable resources in step 5.
    to the passphrase.
 9. Run the local checks: `task verify`.
 
-Use `task tf:bootstrap-plan` for drift checks. Keep the bootstrap root frozen
+Use `task tf:ovh-bootstrap-plan` for drift checks. Keep the bootstrap root frozen
 without additional resources.
 
 ## When the API returns `403 This call has not been granted`

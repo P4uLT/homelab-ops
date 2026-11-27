@@ -35,7 +35,8 @@ locals {
   share_roles     = var.provision_smb_shares ? ["SHARING_SMB_READ", "SHARING_SMB_WRITE"] : []
   acl_roles       = var.provision_dataset_acls ? ["FILESYSTEM_ATTRS_READ", "FILESYSTEM_ATTRS_WRITE"] : []
   lookup_roles    = var.provision_group_lookup ? ["ACCOUNT_READ"] : []
-  provision_roles = concat(local.storage_roles, local.share_roles, local.acl_roles, local.lookup_roles)
+  app_roles       = var.provision_apps ? ["APPS_READ", "APPS_WRITE", "CATALOG_READ", "CATALOG_WRITE", "DOCKER_READ", "DOCKER_WRITE"] : []
+  provision_roles = concat(local.storage_roles, local.share_roles, local.acl_roles, local.lookup_roles, local.app_roles)
 }
 
 resource "truenas_privilege" "provisioner" {

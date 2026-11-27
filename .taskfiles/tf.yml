@@ -36,8 +36,21 @@ vars:
     - proxmox/jarvis
     - bootstrap/truenas/gen8
     - truenas/gen8
+    - rustfs/gen8
+  TF_ROOT_TFVARS:
+    map:
+      bootstrap/ovh: ovh.local.auto.tfvars
+      bootstrap/pve/jarvis: jarvis.local.auto.tfvars
+      proxmox/jarvis: jarvis.local.auto.tfvars
+      bootstrap/truenas/gen8: gen8.local.auto.tfvars
+      truenas/gen8: gen8.local.auto.tfvars
+      rustfs/gen8: gen8.local.auto.tfvars
   TF_TRUENAS_ROOTS: [bootstrap/truenas/gen8, truenas/gen8]
+  TF_LOCAL_TEST_MODULES:
+    - terraform/truenas/modules/dataset
+    - terraform/rustfs/modules/buckets
   TF_TRUENAS_DATASET_MODULE: terraform/truenas/modules/dataset
+  TF_RUSTFS_BUCKETS_MODULE: terraform/rustfs/modules/buckets
   TF_TEST_MODULES: [proxmox/modules/lxc, proxmox/modules/vm]
 
   # Per-root partial backend args. The shell expands the references at run
@@ -53,6 +66,9 @@ vars:
         -backend-config=../../../backend.s3.ovh.hcl
         -backend-config="bucket=$TF_VAR_bucket_name"
       truenas/gen8: >-
+        -backend-config=../../backend.s3.ovh.hcl
+        -backend-config="bucket=$TF_VAR_bucket_name"
+      rustfs/gen8: >-
         -backend-config=../../backend.s3.ovh.hcl
         -backend-config="bucket=$TF_VAR_bucket_name"
 
@@ -112,6 +128,17 @@ tasks:
           as: ROOT
         cmd: tofu -chdir="terraform/{{.ROOT}}" test {{.CLI_ARGS}}
 
+  test-rustfs:
+    desc: Test the RustFS module and root with a mock provider. No host contact.
+    preconditions:
+      - sh: test -f terraform/rustfs/gen8/.terraform/modules/modules.json
+        msg: "Run task tf:init before testing the RustFS root."
+      - sh: test -d {{.TF_RUSTFS_BUCKETS_MODULE}}/.terraform/providers
+        msg: "Run task tf:init before testing the RustFS module."
+    cmds:
+      - tofu -chdir="{{.TF_RUSTFS_BUCKETS_MODULE}}" test {{.CLI_ARGS}}
+      - tofu -chdir="terraform/rustfs/gen8" test {{.CLI_ARGS}}
+
   init:
     desc: Initialize OpenTofu roots and test modules. Contacts remote backends.
     dotenv: [".env.tf"]
@@ -121,9 +148,10 @@ tasks:
     cmds:
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" init -input=false {{index .TF_INIT_BACKEND .ROOT}}
-      - >-
-        tofu -chdir="{{.TF_TRUENAS_DATASET_MODULE}}"
-        init -backend=false -input=false
+      - for:
+          var: TF_LOCAL_TEST_MODULES
+          as: MODULE
+        cmd: tofu -chdir="{{.MODULE}}" init -backend=false -input=false
 
   validate:
     desc: Validate every OpenTofu root. Runs init first.
@@ -136,162 +164,182 @@ tasks:
       - for: { var: TF_ROOTS, as: ROOT }
         cmd: env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" validate -no-color
 
+  test-commands:
+    desc: Test Terraform commands with a fake CLI. No host contact.
+    cmd: uv run python -m unittest discover -s tests -p test_tf_tasks.py
+
+  ovh-bootstrap-plan:
+    desc: Preview bootstrap/ovh. Contacts its API. Owner approval required.
+    aliases: [bootstrap-plan]
+    cmds:
+      - task: _run-ovh
+        vars: {ROOT: bootstrap/ovh, ACTION: plan}
+
+  ovh-bootstrap-apply:
+    desc: Apply bootstrap/ovh. Changes infrastructure. Owner approval required.
+    aliases: [bootstrap-apply]
+    cmds:
+      - task: _run-ovh
+        vars: {ROOT: bootstrap/ovh, ACTION: apply}
+
+  ovh-bootstrap-output:
+    desc: Read saved bootstrap/ovh outputs. Raw key outputs are secret.
+    aliases: [bootstrap-output]
+    cmds:
+      - task: _run-ovh
+        vars: {ROOT: bootstrap/ovh, ACTION: output}
+
+  pve-jarvis-bootstrap-plan:
+    desc: Preview PVE access on Jarvis. Owner approval required.
+    aliases: [pve-jarvis-plan]
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/pve/jarvis, ACTION: plan}
+
+  pve-jarvis-bootstrap-apply:
+    desc: Apply PVE access on Jarvis. Owner approval required.
+    aliases: [pve-jarvis-apply]
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/pve/jarvis, ACTION: apply}
+
+  pve-jarvis-bootstrap-output:
+    desc: Read saved bootstrap/pve/jarvis outputs. Raw key outputs are secret.
+    aliases: [pve-jarvis-output]
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/pve/jarvis, ACTION: output}
+
+  proxmox-jarvis-plan:
+    desc: Preview proxmox/jarvis. Contacts its API. Owner approval required.
+    aliases: [jarvis-plan]
+    cmds:
+      - task: _run
+        vars: {ROOT: proxmox/jarvis, ACTION: plan}
+
+  proxmox-jarvis-apply:
+    desc: Apply proxmox/jarvis. Changes infrastructure. Owner approval required.
+    aliases: [jarvis-apply]
+    cmds:
+      - task: _run
+        vars: {ROOT: proxmox/jarvis, ACTION: apply}
+
+  proxmox-jarvis-output:
+    desc: Read saved proxmox/jarvis outputs. Raw key outputs are secret.
+    aliases: [jarvis-output]
+    cmds:
+      - task: _run
+        vars: {ROOT: proxmox/jarvis, ACTION: output}
+
   truenas-gen8-bootstrap-plan:
-    desc: Preview the Gen8 bootstrap. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars
-        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: >-
-      tofu -chdir=terraform/bootstrap/truenas/gen8 plan
-      -input=false {{.CLI_ARGS}}
+    desc: Preview the TrueNAS Gen8 bootstrap. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/truenas/gen8, ACTION: plan}
 
   truenas-gen8-bootstrap-apply:
-    desc: Apply the Gen8 bootstrap. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/bootstrap/truenas/gen8/gen8.local.auto.tfvars
-        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: >-
-      tofu -chdir=terraform/bootstrap/truenas/gen8 apply
-      -input=false {{.CLI_ARGS}}
+    desc: Apply the TrueNAS Gen8 bootstrap. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/truenas/gen8, ACTION: apply}
 
   truenas-gen8-bootstrap-output:
-    desc: Read a Gen8 bootstrap output. Raw key output is secret.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-    cmd: tofu -chdir=terraform/bootstrap/truenas/gen8 output {{.CLI_ARGS}}
+    desc: Read saved bootstrap/truenas/gen8 outputs. Raw key outputs are secret.
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/truenas/gen8, ACTION: output}
 
   truenas-gen8-plan:
-    desc: Preview the Gen8 storage. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/truenas/gen8/gen8.local.auto.tfvars
-        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: tofu -chdir=terraform/truenas/gen8 plan -input=false {{.CLI_ARGS}}
+    desc: Preview truenas/gen8. Contacts its API. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: truenas/gen8, ACTION: plan}
 
   truenas-gen8-apply:
-    desc: Apply the Gen8 storage. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/truenas/gen8/gen8.local.auto.tfvars
-        msg: "Copy gen8.local.auto.tfvars.example in the root and fill it."
-    cmd: tofu -chdir=terraform/truenas/gen8 apply -input=false {{.CLI_ARGS}}
+    desc: Apply truenas/gen8. Changes infrastructure. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: truenas/gen8, ACTION: apply}
 
-  bootstrap-plan:
-    desc: Plan the state backend.
-    dotenv: [".env.tf", ".env.account.ovh.tf"]
+  truenas-gen8-output:
+    desc: Read saved truenas/gen8 outputs. Raw key outputs are secret.
+    cmds:
+      - task: _run
+        vars: {ROOT: truenas/gen8, ACTION: output}
+
+  rustfs-gen8-plan:
+    desc: Preview rustfs/gen8. Contacts its API. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: rustfs/gen8, ACTION: plan}
+
+  rustfs-gen8-apply:
+    desc: Apply rustfs/gen8. Changes infrastructure. Owner approval required.
+    cmds:
+      - task: _run
+        vars: {ROOT: rustfs/gen8, ACTION: apply}
+
+  rustfs-gen8-status:
+    desc: Read live RustFS storage capacity. Owner approval required.
+    cmd: rc {{.CLI_ARGS}} admin info storage gen8
+
+  rustfs-gen8-quota:
+    desc: Read a live RustFS bucket quota. Owner approval required.
+    requires:
+      vars: [BUCKET]
+    cmd: rc {{.CLI_ARGS}} bucket quota info {{printf "gen8/%s" .BUCKET | q}}
+
+  rustfs-gen8-output:
+    desc: Read saved rustfs/gen8 outputs. Raw key outputs are secret.
+    cmds:
+      - task: _run
+        vars: {ROOT: rustfs/gen8, ACTION: output}
+
+  ovh-bootstrap-state-list:
+    desc: List resources tracked in the OVH bootstrap state.
+    aliases: [bootstrap-state-list]
+    cmds:
+      - task: _run
+        vars: {ROOT: bootstrap/ovh, ACTION: state list}
+
+  _run:
+    internal: true
+    requires:
+      vars: [ROOT, ACTION]
+    dotenv: [".env.tf"]
+    vars: &root_command_vars
+      ROOT_TFVARS: "{{index .TF_ROOT_TFVARS .ROOT}}"
+      INPUT_FLAG: >-
+        {{if or (eq .ACTION "plan") (eq .ACTION "apply")}}-input=false{{end}}
     preconditions:
-      - sh: test -s .env.tf
+      - &shared_env_required
+        sh: test -s .env.tf
         msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
+      - &root_tfvars_required
+        sh: >-
+          {{if .INPUT_FLAG}}test -s "terraform/{{.ROOT}}/{{.ROOT_TFVARS}}"
+          {{else}}true{{end}}
+        msg: "Copy terraform/{{.ROOT}}/{{.ROOT_TFVARS}}.example and fill it."
+    # The RustFS provider would otherwise prefer ambient credentials.
+    cmd: >-
+      {{if eq .ROOT "rustfs/gen8"}}
+      env -u RUSTFS_ENDPOINT -u RUSTFS_USER -u RUSTFS_SECRET
+      {{end}}
+      tofu -chdir="terraform/{{.ROOT}}" {{.ACTION}}
+      {{.INPUT_FLAG}} {{.CLI_ARGS}}
+
+  # Keep account credentials scoped to the state-backend consumer.
+  _run-ovh:
+    internal: true
+    requires:
+      vars: [ROOT, ACTION]
+    dotenv: [".env.tf", ".env.account.ovh.tf"]
+    vars: *root_command_vars
+    preconditions:
+      - *shared_env_required
       - sh: test -s .env.account.ovh.tf
         msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
-      - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
-        msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
-    cmds:
-      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh plan
-
-  bootstrap-apply:
-    desc: Create the state bucket and the access chain. Idempotent.
-    dotenv: [".env.tf", ".env.account.ovh.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s .env.account.ovh.tf
-        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
-      - sh: test -s terraform/bootstrap/ovh/ovh.local.auto.tfvars
-        msg: "terraform/bootstrap/ovh/ovh.local.auto.tfvars is missing. Copy its .example and fill it."
-    cmds:
-      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh apply {{.CLI_ARGS}}
-
-  bootstrap-output:
-    desc: Read one bootstrap output. Pass the args after -- (for example, -raw s3_secret_key).
-    dotenv: [".env.tf", ".env.account.ovh.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s .env.account.ovh.tf
-        msg: ".env.account.ovh.tf is missing or empty. Copy its .example and fill it."
-    cmds:
-      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh output {{.CLI_ARGS}}
-
-  bootstrap-state-list:
-    desc: List resources tracked in the bootstrap state.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-    cmds:
-      - env {{.TF_ENV}} tofu -chdir=terraform/bootstrap/ovh state list
-
-  pve-jarvis-plan:
-    desc: Plan the jarvis PVE access root. Contacts the PVE node. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
-        msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
-    cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis plan -input=false {{.CLI_ARGS}}
-
-  pve-jarvis-apply:
-    desc: Apply the jarvis PVE access root. Changes the PVE node. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars
-        msg: "terraform/bootstrap/pve/jarvis/jarvis.local.auto.tfvars is missing. Copy its .example and fill it."
-    cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis apply -input=false {{.CLI_ARGS}}
-
-  pve-jarvis-output:
-    desc: Read one jarvis access output. Pass the args after -- (for example, -raw token_value).
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-    cmds:
-      - tofu -chdir=terraform/bootstrap/pve/jarvis output {{.CLI_ARGS}}
-
-  jarvis-plan:
-    desc: Plan the jarvis root. Contacts the PVE node. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
-        msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
-    cmds:
-      - tofu -chdir=terraform/proxmox/jarvis plan {{.CLI_ARGS}}
-
-  jarvis-apply:
-    desc: Apply the jarvis root. Changes the PVE node. Owner approval required.
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-      - sh: test -s terraform/proxmox/jarvis/jarvis.local.auto.tfvars
-        msg: "terraform/proxmox/jarvis/jarvis.local.auto.tfvars is missing. Copy jarvis.local.auto.tfvars.example and fill it."
-    cmds:
-      - tofu -chdir=terraform/proxmox/jarvis apply {{.CLI_ARGS}}
-
-  jarvis-output:
-    desc: Read one jarvis output. Pass the args after -- (for example, -json lxcs).
-    dotenv: [".env.tf"]
-    preconditions:
-      - sh: test -s .env.tf
-        msg: ".env.tf is missing or empty. Copy .env.tf.example and fill it."
-    cmds:
-      - tofu -chdir=terraform/proxmox/jarvis output {{.CLI_ARGS}}
+      - *root_tfvars_required
+    cmd: >-
+      env {{.TF_ENV}} tofu -chdir="terraform/{{.ROOT}}" {{.ACTION}}
+      {{.INPUT_FLAG}} {{.CLI_ARGS}}

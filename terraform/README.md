@@ -18,8 +18,16 @@ OpenTofu roots and modules, grouped by provider and target.
   node's Terraform access chain.
 - `bootstrap/truenas/gen8/` owns the Gen8 pool, provisioning identity, local
   users and groups, and NFS and `cifs` services. `truenas/gen8/` owns
-  datasets, permissions, and shares. See the [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
+  datasets, permissions, shares, and the optional RustFS application. See the
+  [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
   Neither root manages dynamically provisioned Kubernetes volumes.
+- `rustfs/gen8/` owns the RustFS buckets, one user and policy per bucket, and
+  their quotas. It applies after the TrueNAS root installed the application.
+  Its endpoint and keys live in the root's git-ignored `gen8.local.auto.tfvars`.
+  The admin key pair matches the TrueNAS root's copy.
+- `rustfs/modules/buckets/`: reusable bucket catalog with quotas, optional
+  versioning, and a scoped user and policy per bucket. The caller configures
+  the RustFS provider.
 - `truenas/modules/dataset/`: one protected filesystem dataset with optional
   permissions and file shares. The Gen8 root calls it once per entry in `datasets`.
 - `talos-lab/` (planned): discovery VMs only. Production Talos nodes use bare metal outside Terraform.
@@ -38,10 +46,80 @@ Group resources by provider, failure scope, and apply cadence, rather than type.
 Give a new PVE server a root named after it. Restrict `bootstrap/ovh/` to the
 state backend.
 
+- Use `variables.tf` for root-wide inputs. Split larger contracts into
+  `variables.<domain>.tf`, such as `variables.apps.tf`.
+- Use `main.tf` for the root's composition or the module's main resource.
+  Group adjacent resources and data sources by purpose, such as `shares.tf`.
+- Keep a local near its only consumer. Put shared values in `locals.tf`.
+- Keep `outputs.tf` for output declarations. Read data in the file that owns
+  the lookup or measurement.
+- Extract a module when it owns a distinct contract, such as a dataset with
+  its shares or a bucket with its access policy. File length alone isn't a
+  reason to create a module.
+
 Declare the state key in each root's `backend.tf`, using
 `<path>/terraform.tfstate`, as in `proxmox/jarvis/terraform.tfstate`.
 A directory move doesn't move state. Keep the existing key unless a separate
 [state migration](BACKEND.md#state-locations-and-code-moves) is approved.
+
+## Root commands
+
+Each scope exposes `task tf:<scope>-plan`, `-apply`, and `-output`:
+
+| Scope | Root |
+| --- | --- |
+| `ovh-bootstrap` | `bootstrap/ovh` |
+| `pve-jarvis-bootstrap` | `bootstrap/pve/jarvis` |
+| `proxmox-jarvis` | `proxmox/jarvis` |
+| `truenas-gen8-bootstrap` | `bootstrap/truenas/gen8` |
+| `truenas-gen8` | `truenas/gen8` |
+| `rustfs-gen8` | `rustfs/gen8` |
+
+Pass native OpenTofu arguments after `--`:
+
+```sh
+task tf:proxmox-jarvis-plan -- -out=review.tfplan
+task tf:proxmox-jarvis-apply -- review.tfplan
+task tf:proxmox-jarvis-output -- -json lxcs
+```
+
+Get owner approval before plans, applies, and other host contact.
+Plan and apply require the root's local tfvars. Both use `-input=false`.
+Output reads saved state without refreshing the API. It needs the state
+credentials but doesn't require the root's connection tfvars.
+Raw key outputs are secret.
+
+Private runners share execution and preconditions. Only the OVH bootstrap
+runner loads the OVH account credential. RustFS commands unset ambient
+`RUSTFS_ENDPOINT`, `RUSTFS_USER`, and `RUSTFS_SECRET` so tfvars select the target.
+
+The `bootstrap-*`, `pve-jarvis-*`, and `jarvis-*` names remain aliases.
+Use `task tf:ovh-bootstrap-state-list` to inspect the backend bootstrap state.
+
+## Capacity units
+
+Configuration follows each provider's native units. Don't convert existing
+inputs or round disk sizes to change their display.
+
+| Input | Unit |
+| --- | --- |
+| Proxmox root disks and VM disk sizes | GiB |
+| Proxmox mount point sizes | Native suffixed values, such as `10G` |
+| Proxmox memory | MiB |
+| TrueNAS dataset quotas and reservations | Bytes |
+| TrueNAS SMB auto and Time Machine quotas | GiB |
+| RustFS `quota_gib` | GiB, converted to bytes by the bucket module |
+
+One decimal GB is 1,000,000,000 bytes. One GiB is 1,073,741,824 bytes.
+A 64 GiB disk is about 68.72 GB. Preserve exact byte counts in scripts.
+The RustFS client retains its native display units. Use its
+[live capacity commands](../docs/runbooks/truenas-install-rustfs-app.md#read-live-capacity)
+rather than applying OpenTofu to look up current measurements.
+
+The [National Institute of Standards and Technology](https://physics.nist.gov/cuu/Units/binary.html)
+defines GB and GiB separately.
+[Prometheus naming guidance](https://prometheus.io/docs/practices/naming/)
+uses bytes as the base unit for measurements.
 
 ## VM image sources
 
@@ -172,6 +250,7 @@ Run `task tf:test` for mocked LXC and VM module tests.
 After `task tf:init`, run `task tf:test-root-inputs` for the Jarvis input contract.
 Run `task tf:test-pve-bootstrap` to check the clean-node access path.
 Run `task tf:test-truenas` for the Gen8 pool, identity, and export contracts.
+Run `task tf:test-rustfs` for the catalog and Gen8 connection contracts.
 These tests run in `task verify` and use fixtures without host contact or
 connection credentials. Provider installation can need registry access.
 Successful root plans target local inventory because datastore outputs aren't
