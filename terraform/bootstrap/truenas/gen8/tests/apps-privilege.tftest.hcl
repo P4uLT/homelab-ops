@@ -5,13 +5,15 @@ mock_provider "truenas" {
 }
 
 variables {
-  truenas_host         = "nas.example.invalid"
-  truenas_api_key      = "mock-only"
-  state_passphrase     = "mock-only-passphrase"
-  pool                 = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
-  services             = { nfs = true, cifs = true }
-  provision_smb_shares = false
-  provision_apps       = true
+  acme_enabled                = false
+  acme_admin_certificate_name = null
+  truenas_host                = "nas.example.invalid"
+  truenas_api_key             = "mock-only"
+  state_passphrase            = "mock-only-passphrase"
+  pool                        = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
+  services                    = { nfs = true, cifs = true }
+  provision_smb_shares        = false
+  provision_apps              = true
 }
 
 run "provisioner_gains_apps_roles_when_gated" {

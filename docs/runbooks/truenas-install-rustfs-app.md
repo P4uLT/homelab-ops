@@ -23,9 +23,9 @@ tests don't prove the application's behavior.
 6. Fill the `rustfs_app_*` block in the storage tfvars. Set the version to
    the one the catalog offers, `1.1.47` at the last check. A missing version
    fails the apply with `Version ... not found`.
-7. In TrueNAS, select or issue a certificate for the RustFS DNS name.
-   Use a certificate that includes that name as a subject alternative name.
-   Set `rustfs_app_certificate_id` to its TrueNAS ID.
+7. Select a TrueNAS certificate that covers the RustFS DNS name. To use a
+   managed wildcard, [issue certificates with OVH DNS](truenas-acme-ovh.md).
+   Set `rustfs_app_certificate_id` to the certificate ID.
 8. Allow the API port only from the operator and Talos networks in the NAS
    firewall. The chart publishes the port on every interface and accepts only
    a wildcard bind address.

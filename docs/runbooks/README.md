@@ -12,6 +12,7 @@ Check mode can change a node.
 
 - [Bootstrap PVE access](bootstrap-pve-access.md): create the workload API token.
 - [Bootstrap TrueNAS](bootstrap-truenas.md): create the pool and provisioning access.
+- [Issue TrueNAS certificates with OVH DNS](truenas-acme-ovh.md): issue and renew certificates for administration and apps.
 - [Share over NFS](truenas-share-nfs.md): serve a dataset to NFS clients.
 - [Share over SMB](truenas-share-smb.md): serve a dataset to Windows clients.
 - [Share over SMB and NFS](truenas-share-multiprotocol.md): serve one dataset to both.

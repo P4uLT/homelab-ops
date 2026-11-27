@@ -5,13 +5,15 @@ mock_provider "truenas" {
 }
 
 variables {
-  truenas_host         = "nas.example.invalid"
-  truenas_api_key      = "mock-only"
-  state_passphrase     = "mock-only-passphrase"
-  pool                 = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
-  services             = { nfs = true, cifs = true }
-  provision_smb_shares = false
-  provision_apps       = false
+  acme_enabled                = false
+  acme_admin_certificate_name = null
+  truenas_host                = "nas.example.invalid"
+  truenas_api_key             = "mock-only"
+  state_passphrase            = "mock-only-passphrase"
+  pool                        = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
+  services                    = { nfs = true, cifs = true }
+  provision_smb_shares        = false
+  provision_apps              = false
 }
 
 run "plans_a_single_raidz2_vdev_by_default" {

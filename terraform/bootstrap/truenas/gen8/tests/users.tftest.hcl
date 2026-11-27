@@ -5,13 +5,15 @@ mock_provider "truenas" {
 }
 
 variables {
-  truenas_host           = "nas.example.invalid"
-  truenas_api_key        = "mock-only"
-  state_passphrase       = "mock-only-passphrase"
-  disk_serials           = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"]
-  provision_smb_shares   = true
-  provision_dataset_acls = false
-  provision_group_lookup = false
+  acme_enabled                = false
+  acme_admin_certificate_name = null
+  truenas_host                = "nas.example.invalid"
+  truenas_api_key             = "mock-only"
+  state_passphrase            = "mock-only-passphrase"
+  pool                        = { serials = ["DRIVE-A", "DRIVE-B", "DRIVE-C", "DRIVE-D"] }
+  provision_smb_shares        = true
+  provision_dataset_acls      = false
+  provision_group_lookup      = false
   groups = {
     iso = { name = "iso-writers", smb = true }
   }

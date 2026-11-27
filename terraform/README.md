@@ -17,7 +17,8 @@ OpenTofu roots and modules, grouped by provider and target.
   the state backend and uses local state. `bootstrap/pve/<node>/` creates a
   node's Terraform access chain.
 - `bootstrap/truenas/gen8/` owns the Gen8 pool, provisioning identity, local
-  users and groups, and NFS and `cifs` services. `truenas/gen8/` owns
+  users and groups, NFS and `cifs` services, and optional certificates.
+  `truenas/gen8/` consumes certificate IDs and owns
   datasets, permissions, shares, and the optional RustFS application. See the
   [TrueNAS bootstrap runbook](../docs/runbooks/bootstrap-truenas.md).
   Neither root manages dynamically provisioned Kubernetes volumes.

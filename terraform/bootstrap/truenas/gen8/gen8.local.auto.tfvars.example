@@ -58,3 +58,34 @@ provision_smb_shares = false
 # The apps-subsystem roles for the RustFS application. Apply this root after
 # enabling the gate, before the storage root plans the application.
 # provision_apps = true
+
+# Enable issuance before changing any application or administration binding.
+# The NAS keeps the TLS keys across renewals.
+# acme_enabled = true
+# acme = {
+#   name_prefix  = "truenas" # Label in TrueNAS, not a DNS name.
+#   ovh_endpoint = "ovh-eu"
+#   accept_terms = true
+# }
+# acme_certificates = [
+#   {
+#     name        = "shared"
+#     common_name = "nas.example.net"
+#     san         = ["*.apps.example.net"]
+#   },
+# ]
+# The common name also becomes a subject alternative name.
+# acme_ovh_credentials = {
+#   application_key    = "replace-locally"
+#   application_secret = "replace-locally"
+#   consumer_key       = "replace-locally"
+# }
+# Increment this value when replacing the OVH credentials.
+# acme_ovh_credentials_version = 1
+
+# To use an existing DNS authenticator instead, set acme.dns_authenticator_id
+# to its positive numeric ID. Omit acme.ovh_endpoint and acme_ovh_credentials.
+
+# Bind the administration certificate only after checking both chains and the
+# endpoint hostname. The change restarts the web server.
+# acme_admin_certificate_name = "shared"
