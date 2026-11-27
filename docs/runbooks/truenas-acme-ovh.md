@@ -9,7 +9,7 @@ Get owner approval before any live plan, apply, DNS operation, or endpoint check
 ## Prepare DNS and credentials
 
 1. Choose certificate names in your OVH-managed public DNS zone. Use an exact name for the administration interface.
-2. Resolve direct service names to the NAS through private DNS. Use separate names for clients that connect through a reverse proxy.
+2. Use private DNS to resolve each service name to the NAS or to its reverse proxy. If clients need both paths, you can use separate names. Each TLS endpoint needs a certificate that covers the name its clients use.
 3. Check the public authority for each challenge. Check certification authority authorization (`CAA`) records if present.
 
 ### Create the OVH credential manually
@@ -85,7 +85,7 @@ If RustFS is enabled, select a certificate that covers its HTTPS name.
 4. Verify the certificate chain and name on the RustFS HTTPS port. If you use a proxy, verify a signed S3 request through it as well. If the endpoint changes, update `rustfs_endpoint`. Keep TLS verification on.
 5. Verify RustFS health. If RustFS fails, restore its previous certificate ID and matching client endpoint. Preview and obtain approval before applying that rollback.
 
-The storage root needs only certificate IDs. Don't add a certificate data source or read the whole bootstrap state for this handoff.
+The storage root needs only certificate IDs. Read the named output rather than the whole bootstrap state. Don't use a certificate data source for this handoff. It can store the certificate's private key in the storage root's state if TrueNAS returns it.
 
 ## Switch administration separately
 
