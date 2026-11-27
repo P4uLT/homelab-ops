@@ -46,6 +46,17 @@ Group resources by provider, failure scope, and apply cadence, rather than type.
 Give a new PVE server a root named after it. Restrict `bootstrap/ovh/` to the
 state backend.
 
+- Use `variables.tf` for root-wide inputs. Split larger contracts into
+  `variables.<domain>.tf`, such as `variables.apps.tf`.
+- Use `main.tf` for the root's composition or the module's main resource.
+  Group adjacent resources and data sources by purpose, such as `shares.tf`.
+- Keep a local near its only consumer. Put shared values in `locals.tf`.
+- Keep `outputs.tf` for output declarations. Read data in the file that owns
+  the lookup or measurement.
+- Extract a module when it owns a distinct contract, such as a dataset with
+  its shares or a bucket with its access policy. File length alone isn't a
+  reason to create a module.
+
 Declare the state key in each root's `backend.tf`, using
 `<path>/terraform.tfstate`, as in `proxmox/jarvis/terraform.tfstate`.
 A directory move doesn't move state. Keep the existing key unless a separate

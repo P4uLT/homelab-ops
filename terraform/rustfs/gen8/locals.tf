@@ -1,6 +1,9 @@
 locals {
   bytes_per_gb = 1000000000
 
+  existing_bucket_names  = toset([for bucket in data.rustfs_buckets.existing.buckets : bucket.name])
+  unmanaged_bucket_names = setsubtract(local.existing_bucket_names, toset(keys(var.buckets)))
+
   bucket_statistics = merge(data.rustfs_quota_stats.this, data.rustfs_quota_stats.unmanaged)
 
   quota_summary = [

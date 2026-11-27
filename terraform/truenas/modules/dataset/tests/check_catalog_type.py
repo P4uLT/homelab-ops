@@ -17,7 +17,7 @@ def type_body(path: Path, variable: str, wrapper: str) -> list[str]:
 
 def main() -> None:
     module = Path(__file__).resolve().parents[1]
-    root = module.parents[1] / "gen8" / "variables.tf"
+    root = module.parents[1] / "gen8" / "variables.datasets.tf"
     datasets = type_body(root, "datasets", "map(object(")
     dataset = type_body(module / "variables.tf", "dataset", "object(")
     if datasets != dataset:
