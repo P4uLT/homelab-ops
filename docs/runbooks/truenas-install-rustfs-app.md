@@ -85,6 +85,18 @@ bucket listing and object reads, writes, and multipart uploads. Add actions
 only when the client needs them. The backup tool for `k8s-backups` is still
 open, so its policy is provisional.
 
+The plan reads the cluster before it writes. It fails when the cluster is
+offline, when a disk is offline, or when a bucket `location_constraint`
+differs from the server region. Omit the constraint on the server's own
+region: `us-east-1` is the default and isn't an accepted value, and `EU` is
+the accepted alias for `eu-west-1`.
+It also warns when RustFS holds a bucket that the catalog doesn't declare.
+
+`task tf:rustfs-gen8-plan` prints `bucket_quotas_summary`, one line per
+bucket with its usage, limit, and headroom. `bucket_quotas` keeps the same
+values in bytes for scripts, and `unmanaged_buckets` reads `none` or names the
+stray buckets.
+
 Stop on any deletion or replacement. Removing or renaming a bucket entry
 plans its destruction. Changes to Object Lock, the namespace, or creation
 options such as tags plan replacement. Keep `force_destroy` off to prevent
