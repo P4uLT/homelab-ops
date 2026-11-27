@@ -117,8 +117,9 @@ replacements that would destroy a dataset while its resource stays configured.
 
 ## Next
 
-- [Install the RustFS application](truenas-install-rustfs-app.md) to run
-  the one application on the NAS.
+- [Issue TrueNAS certificates with OVH DNS](truenas-acme-ovh.md) for the
+  administration interface and applications.
+- [Install the RustFS application](truenas-install-rustfs-app.md) and create its buckets.
 - [Set dataset permissions](truenas-dataset-permissions.md) to grant group or
   user access through OpenTofu.
 - [Recover TrueNAS storage](recover-truenas-storage.md) after a reinstall, a

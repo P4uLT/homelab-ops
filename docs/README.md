@@ -15,6 +15,7 @@ and credentials, including [local Packer plugin overrides](runbooks/override-pac
 
 ## Design
 
+- [TLS for TrueNAS administration and applications](truenas-tls.md): understand DNS validation, private access, and certificate ownership.
 - [TrueNAS dataset and share access](truenas-access.md): choose datasets,
   identities, and permissions before creating shares.
 
