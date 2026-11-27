@@ -85,9 +85,6 @@ bucket listing and object reads, writes, and multipart uploads. Add actions
 only when the client needs them. The backup tool for `k8s-backups` is still
 open, so its policy is provisional.
 
-For an existing deployment, expect the plan to move state addresses under
-`module.buckets`. These moves don't recreate buckets or users.
-
 Stop on any deletion or replacement. Removing or renaming a bucket entry
 plans its destruction. Changes to Object Lock, the namespace, or creation
 options such as tags plan replacement. Keep `force_destroy` off to prevent
