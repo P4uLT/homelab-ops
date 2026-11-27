@@ -80,7 +80,7 @@ Pass native OpenTofu arguments after `--`:
 ```sh
 task tf:proxmox-jarvis-plan -- -out=review.tfplan
 task tf:proxmox-jarvis-apply -- review.tfplan
-task tf:rustfs-gen8-output -- -json bucket_quotas
+task tf:proxmox-jarvis-output -- -json lxcs
 ```
 
 Get owner approval before plans, applies, and other host contact.
@@ -110,10 +110,11 @@ inputs or round disk sizes to change their display.
 | TrueNAS SMB auto and Time Machine quotas | GiB |
 | RustFS `quota_gib` | GiB, converted to bytes by the bucket module |
 
-Human-readable capacity summaries use decimal GB: one GB is 1,000,000,000 bytes.
-One GiB is 1,073,741,824 bytes. A 64 GiB disk therefore reads as 68.72 GB.
-Numeric capacity outputs keep exact bytes for scripts. Missing measurements
-stay unknown rather than becoming zero.
+One decimal GB is 1,000,000,000 bytes. One GiB is 1,073,741,824 bytes.
+A 64 GiB disk is about 68.72 GB. Preserve exact byte counts in scripts.
+The RustFS client retains its native display units. Use its
+[live capacity commands](../docs/runbooks/truenas-install-rustfs-app.md#read-live-capacity)
+rather than applying OpenTofu to look up current measurements.
 
 The [National Institute of Standards and Technology](https://physics.nist.gov/cuu/Units/binary.html)
 defines GB and GiB separately.

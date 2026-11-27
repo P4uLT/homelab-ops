@@ -15,13 +15,6 @@ mock_provider "rustfs" {
     }
   }
 
-  mock_data "rustfs_quota_stats" {
-    defaults = {
-      quota_limit     = 1610612736
-      current_usage   = 0
-      remaining_quota = 1610612736
-    }
-  }
 }
 
 variables {
@@ -95,32 +88,24 @@ run "accepts_explicit_http" {
   }
 }
 
-run "applies_the_catalog_from_gen8_inputs" {
-  command = apply
+run "plans_the_catalog_from_gen8_inputs" {
+  command = plan
 
   assert {
     condition     = module.buckets.bucket_names == toset(["test-data"])
-    error_message = "Gen8 must pass the configured buckets to the catalog module."
+    error_message = "The bucket module must receive the Gen8 catalog."
+  }
+}
+
+run "warns_about_unmanaged_buckets" {
+  command = plan
+
+  override_data {
+    target = data.rustfs_buckets.existing
+    values = { buckets = [{ name = "stray-data", creation_date = "2026-01-01T00:00:00Z" }] }
   }
 
-  assert {
-    condition = (
-      output.bucket_quotas["test-data"].limit == 1610612736 &&
-      output.bucket_quotas["test-data"].usage == 0 &&
-      output.bucket_quotas["test-data"].remaining == 1610612736
-    )
-    error_message = "The quota statistics of an existing bucket must reach the output."
-  }
-
-  assert {
-    condition     = output.bucket_quotas_summary == ["test-data: 0.0 GB used / 1.6 GB quota, 1.6 GB quota remaining (0%)"]
-    error_message = "The summary must show one readable line per bucket, sorted by name."
-  }
-
-  assert {
-    condition     = output.unmanaged_buckets == "none"
-    error_message = "An empty set of unmanaged buckets must read as none."
-  }
+  expect_failures = [check.unmanaged_buckets]
 }
 
 run "rejects_an_offline_cluster" {

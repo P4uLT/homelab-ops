@@ -279,6 +279,16 @@ tasks:
       - task: _run
         vars: {ROOT: rustfs/gen8, ACTION: apply}
 
+  rustfs-gen8-status:
+    desc: Read live RustFS storage capacity. Owner approval required.
+    cmd: rc {{.CLI_ARGS}} admin info storage gen8
+
+  rustfs-gen8-quota:
+    desc: Read a live RustFS bucket quota. Owner approval required.
+    requires:
+      vars: [BUCKET]
+    cmd: rc {{.CLI_ARGS}} bucket quota info {{printf "gen8/%s" .BUCKET | q}}
+
   rustfs-gen8-output:
     desc: Read saved rustfs/gen8 outputs. Raw key outputs are secret.
     cmds:

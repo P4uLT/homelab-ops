@@ -76,8 +76,9 @@ For `wal-g` and `loki`, carry over `s3:DeleteObject` in
 `additional_object_actions` to keep their existing permissions.
 
 ```sh
-task tf:rustfs-gen8-plan
-task tf:rustfs-gen8-apply
+task tf:rustfs-gen8-plan -- -out=review.tfplan
+# Review the plan before applying it.
+task tf:rustfs-gen8-apply -- review.tfplan
 ```
 
 Each bucket gets one user, one policy, and one quota. The default policy allows
@@ -92,29 +93,8 @@ region: `us-east-1` is the default and isn't an accepted value, and `EU` is
 the accepted alias for `eu-west-1`.
 It also warns when RustFS holds a bucket that the catalog doesn't declare.
 
-The `bucket_quotas_summary` output lists usage, quota, and quota remaining in
-decimal GB. Configuration still uses `quota_gib`. Changing the display doesn't
-change a quota. See [capacity units](../../terraform/README.md#capacity-units).
-
-The plan defers managed-bucket statistics until after catalog changes apply.
-This includes new buckets, so their summary appears after creation.
-On an unchanged plan, OpenTofu can omit unchanged outputs from the display.
-Read the saved outputs to see the full summary:
-
-```sh
-task tf:rustfs-gen8-output -- -json bucket_quotas_summary
-task tf:rustfs-gen8-output -- -json storage_capacity_summary
-```
-
-Output commands read the last stored state, not live measurements.
-
-`bucket_quotas` keeps exact bytes for scripts.
-`storage_capacity_summary` reports filesystem usage and availability per
-RustFS drive. These values aren't bucket quotas or a total for the whole NAS.
-Don't sum paths that share a filesystem or storage pool.
-An empty drive list means the server reported no drive capacities.
-`storage_capacity_bytes` keeps those measurements in bytes.
-`unmanaged_buckets` reads `none` or names the stray buckets.
+This root exports no Terraform outputs. The first plan may remove outputs
+stored in the state. Review that state change like any other plan.
 
 Stop on any deletion or replacement. Removing or renaming a bucket entry
 plans its destruction. Changes to Object Lock, the namespace, or creation
@@ -138,6 +118,41 @@ After the RustFS apply, test each key with throwaway objects:
 - No key can administer its own bucket.
 - Every quota is positive and leaves headroom on `tank` for snapshots and the
   other datasets.
+
+## Read live capacity
+
+Run `mise install` to install the pinned official RustFS CLI (`rc`).
+Get owner approval before contacting the NAS.
+Use an identity authorized to read storage and quota information. Prepare the
+`RC_HOST_gen8` value in your password manager. Replace `NAS_HOST` with the DNS
+name covered by the certificate and use the published API port.
+
+```text
+https://ACCESS_KEY:SECRET_KEY@NAS_HOST:30292
+```
+
+Percent-encode special characters in the keys. For example, encode `+` as
+`%2B`, `/` as `%2F`, and `=` as `%3D`. See the CLI's
+[environment alias format](https://github.com/rustfs/cli/blob/v0.1.38/README.md#basic-operations).
+Don't put credentials in command arguments or save an alias with keys.
+
+In zsh, paste the URL at the hidden prompt. The parentheses limit the alias
+export to these commands:
+
+```zsh
+(
+  read -rs 'RC_HOST_gen8?RustFS URL: ' || exit 1
+  printf '\n'
+  [[ -n $RC_HOST_gen8 ]] || exit 1
+  export RC_HOST_gen8
+  task tf:rustfs-gen8-status && task tf:rustfs-gen8-quota BUCKET=k8s-backups
+)
+```
+
+Pass `-- --json` for the CLI's machine-readable output. The CLI uses its
+own display units. Storage capacity and the bucket quota are separate
+measures. Usage may be absent if the quota endpoint doesn't report it.
+Neither task needs OpenTofu state or a plan.
 
 ## Check certificate renewal
 
