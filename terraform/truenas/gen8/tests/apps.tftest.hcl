@@ -18,7 +18,7 @@ variables {
 
   rustfs_app_enabled        = true
   rustfs_app_version        = "1.1.47"
-  rustfs_app_certificate_id = 1
+  rustfs_app_certificate_id = 202
   rustfs_app_access_key     = "mockadmin"
   rustfs_app_secret_key     = "mocksecret"
 }
@@ -47,7 +47,7 @@ run "plans_the_gated_application" {
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).storage.data_disks[0].host_path_config.path == "/mnt/tank/rustfs" &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.port_number == 30292 &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.web_port.port_number == 30293 &&
-      jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.certificate_id == 1 &&
+      jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.certificate_id == 202 &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.bind_mode == "published" &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.api_port.host_ips[0] == "0.0.0.0" &&
       jsondecode(nonsensitive(truenas_app.rustfs[0].values)).network.web_port.bind_mode == "exposed" &&
