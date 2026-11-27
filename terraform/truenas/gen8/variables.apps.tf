@@ -82,7 +82,7 @@ variable "rustfs_app_api_port" {
 }
 
 variable "rustfs_app_web_port" {
-  description = "Console port of the RustFS application. The chart leaves it unpublished."
+  description = "Console port of the RustFS application."
   type        = number
   default     = 30293
   nullable    = false
@@ -95,6 +95,13 @@ variable "rustfs_app_web_port" {
     )
     error_message = "rustfs_app_web_port must be a whole number from 1 to 65535."
   }
+}
+
+variable "rustfs_app_web_published" {
+  description = "Publish the RustFS Console port for operator testing. Off leaves it exposed to the container only. The NAS firewall must still restrict it."
+  type        = bool
+  default     = false
+  nullable    = false
 }
 
 variable "rustfs_app_certificate_id" {

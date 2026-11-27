@@ -1,3 +1,7 @@
+locals {
+  rustfs_app_wildcard_hosts = ["0.0.0.0"]
+}
+
 resource "truenas_docker_config" "gen8" {
   count = var.rustfs_app_enabled ? 1 : 0
   pool  = "tank"
@@ -28,9 +32,15 @@ resource "truenas_app" "rustfs" {
       api_port = {
         bind_mode   = "published"
         port_number = var.rustfs_app_api_port
-        host_ips    = ["0.0.0.0"]
+        host_ips    = local.rustfs_app_wildcard_hosts
       }
-      web_port = { bind_mode = "exposed", port_number = var.rustfs_app_web_port }
+      web_port = merge(
+        {
+          bind_mode   = var.rustfs_app_web_published ? "published" : "exposed"
+          port_number = var.rustfs_app_web_port
+        },
+        var.rustfs_app_web_published ? { host_ips = local.rustfs_app_wildcard_hosts } : {},
+      )
     }
     run_as = { user = 568, group = 568 }
     storage = {
