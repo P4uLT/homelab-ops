@@ -18,7 +18,7 @@
           {{ inventory_hostname }} has no explicit, nonblank ansible_host string.
           Record the address in
           inventory/servers/group_vars/{{ workload_group }}/secrets.sops.yaml
-          with the ct_ipv4 from `task tf:jarvis-output -- -json lxcs`.
+          with the ct_ipv4 from `task tf:proxmox-jarvis-output -- -json lxcs`.
         quiet: true
 
     - name: Check the image build marker

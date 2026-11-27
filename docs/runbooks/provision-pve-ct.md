@@ -34,8 +34,8 @@ The root sets `insecure = true` for PVE's self-signed certificate.
 Get owner approval before either command:
 
 ```sh
-task tf:jarvis-plan
-task tf:jarvis-apply -- -auto-approve
+task tf:proxmox-jarvis-plan
+task tf:proxmox-jarvis-apply -- -auto-approve
 ```
 
 Expect one container to add. The apply clones the configured `template`,
@@ -58,7 +58,7 @@ Named output, `-json`, and `-raw` can print plaintext. Keep them out of shared
 logs and tracked files.
 
 ```sh
-task tf:jarvis-output -- -json lxcs
+task tf:proxmox-jarvis-output -- -json lxcs
 ```
 
 Each workload entry provides `ct_id` and `ct_ipv4`.
@@ -190,9 +190,9 @@ If protection is enabled, complete these steps first:
 With protection disabled, complete the deletion:
 
 1. Delete the workload's entry from `lxc_workloads` in the local tfvars.
-2. Save a plan with `task tf:jarvis-plan -- -out=delete.tfplan`.
+2. Save a plan with `task tf:proxmox-jarvis-plan -- -out=delete.tfplan`.
 3. Review the resource and disk deletions.
-4. Apply the approved plan with `task tf:jarvis-apply -- delete.tfplan`.
+4. Apply the approved plan with `task tf:proxmox-jarvis-apply -- delete.tfplan`.
 
 The state defines resource ownership. A `terraform` tag alone doesn't import or delete a container.
 

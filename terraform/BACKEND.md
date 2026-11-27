@@ -135,12 +135,12 @@ Keep credential values out of tracked files.
 
 ```sh
 task tf:init               # initialize every root; downloads the provider
-task tf:bootstrap-plan     # preview; safe to repeat
-task tf:bootstrap-apply    # create; idempotent
-task tf:bootstrap-output   # read the S3 keys after the apply
-task tf:bootstrap-state-list
-task tf:jarvis-plan        # preview the PVE workload; reads the node
-task tf:jarvis-apply       # change the node; owner approval
+task tf:ovh-bootstrap-plan     # preview; safe to repeat
+task tf:ovh-bootstrap-apply    # create; idempotent
+task tf:ovh-bootstrap-output   # read the S3 keys after the apply
+task tf:ovh-bootstrap-state-list
+task tf:proxmox-jarvis-plan        # preview the PVE workload; reads the node
+task tf:proxmox-jarvis-apply       # change the node; owner approval
 task tf:fmt-check          # offline format check, part of task verify
 task tf:validate           # init, then schema-check every root
 ```

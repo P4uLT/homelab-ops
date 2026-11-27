@@ -51,6 +51,40 @@ Declare the state key in each root's `backend.tf`, using
 A directory move doesn't move state. Keep the existing key unless a separate
 [state migration](BACKEND.md#state-locations-and-code-moves) is approved.
 
+## Root commands
+
+Each scope exposes `task tf:<scope>-plan`, `-apply`, and `-output`:
+
+| Scope | Root |
+| --- | --- |
+| `ovh-bootstrap` | `bootstrap/ovh` |
+| `pve-jarvis-bootstrap` | `bootstrap/pve/jarvis` |
+| `proxmox-jarvis` | `proxmox/jarvis` |
+| `truenas-gen8-bootstrap` | `bootstrap/truenas/gen8` |
+| `truenas-gen8` | `truenas/gen8` |
+| `rustfs-gen8` | `rustfs/gen8` |
+
+Pass native OpenTofu arguments after `--`:
+
+```sh
+task tf:proxmox-jarvis-plan -- -out=review.tfplan
+task tf:proxmox-jarvis-apply -- review.tfplan
+task tf:rustfs-gen8-output -- -json bucket_quotas
+```
+
+Get owner approval before plans, applies, and other host contact.
+Plan and apply require the root's local tfvars. Both use `-input=false`.
+Output reads saved state without refreshing the API. It needs the state
+credentials but doesn't require the root's connection tfvars.
+Raw key outputs are secret.
+
+Private runners share execution and preconditions. Only the OVH bootstrap
+runner loads the OVH account credential. RustFS commands unset ambient
+`RUSTFS_ENDPOINT`, `RUSTFS_USER`, and `RUSTFS_SECRET` so tfvars select the target.
+
+The `bootstrap-*`, `pve-jarvis-*`, and `jarvis-*` names remain aliases.
+Use `task tf:ovh-bootstrap-state-list` to inspect the backend bootstrap state.
+
 ## Capacity units
 
 Configuration follows each provider's native units. Don't convert existing

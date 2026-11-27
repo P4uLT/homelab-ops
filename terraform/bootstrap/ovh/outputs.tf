@@ -1,5 +1,5 @@
 # Read the credentials with the task. Terraform masks their values:
-#   task tf:bootstrap-output -- -raw s3_secret_key
+#   task tf:ovh-bootstrap-output -- -raw s3_secret_key
 
 output "s3_access_key" {
   description = "S3 access key for the state bucket. Copy to AWS_ACCESS_KEY_ID in .env.tf."

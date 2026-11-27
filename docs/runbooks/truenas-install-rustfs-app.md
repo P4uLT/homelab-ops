@@ -99,7 +99,13 @@ change a quota. See [capacity units](../../terraform/README.md#capacity-units).
 The plan defers managed-bucket statistics until after catalog changes apply.
 This includes new buckets, so their summary appears after creation.
 On an unchanged plan, OpenTofu can omit unchanged outputs from the display.
-Read the saved outputs to see the full summary.
+Read the saved outputs to see the full summary:
+
+```sh
+task tf:rustfs-gen8-output -- -json bucket_quotas_summary
+task tf:rustfs-gen8-output -- -json storage_capacity_summary
+```
+
 Output commands read the last stored state, not live measurements.
 
 `bucket_quotas` keeps exact bytes for scripts.
