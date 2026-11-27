@@ -110,12 +110,14 @@ run "issues_named_certificates" {
   assert {
     condition = (
       toset(keys(truenas_certificate.issued)) == toset(["admin", "apps", "shared"]) &&
+      truenas_certificate.issued["admin"].dns_mapping == tomap({ "nas.example.net" = 42 }) &&
+      truenas_certificate.issued["apps"].dns_mapping == tomap({ "*.apps.example.net" = 42 }) &&
+      truenas_certificate.issued["shared"].dns_mapping == tomap({ "nas.example.net" = 42, "DNS:*.apps.example.net" = 42 }) &&
       alltrue([
         for name, cert in truenas_certificate.issued :
         cert.name == "truenas-${name}-acme" &&
         cert.csr_id == truenas_certificate.request[name].id &&
         cert.create_type == "CERTIFICATE_CREATE_ACME" &&
-        cert.dns_mapping == tomap({ for dns_name in truenas_certificate.request[name].san : dns_name => 42 }) &&
         cert.acme_directory_uri == "https://acme-v02.api.letsencrypt.org/directory" &&
         cert.renew_days == 30 && cert.tos
       ]) &&
@@ -200,7 +202,7 @@ run "uses_an_existing_dns_authenticator_without_ovh" {
   assert {
     condition = (
       length(truenas_acme_dns_authenticator.ovh) == 0 &&
-      truenas_certificate.issued["shared"].dns_mapping == tomap({ "nas.example.net" = 913, "*.apps.example.net" = 913 })
+      truenas_certificate.issued["shared"].dns_mapping == tomap({ "nas.example.net" = 913, "DNS:*.apps.example.net" = 913 })
     )
     error_message = "Use the supplied authenticator ID for every name without creating an OVH authenticator."
   }

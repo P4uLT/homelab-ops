@@ -39,7 +39,12 @@ resource "truenas_certificate" "issued" {
   acme_directory_uri = local.acme_directory
   tos                = var.acme.accept_terms
   renew_days         = 30
-  dns_mapping        = { for name in each.value.san : name => local.acme_dns_authenticator_id }
+
+  # TrueNAS matches the bare CN and DNS:-prefixed SANs during issuance.
+  dns_mapping = {
+    for name in each.value.san :
+    (name == each.value.common_name ? name : "DNS:${name}") => local.acme_dns_authenticator_id
+  }
 
   lifecycle {
     prevent_destroy = true
