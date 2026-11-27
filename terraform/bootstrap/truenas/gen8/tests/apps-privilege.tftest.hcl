@@ -5,6 +5,8 @@ mock_provider "truenas" {
 }
 
 variables {
+  acme_enabled         = false
+  acme_assign_admin    = false
   truenas_host         = "nas.example.invalid"
   truenas_api_key      = "mock-only"
   state_passphrase     = "mock-only-passphrase"
