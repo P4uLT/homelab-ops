@@ -108,7 +108,7 @@ After the TrueNAS apply:
 
 - The installed chart version matches the pin, and the application is healthy.
 - The API answers over verified HTTPS at the configured DNS name and port.
-- The console port isn't published.
+- The console port isn't published unless `rustfs_app_web_published = true`.
 - User `568` can write to `/mnt/tank/rustfs`.
 
 After the RustFS apply, test each key with throwaway objects:
@@ -118,6 +118,38 @@ After the RustFS apply, test each key with throwaway objects:
 - No key can administer its own bucket.
 - Every quota is positive and leaves headroom on `tank` for snapshots and the
   other datasets.
+
+## Test the console
+
+Get owner approval before each firewall change, live plan, apply, or live
+check. The toggle can redeploy RustFS. Don't apply the RustFS buckets root.
+
+1. Restrict the console port to the authorized operator host or network in the
+   NAS firewall before publishing it. The port defaults to `30293`. The chart
+   binds it to all interfaces. Keep Talos on the API port only.
+2. Set `rustfs_app_web_published = true` in
+   `terraform/truenas/gen8/gen8.local.auto.tfvars`.
+3. Run `task tf:truenas-gen8-plan`. Stop on app replacement or unrelated changes.
+4. After approval, run `task tf:truenas-gen8-apply`. Review the fresh plan
+   against the same criteria before confirming.
+5. From an authorized browser, open `https://<certificate-covered-name>:30293`.
+   Use the configured port if it differs. Don't bypass certificate errors.
+6. Confirm that a client outside the allowed network can't reach the port.
+7. Select **Key Login**. Enter the existing RustFS admin access key and secret
+   key from the password manager, not a TrueNAS login or a bucket key.
+
+### Close the console
+
+1. Block operator access to the console port while keeping other clients blocked.
+2. Set `rustfs_app_web_published = false` or remove the override. Keep
+   `rustfs_app_enabled = true`.
+3. Repeat the approved TrueNAS plan and apply steps. Stop on app replacement
+   or unrelated changes.
+4. In TrueNAS Apps, check the RustFS network settings. Confirm the console port
+   is exposed to the container only, not published on the NAS. A failed browser
+   connection alone doesn't prove the port is unpublished.
+5. Run the HTTPS health check from [Create the buckets and users](#create-the-buckets-and-users).
+6. Remove the temporary firewall rule only after confirming the port isn't published.
 
 ## Read live capacity
 
