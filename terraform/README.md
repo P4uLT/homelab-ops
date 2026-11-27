@@ -51,6 +51,30 @@ Declare the state key in each root's `backend.tf`, using
 A directory move doesn't move state. Keep the existing key unless a separate
 [state migration](BACKEND.md#state-locations-and-code-moves) is approved.
 
+## Capacity units
+
+Configuration follows each provider's native units. Don't convert existing
+inputs or round disk sizes to change their display.
+
+| Input | Unit |
+| --- | --- |
+| Proxmox root disks and VM disk sizes | GiB |
+| Proxmox mount point sizes | Native suffixed values, such as `10G` |
+| Proxmox memory | MiB |
+| TrueNAS dataset quotas and reservations | Bytes |
+| TrueNAS SMB auto and Time Machine quotas | GiB |
+| RustFS `quota_gib` | GiB, converted to bytes by the bucket module |
+
+Human-readable capacity summaries use decimal GB: one GB is 1,000,000,000 bytes.
+One GiB is 1,073,741,824 bytes. A 64 GiB disk therefore reads as 68.72 GB.
+Numeric capacity outputs keep exact bytes for scripts. Missing measurements
+stay unknown rather than becoming zero.
+
+The [National Institute of Standards and Technology](https://physics.nist.gov/cuu/Units/binary.html)
+defines GB and GiB separately.
+[Prometheus naming guidance](https://prometheus.io/docs/practices/naming/)
+uses bytes as the base unit for measurements.
+
 ## VM image sources
 
 | Input | Use case | Image owner | Disk import |

@@ -92,10 +92,23 @@ region: `us-east-1` is the default and isn't an accepted value, and `EU` is
 the accepted alias for `eu-west-1`.
 It also warns when RustFS holds a bucket that the catalog doesn't declare.
 
-`task tf:rustfs-gen8-plan` prints `bucket_quotas_summary`, one line per
-bucket with its usage, limit, and headroom. `bucket_quotas` keeps the same
-values in bytes for scripts, and `unmanaged_buckets` reads `none` or names the
-stray buckets.
+The `bucket_quotas_summary` output lists usage, quota, and quota remaining in
+decimal GB. Configuration still uses `quota_gib`. Changing the display doesn't
+change a quota. See [capacity units](../../terraform/README.md#capacity-units).
+
+The plan defers managed-bucket statistics until after catalog changes apply.
+This includes new buckets, so their summary appears after creation.
+On an unchanged plan, OpenTofu can omit unchanged outputs from the display.
+Read the saved outputs to see the full summary.
+Output commands read the last stored state, not live measurements.
+
+`bucket_quotas` keeps exact bytes for scripts.
+`storage_capacity_summary` reports filesystem usage and availability per
+RustFS drive. These values aren't bucket quotas or a total for the whole NAS.
+Don't sum paths that share a filesystem or storage pool.
+An empty drive list means the server reported no drive capacities.
+`storage_capacity_bytes` keeps those measurements in bytes.
+`unmanaged_buckets` reads `none` or names the stray buckets.
 
 Stop on any deletion or replacement. Removing or renaming a bucket entry
 plans its destruction. Changes to Object Lock, the namespace, or creation

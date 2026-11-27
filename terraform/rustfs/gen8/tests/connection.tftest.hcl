@@ -95,8 +95,8 @@ run "accepts_explicit_http" {
   }
 }
 
-run "plans_the_catalog_from_gen8_inputs" {
-  command = plan
+run "applies_the_catalog_from_gen8_inputs" {
+  command = apply
 
   assert {
     condition     = module.buckets.bucket_names == toset(["test-data"])
@@ -113,7 +113,7 @@ run "plans_the_catalog_from_gen8_inputs" {
   }
 
   assert {
-    condition     = output.bucket_quotas_summary == ["test-data: 0% used, 1.5 GiB limit, 1.5 GiB free"]
+    condition     = output.bucket_quotas_summary == ["test-data: 0.0 GB used / 1.6 GB quota, 1.6 GB quota remaining (0%)"]
     error_message = "The summary must show one readable line per bucket, sorted by name."
   }
 

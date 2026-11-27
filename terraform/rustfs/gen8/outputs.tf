@@ -1,31 +1,7 @@
-# The quota subsystem reports a bucket's limit, usage, and headroom. Read only
-# buckets that already exist: a data source for a new bucket fails the plan.
-data "rustfs_quota_stats" "this" {
-  for_each = local.existing_bucket_names
-
-  bucket = each.value
-}
-
-locals {
-  bytes_per_gib = pow(2, 30)
-
-  # One readable line per bucket for a plan review. The numeric output below
-  # keeps the exact byte values for scripts.
-  quota_summary = [
-    for name in sort(keys(data.rustfs_quota_stats.this)) : format(
-      "%s: %s%% used, %s limit, %s free",
-      name,
-      try(format("%.0f", data.rustfs_quota_stats.this[name].usage_percentage), "?"),
-      try(format("%.1f GiB", data.rustfs_quota_stats.this[name].quota_limit / local.bytes_per_gib), "no quota"),
-      try(format("%.1f GiB", data.rustfs_quota_stats.this[name].remaining_quota / local.bytes_per_gib), "unknown"),
-    )
-  ]
-}
-
 output "bucket_quotas" {
-  description = "Quota limit, usage, and headroom in bytes for each existing bucket."
+  description = "Quota limit, usage, and headroom in bytes for managed and stray buckets. Null means unknown."
   value = {
-    for name, stats in data.rustfs_quota_stats.this : name => {
+    for name, stats in local.bucket_statistics : name => {
       limit     = stats.quota_limit
       usage     = stats.current_usage
       remaining = stats.remaining_quota
@@ -35,8 +11,18 @@ output "bucket_quotas" {
 }
 
 output "bucket_quotas_summary" {
-  description = "One readable line per existing bucket: usage, limit, and headroom."
+  description = "Bucket usage, quota, and quota remaining in decimal GB. Changed buckets are read after apply."
   value       = local.quota_summary
+}
+
+output "storage_capacity_bytes" {
+  description = "Filesystem capacities reported by each RustFS drive, in bytes. Don't sum paths that share storage."
+  value       = local.storage_capacity_bytes
+}
+
+output "storage_capacity_summary" {
+  description = "Filesystem usage and availability per RustFS drive in decimal GB, separate from bucket quotas."
+  value       = local.storage_capacity_summary
 }
 
 output "unmanaged_buckets" {

@@ -1,5 +1,5 @@
 variable "dataset" {
-  description = "One filesystem dataset and its optional NFS and SMB shares."
+  description = "One filesystem dataset and its optional NFS and SMB shares. Dataset quotas and reservations use bytes. SMB quotas use GiB."
   type = object({
     name    = string
     protect = optional(bool, true)
